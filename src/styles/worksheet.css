@@ -104,6 +104,60 @@
   color: #f59e0b;
 }
 
+.project-badge.development {
+  background-color: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .worksheet-content {
+    padding: 16px;
+  }
+
+  .worksheet-header-actions {
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  
+  .worksheet-header-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .worksheet-top-bar {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .worksheet-date-selector {
+    width: 100%;
+  }
+
+  .worksheet-stats-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .ws-stat-card {
+    min-width: 140px;
+    flex: 1 1 calc(50% - 12px);
+    padding: 12px;
+  }
+
+  .worksheet-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .worksheet-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+}
+
 .ws-icon.hours {
   background-color: rgba(168, 85, 247, 0.1);
   color: #a855f7;

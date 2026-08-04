@@ -17,8 +17,21 @@ import {
   PackageOpen,
   CalendarDays,
   Palmtree,
-  Info
+  Info,
+  Plus
 } from 'lucide-react';
+import {
+  EnterpriseModal,
+  FormHeader,
+  FormBody,
+  FormSection,
+  FormField,
+  SelectInput,
+  TextInput,
+  DateInput,
+  FormFooter
+} from '../components/EnterpriseForm';
+import DashboardLayout from '../components/DashboardLayout';
 import '../styles/dashboard.css';
 import '../styles/holidays.css';
 
@@ -36,6 +49,14 @@ const HOLIDAYS_DATA = [
 
 function Holidays() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [newHoliday, setNewHoliday] = useState({ name: '', date: '', type: 'Mandatory' });
+
+  const handleAddHoliday = (e) => {
+    e.preventDefault();
+    alert(`Added holiday: ${newHoliday.name}`);
+    setShowModal(false);
+  };
 
   const getMonthName = (dateStr) => {
     const d = new Date(dateStr);
@@ -64,103 +85,7 @@ function Holidays() {
   const upcomingHoliday = HOLIDAYS_DATA.find(h => !h.passed);
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-icon">D</div>
-          <div className="sidebar-logo-text">
-            <h2>Dropyhub</h2>
-            <p>HRMS Portal</p>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          <ul>
-            <li>
-              <Link to="/dashboard" className="nav-item-content"><LayoutDashboard size={18} /> Dashboard</Link>
-            </li>
-            <li>
-              <Link to="/attendance" className="nav-item-content"><CheckSquare size={18} /> Attendance</Link>
-            </li>
-            <li>
-              <Link to="/leave-management" className="nav-item-content"><Calendar size={18} /> Leave Management</Link>
-            </li>
-            <li>
-              <Link to="/worksheet" className="nav-item-content"><FileText size={18} /> Worksheet</Link>
-            </li>        
-            <li>
-              <Link to="/tasks" className="nav-item-content"><ListTodo size={18} /> Task Management</Link>
-            </li>
-            <li>
-              <Link to="/tickets" className="nav-item-content"><Ticket size={18} /> Tickets</Link>
-            </li>
-            <li>
-              <Link to="/assets" className="nav-item-content"><PackageOpen size={18} /> Assets</Link>
-            </li>
-            <li className="active">
-              <Link to="/holidays" className="nav-item-content"><CalendarDays size={18} /> Holidays</Link>
-            </li>
-            <li>
-              <Link to="/settings" className="nav-item-content"><Settings size={18} /> Settings</Link>
-            </li>
-
-            <li className="logout-nav-item">
-              <div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="copyright">
-            <p>© 2025 Dropyhub HRMS</p>
-            <p>All rights reserved.</p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="dashboard-main">
-        {/* Top Header */}
-        <header className="dashboard-header">
-          <div className="search-bar">
-            <Search size={20} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <input type="text" placeholder="Search holidays..." />
-            <button className="search-btn">Search</button>
-          </div>
-          
-          <div className="header-actions">
-            <button className="icon-btn notification">
-              <Bell size={20} />
-              <span className="dot">3</span>
-            </button>
-            <button className="icon-btn message">
-              <MessageSquare size={20} />
-            </button>
-            <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <div className="avatar"></div>
-              <div className="user-info">
-                <h4>Balaji Kumar</h4>
-                <p>Frontend Developer</p>
-              </div>
-              <ChevronDown size={16} color="#6b7280" />
-
-              {isProfileOpen && (
-                <>
-                  <div className="dropdown-backdrop" onClick={() => setIsProfileOpen(false)} />
-                  <div className="profile-dropdown">
-                    <Link to="/profile" className="profile-dropdown-item">
-                      <User size={16} /> My Profile
-                    </Link>
-                    <Link to="/settings" className="profile-dropdown-item">
-                      <Settings size={16} /> Settings
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
+    <DashboardLayout>
 
         {/* Holidays Content */}
         <div className="dashboard-content">
@@ -224,8 +149,52 @@ function Holidays() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      {/* CREATE HOLIDAY ENTERPRISE MODAL */}
+      <EnterpriseModal isOpen={showModal} onClose={() => setShowModal(false)}>
+        <FormHeader 
+          icon={Palmtree} 
+          title="Add New Holiday" 
+          description="Schedule a public or company holiday for the organization." 
+        />
+        
+        <form onSubmit={handleAddHoliday}>
+          <FormBody>
+            <FormSection title="Holiday Details" description="Enter the basic information about the holiday.">
+              <FormField label="Holiday Name" required fullWidth>
+                <TextInput 
+                  placeholder="e.g. Christmas Day"
+                  value={newHoliday.name}
+                  onChange={(e) => setNewHoliday({...newHoliday, name: e.target.value})}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Date" required>
+                <DateInput 
+                  required
+                  value={newHoliday.date}
+                  onChange={(e) => setNewHoliday({...newHoliday, date: e.target.value})}
+                />
+              </FormField>
+
+              <FormField label="Holiday Type" required>
+                <SelectInput 
+                  options={['Mandatory', 'Optional', 'Restricted']}
+                  value={newHoliday.type}
+                  onChange={(e) => setNewHoliday({...newHoliday, type: e.target.value})}
+                  required
+                />
+              </FormField>
+            </FormSection>
+          </FormBody>
+          
+          <FormFooter 
+            onCancel={() => setShowModal(false)} 
+            submitText="Save Holiday" 
+          />
+        </form>
+      </EnterpriseModal>
+    </DashboardLayout>
   );
 }
 

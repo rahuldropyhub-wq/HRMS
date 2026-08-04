@@ -7,6 +7,18 @@ import {
   AlertTriangle, CheckCircle2, Clock, MapPin, Tag, ShieldAlert,
   ChevronLeft, ChevronRight, Download, PackageOpen, File, FileText as FilePdf, Image as FileImage, RotateCcw
 } from 'lucide-react';
+import {
+  EnterpriseModal,
+  FormHeader,
+  FormBody,
+  FormSection,
+  FormField,
+  SelectInput,
+  TextArea,
+  FileUpload,
+  FormFooter
+} from '../components/EnterpriseForm';
+import DashboardLayout from '../components/DashboardLayout';
 import '../styles/dashboard.css';
 import '../styles/assets.css';
 
@@ -123,7 +135,8 @@ export default function Assets() {
 
   const selected = MOCK_ASSETS.find(t => t.id === selectedId);
 
-  const handleReportIssue = () => {
+  const handleReportIssue = (e) => {
+    e?.preventDefault();
     if (!issueForm.description.trim()) return;
     alert(`Issue Reported for ${selected.id}: ${issueForm.type}`);
     setShowIssueModal(false);
@@ -140,61 +153,7 @@ export default function Assets() {
   ];
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-icon">D</div>
-          <div className="sidebar-logo-text"><h2>Dropyhub</h2><p>HRMS Portal</p></div>
-        </div>
-        <nav className="sidebar-nav">
-          <ul>
-            <li><Link to="/dashboard" className="nav-item-content"><LayoutDashboard size={18} /> Dashboard</Link></li>
-            <li><Link to="/attendance" className="nav-item-content"><CheckSquare size={18} /> Attendance</Link></li>
-            <li><Link to="/leave-management" className="nav-item-content"><Calendar size={18} /> Leave Management</Link></li>
-            <li><Link to="/worksheet" className="nav-item-content"><FileText size={18} /> Worksheet</Link></li>
-            <li><Link to="/tasks" className="nav-item-content"><ListTodo size={18} /> Task Management</Link></li>
-            <li><Link to="/tickets" className="nav-item-content"><Ticket size={18} /> Tickets</Link></li>
-            <li className="active"><Link to="/assets" className="nav-item-content"><PackageOpen size={18} /> Assets</Link></li>
-            <li><Link to="/settings" className="nav-item-content"><Settings size={18} /> Settings</Link></li>
-            <li className="logout-nav-item">
-              <div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div>
-            </li>
-          </ul>
-        </nav>
-        <div className="sidebar-footer">
-          <div className="copyright"><p>© 2025 Dropyhub HRMS</p><p>All rights reserved.</p></div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="dashboard-main">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="search-bar">
-            <Search size={20} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <input type="text" placeholder="Search anything..." />
-            <button className="search-btn">Search</button>
-          </div>
-          <div className="header-actions">
-            <button className="icon-btn notification"><Bell size={20} /><span className="dot">3</span></button>
-            <button className="icon-btn message"><MessageSquare size={20} /></button>
-            <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <div className="avatar"></div>
-              <div className="user-info"><h4>Balaji Kumar</h4><p>Frontend Developer</p></div>
-              <ChevronDown size={16} color="#6b7280" />
-              {isProfileOpen && (
-                <>
-                  <div className="dropdown-backdrop" onClick={() => setIsProfileOpen(false)} />
-                  <div className="profile-dropdown">
-                    <Link to="/profile" className="profile-dropdown-item"><User size={16} /> My Profile</Link>
-                    <Link to="/settings" className="profile-dropdown-item"><Settings size={16} /> Settings</Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
+    <DashboardLayout>
 
         {/* Assets Split Layout */}
         <div className="assets-layout">
@@ -431,64 +390,51 @@ export default function Assets() {
                     </div>
                   </div>
                 )}
-
               </div>
             )}
           </div>
         </div>
-      </main>
+      {/* RAISE ISSUE ENTERPRISE MODAL */}
+      <EnterpriseModal isOpen={showIssueModal} onClose={() => setShowIssueModal(false)}>
+        <FormHeader 
+          icon={AlertTriangle} 
+          title="Report Asset Issue" 
+          description={`Reporting issue for ${selected?.name} (${selected?.id}).`}
+        />
+        
+        <form onSubmit={handleReportIssue}>
+          <FormBody>
+            <FormSection title="Issue Details" description="Describe the problem you are facing with this asset." singleColumn>
+              <FormField label="Issue Type" required>
+                <SelectInput 
+                  options={['Damaged', 'Not Working', 'Lost', 'Upgrade Request', 'Repair Required']}
+                  value={issueForm.type}
+                  onChange={e => setIssueForm(f => ({ ...f, type: e.target.value }))}
+                  required
+                />
+              </FormField>
 
-      {/* ── RAISE ISSUE MODAL ── */}
-      {showIssueModal && (
-        <div className="ast-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowIssueModal(false); }}>
-          <div className="ast-modal-box">
-            <div className="ast-modal-header">
-              <div className="ast-modal-title">⚠️ Report Asset Issue</div>
-              <button className="ast-modal-close" onClick={() => setShowIssueModal(false)}><X size={20} /></button>
-            </div>
-
-            <div className="ast-modal-body">
-              <p style={{ fontSize: 13, color: '#6b7280' }}>
-                Reporting issue for <strong>{selected?.name} ({selected?.id})</strong>.
-              </p>
-              
-              <div className="ast-form-group">
-                <label>Issue Type *</label>
-                <select value={issueForm.type} onChange={e => setIssueForm(f => ({ ...f, type: e.target.value }))}>
-                  <option>Damaged</option>
-                  <option>Not Working</option>
-                  <option>Lost</option>
-                  <option>Upgrade Request</option>
-                  <option>Repair Required</option>
-                </select>
-              </div>
-
-              <div className="ast-form-group">
-                <label>Description *</label>
-                <textarea
+              <FormField label="Description" required>
+                <TextArea 
                   placeholder="Please describe the issue in detail..."
                   value={issueForm.description}
                   onChange={e => setIssueForm(f => ({ ...f, description: e.target.value }))}
+                  required
                 />
-              </div>
+              </FormField>
 
-              <div className="ast-form-group">
-                <label>Attachments (Optional)</label>
-                <div className="ast-upload-zone">
-                  <FileImage size={22} color="#6b7280" />
-                  <p>Upload photos of the damage</p>
-                  <p style={{ fontSize: 11, color: '#9ca3af' }}>Max size 5MB (JPG/PNG)</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="ast-modal-footer">
-              <button className="ast-cancel-btn" onClick={() => setShowIssueModal(false)}>Cancel</button>
-              <button className="ast-submit-btn" onClick={handleReportIssue}>Submit Issue</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              <FormField label="Attachments" optional>
+                <FileUpload hint="Upload photos of the damage (Max 5MB JPG/PNG)" />
+              </FormField>
+            </FormSection>
+          </FormBody>
+          
+          <FormFooter 
+            onCancel={() => setShowIssueModal(false)} 
+            submitText="Submit Issue" 
+          />
+        </form>
+      </EnterpriseModal>
+    </DashboardLayout>
   );
 }

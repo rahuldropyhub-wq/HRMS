@@ -6,8 +6,23 @@ import {
   Plus, X, Tag, Clock, Paperclip, Send, Download, Ticket,
   ArrowRight, AlertTriangle, CheckCircle2, RotateCcw, Filter,
   ChevronLeft, ChevronRight, FileImage, FileText as FilePdf,
-  Inbox, Shield, HelpCircle, PackageOpen
+  Inbox, Shield, HelpCircle, PackageOpen, LifeBuoy,
+  Phone,
+  Monitor
 } from 'lucide-react';
+import {
+  EnterpriseModal,
+  FormHeader,
+  FormBody,
+  FormSection,
+  FormField,
+  SelectInput,
+  TextArea,
+  TextInput,
+  FileUpload,
+  FormFooter
+} from '../components/EnterpriseForm';
+import DashboardLayout from '../components/DashboardLayout';
 import '../styles/dashboard.css';
 import '../styles/tickets.css';
 
@@ -251,61 +266,7 @@ export default function Tickets() {
   ];
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-icon">D</div>
-          <div className="sidebar-logo-text"><h2>Dropyhub</h2><p>HRMS Portal</p></div>
-        </div>
-        <nav className="sidebar-nav">
-          <ul>
-            <li><Link to="/dashboard" className="nav-item-content"><LayoutDashboard size={18} /> Dashboard</Link></li>
-            <li><Link to="/attendance" className="nav-item-content"><CheckSquare size={18} /> Attendance</Link></li>
-            <li><Link to="/leave-management" className="nav-item-content"><Calendar size={18} /> Leave Management</Link></li>
-            <li><Link to="/worksheet" className="nav-item-content"><FileText size={18} /> Worksheet</Link></li>
-            <li><Link to="/tasks" className="nav-item-content"><ListTodo size={18} /> Task Management</Link></li>
-            <li className="active"><Link to="/tickets" className="nav-item-content"><Ticket size={18} /> Tickets</Link></li>
-            <li><Link to="/assets" className="nav-item-content"><PackageOpen size={18} /> Assets</Link></li>
-            <li><Link to="/settings" className="nav-item-content"><Settings size={18} /> Settings</Link></li>
-            <li className="logout-nav-item">
-              <div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div>
-            </li>
-          </ul>
-        </nav>
-        <div className="sidebar-footer">
-          <div className="copyright"><p>© 2025 Dropyhub HRMS</p><p>All rights reserved.</p></div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="dashboard-main">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="search-bar">
-            <Search size={20} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <input type="text" placeholder="Search anything..." />
-            <button className="search-btn">Search</button>
-          </div>
-          <div className="header-actions">
-            <button className="icon-btn notification"><Bell size={20} /><span className="dot">3</span></button>
-            <button className="icon-btn message"><MessageSquare size={20} /></button>
-            <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <div className="avatar"></div>
-              <div className="user-info"><h4>Balaji Kumar</h4><p>Frontend Developer</p></div>
-              <ChevronDown size={16} color="#6b7280" />
-              {isProfileOpen && (
-                <>
-                  <div className="dropdown-backdrop" onClick={() => setIsProfileOpen(false)} />
-                  <div className="profile-dropdown">
-                    <Link to="/profile" className="profile-dropdown-item"><User size={16} /> My Profile</Link>
-                    <Link to="/settings" className="profile-dropdown-item"><Settings size={16} /> Settings</Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
+    <DashboardLayout>
 
         {/* Ticket Split Layout */}
         <div className="tickets-layout">
@@ -591,77 +552,95 @@ export default function Tickets() {
             )}
           </div>
         </div>
-      </main>
+      {/* CREATE MODAL */}
+      <EnterpriseModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
+        <FormHeader 
+          icon={LifeBuoy} 
+          title="Create New Support Ticket" 
+          description="Submit a request for IT or HR assistance." 
+        />
+        
+        <form onSubmit={handleCreateTicket}>
+          <FormBody>
+            <FormSection title="Support Request" description="Categorize and prioritize your issue.">
+              <FormField label="Department" required>
+                <SelectInput 
+                  options={DEPARTMENTS}
+                  value={form.dept} 
+                  onChange={e => setForm(f => ({ ...f, dept: e.target.value }))}
+                  required
+                />
+              </FormField>
 
-      {/* ── CREATE MODAL ── */}
-      {showCreateModal && (
-        <div className="tkt-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowCreateModal(false); }}>
-          <div className="tkt-modal-box">
-            <div className="tkt-modal-header">
-              <div className="tkt-modal-title">🎫 Create New Support Ticket</div>
-              <button className="tkt-modal-close" onClick={() => setShowCreateModal(false)}><X size={20} /></button>
-            </div>
+              <FormField label="Priority" required>
+                <SelectInput 
+                  options={[
+                    {value: 'low', label: 'Low'},
+                    {value: 'medium', label: 'Medium'},
+                    {value: 'high', label: 'High'},
+                    {value: 'critical', label: 'Critical'}
+                  ]}
+                  value={form.priority} 
+                  onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
+                  required
+                />
+              </FormField>
 
-            <div className="tkt-modal-body">
-              <div className="tkt-form-row">
-                <div className="tkt-form-group">
-                  <label>Department *</label>
-                  <select value={form.dept} onChange={e => setForm(f => ({ ...f, dept: e.target.value }))}>
-                    {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div className="tkt-form-group">
-                  <label>Priority *</label>
-                  <div className="tkt-priority-radio">
-                    {['low', 'medium', 'high', 'critical'].map(p => (
-                      <div
-                        key={p}
-                        className={`tkt-priority-chip ${form.priority === p ? `sel-${p}` : ''}`}
-                        onClick={() => setForm(f => ({ ...f, priority: p }))}
-                      >
-                        {PRIORITY_COLOR[p]} {p.charAt(0).toUpperCase() + p.slice(1)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <FormField label="Issue Category">
+                <SelectInput 
+                  options={['Hardware Issue', 'Software Issue', 'Access Request', 'Payroll Query', 'Other']}
+                  required
+                />
+              </FormField>
+              
+              <FormField label="Contact Number">
+                <TextInput placeholder="+1 (555) 000-0000" />
+              </FormField>
+            </FormSection>
 
-              <div className="tkt-form-group full">
-                <label>Subject *</label>
-                <input
-                  type="text"
+            <FormSection title="Issue Details" description="Provide as much context as possible.">
+              <FormField label="Subject" required fullWidth>
+                <TextInput 
                   placeholder="Brief summary of your issue..."
                   value={form.subject}
                   onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+                  required
                 />
-              </div>
-
-              <div className="tkt-form-group full">
-                <label>Description *</label>
-                <textarea
+              </FormField>
+              
+              <FormField label="Description" required fullWidth>
+                <TextArea 
                   placeholder="Describe your issue in detail. Include steps to reproduce, affected systems, urgency etc..."
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  required
                 />
-              </div>
+              </FormField>
 
-              <div className="tkt-form-group full">
-                <label>Attachments (Optional)</label>
-                <div className="tkt-upload-zone">
-                  <Paperclip size={22} color="#6b7280" />
-                  <p>Drag & drop files here or <span>browse</span></p>
-                  <p style={{ fontSize: 11, color: '#9ca3af' }}>Supports: Images, PDF, Word, Excel, ZIP · Max 10 MB</p>
-                </div>
-              </div>
-            </div>
+              <FormField label="Device / OS">
+                <TextInput placeholder="e.g. MacBook Pro, macOS Sonoma" />
+              </FormField>
+              
+              <FormField label="Browser">
+                <TextInput placeholder="e.g. Chrome 120" />
+              </FormField>
 
-            <div className="tkt-modal-footer">
-              <button className="tkt-cancel-btn" onClick={() => setShowCreateModal(false)}>Cancel</button>
-              <button className="tkt-submit-btn" onClick={handleCreateTicket}>Submit Ticket</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              <FormField label="Expected Resolution" fullWidth>
+                <TextArea placeholder="What should happen instead?" />
+              </FormField>
+              
+              <FormField label="Attachments & Screenshots" fullWidth>
+                <FileUpload hint="Supports: Images, PDF, Word, Excel, ZIP - Max 10 MB" />
+              </FormField>
+            </FormSection>
+          </FormBody>
+          
+          <FormFooter 
+            onCancel={() => setShowCreateModal(false)} 
+            submitText="Submit Ticket" 
+          />
+        </form>
+      </EnterpriseModal>
+    </DashboardLayout>
   );
 }

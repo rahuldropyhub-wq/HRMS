@@ -8,6 +8,7 @@ import {
   Image as FileImage, Shield, Smartphone, Monitor, Clock, CheckCircle2,
   AlertTriangle, History, Link as LinkIcon
 } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
 import '../styles/dashboard.css';
 import '../styles/profile.css';
 
@@ -69,56 +70,8 @@ export default function Profile() {
   }, []);
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-icon">D</div>
-          <div className="sidebar-logo-text"><h2>Dropyhub</h2><p>HRMS Portal</p></div>
-        </div>
-        <nav className="sidebar-nav">
-          <ul>
-            <li><Link to="/dashboard" className="nav-item-content"><LayoutDashboard size={18} /> Dashboard</Link></li>
-            <li><Link to="/attendance" className="nav-item-content"><CheckSquare size={18} /> Attendance</Link></li>
-            <li><Link to="/leave-management" className="nav-item-content"><Calendar size={18} /> Leave Management</Link></li>
-            <li><Link to="/worksheet" className="nav-item-content"><FileText size={18} /> Worksheet</Link></li>
-            <li><Link to="/tasks" className="nav-item-content"><ListTodo size={18} /> Task Management</Link></li>
-            <li><Link to="/tickets" className="nav-item-content"><Ticket size={18} /> Tickets</Link></li>
-            <li><Link to="/assets" className="nav-item-content"><PackageOpen size={18} /> Assets</Link></li>
-            <li><Link to="/settings" className="nav-item-content"><Settings size={18} /> Settings</Link></li>
-            <li className="logout-nav-item">
-              <div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+    <DashboardLayout>
 
-      {/* Main Container */}
-      <main className="dashboard-main" style={{ display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="search-bar">
-            <Search size={20} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <input type="text" placeholder="Search anything..." />
-          </div>
-          <div className="header-actions">
-            <button className="icon-btn notification"><Bell size={20} /><span className="dot">3</span></button>
-            <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <div className="avatar"></div>
-              <div className="user-info"><h4>Balaji Kumar</h4><p>Frontend Developer</p></div>
-              <ChevronDown size={16} color="#6b7280" />
-              {isProfileOpen && (
-                <>
-                  <div className="dropdown-backdrop" onClick={() => setIsProfileOpen(false)} />
-                  <div className="profile-dropdown">
-                    <Link to="/profile" className="profile-dropdown-item"><User size={16} /> My Profile</Link>
-                    <Link to="/settings" className="profile-dropdown-item"><Settings size={16} /> Settings</Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
 
         {/* Profile Content */}
         <div className="profile-layout">
@@ -429,7 +382,6 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 }

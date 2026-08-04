@@ -22,8 +22,25 @@ import {
   ChevronRight,
   ListTodo,
   Ticket,
-  PackageOpen
+  PackageOpen,
+  X,
+  CalendarDays
 } from 'lucide-react';
+import {
+  EnterpriseModal,
+  FormHeader,
+  FormBody,
+  FormSection,
+  FormField,
+  SelectInput,
+  DateInput,
+  TextArea,
+  TextInput,
+  FileUpload,
+  Checkbox,
+  FormFooter
+} from '../components/EnterpriseForm';
+import DashboardLayout from '../components/DashboardLayout';
 import '../styles/dashboard.css';
 import '../styles/leave-management.css';
 
@@ -38,102 +55,45 @@ const leaveData = [
 
 function LeaveManagement() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [leaves, setLeaves] = useState(leaveData);
+  const [activeTab, setActiveTab] = useState('Leave History');
+  const [showModal, setShowModal] = useState(false);
+  const [newLeave, setNewLeave] = useState({
+    type: 'Casual Leave',
+    from: '',
+    to: '',
+    reason: ''
+  });
+
+  const handleApplyLeave = (e) => {
+    e.preventDefault();
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    
+    // Calculate days roughly
+    const fromDate = new Date(newLeave.from);
+    const toDate = new Date(newLeave.to);
+    const diffTime = Math.abs(toDate - fromDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    const leaveObj = {
+      id: `LV-${today.getFullYear()}-0${Math.floor(Math.random() * 100) + 10}`,
+      type: newLeave.type,
+      from: fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      to: toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      days: diffDays || 1,
+      reason: newLeave.reason,
+      status: 'Pending',
+      appliedOn: formattedDate
+    };
+
+    setLeaves([leaveObj, ...leaves]);
+    setShowModal(false);
+    setNewLeave({ type: 'Casual Leave', from: '', to: '', reason: '' });
+  };
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-icon">D</div>
-          <div className="sidebar-logo-text">
-            <h2>Dropyhub</h2>
-            <p>HRMS Portal</p>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          <ul>
-            <li>
-              <Link to="/dashboard" className="nav-item-content"><LayoutDashboard size={18} /> Dashboard</Link>
-            </li>
-            <li>
-              <Link to="/attendance" className="nav-item-content"><CheckSquare size={18} /> Attendance</Link>
-            </li>
-            <li className="active">
-              <Link to="/leave-management" className="nav-item-content"><Calendar size={18} /> Leave Management</Link>
-            </li>
-            <li>
-              <Link to="/worksheet" className="nav-item-content"><FileText size={18} /> Worksheet</Link>
-            </li>
-            <li>
-              <Link to="/tasks" className="nav-item-content"><ListTodo size={18} /> Task Management</Link>
-            </li>
-            <li>
-              <Link to="/tickets" className="nav-item-content"><Ticket size={18} /> Tickets</Link>
-            </li>
-            <li>
-              <Link to="/assets" className="nav-item-content"><PackageOpen size={18} /> Assets</Link>
-            </li>
-            <li>
-              <Link to="/settings" className="nav-item-content"><Settings size={18} /> Settings</Link>
-            </li>
-
-            <li className="logout-nav-item">
-              <div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="copyright">
-            <p>© 2025 Dropyhub HRMS</p>
-            <p>All rights reserved.</p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="dashboard-main">
-        {/* Top Header */}
-        <header className="dashboard-header">
-          <div className="search-bar">
-            <Search size={20} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <input type="text" placeholder="Search anything..." />
-            <button className="search-btn">Search</button>
-          </div>
-
-          <div className="header-actions">
-            <button className="icon-btn notification">
-              <Bell size={20} />
-              <span className="dot">3</span>
-            </button>
-            <button className="icon-btn message">
-              <MessageSquare size={20} />
-            </button>
-            <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <div className="avatar"></div>
-              <div className="user-info">
-                <h4>Balaji Kumar</h4>
-                <p>Frontend Developer</p>
-              </div>
-              <ChevronDown size={16} color="#6b7280" />
-
-              {isProfileOpen && (
-                <>
-                  <div className="dropdown-backdrop" onClick={() => setIsProfileOpen(false)} />
-                  <div className="profile-dropdown">
-                    <Link to="/profile" className="profile-dropdown-item">
-                      <User size={16} /> My Profile
-                    </Link>
-                    <Link to="/settings" className="profile-dropdown-item">
-                      <Settings size={16} /> Settings
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
+    <DashboardLayout>
 
         {/* Page Content */}
         <div className="leave-content">
@@ -142,7 +102,7 @@ function LeaveManagement() {
               <h1>Leave Management</h1>
               <p>Apply for leave and track your leave history</p>
             </div>
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => setShowModal(true)}>
               <Plus size={18} /> Apply Leave
             </button>
           </div>
@@ -196,9 +156,9 @@ function LeaveManagement() {
 
           {/* Tabs */}
           <div className="leave-tabs">
-            <button className="leave-tab active">Leave History</button>
-            <button className="leave-tab">Upcoming Leaves</button>
-            <button className="leave-tab">Leave Balance</button>
+            <button className={`leave-tab ${activeTab === 'Leave History' ? 'active' : ''}`} onClick={() => setActiveTab('Leave History')}>Leave History</button>
+            <button className={`leave-tab ${activeTab === 'Upcoming Leaves' ? 'active' : ''}`} onClick={() => setActiveTab('Upcoming Leaves')}>Upcoming Leaves</button>
+            <button className={`leave-tab ${activeTab === 'Leave Balance' ? 'active' : ''}`} onClick={() => setActiveTab('Leave Balance')}>Leave Balance</button>
           </div>
 
           {/* Filters */}
@@ -237,7 +197,11 @@ function LeaveManagement() {
                 </tr>
               </thead>
               <tbody>
-                {leaveData.map((row) => (
+                {leaves.filter(row => {
+                  if (activeTab === 'Upcoming Leaves') return row.status === 'Pending' || new Date(row.from) > new Date();
+                  if (activeTab === 'Leave Balance') return row.status === 'Approved';
+                  return true;
+                }).map((row) => (
                   <tr key={row.id}>
                     <td className="fw-medium">{row.id}</td>
                     <td>
@@ -278,8 +242,74 @@ function LeaveManagement() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      {/* Apply Leave Enterprise Modal */}
+      <EnterpriseModal isOpen={showModal} onClose={() => setShowModal(false)}>
+        <FormHeader 
+          icon={CalendarDays} 
+          title="Apply for Leave" 
+          description="Submit a new time-off request for manager approval." 
+        />
+        
+        <form onSubmit={handleApplyLeave}>
+          <FormBody>
+            <FormSection title="Leave Details" description="Specify the dates and type of leave you are requesting.">
+              <FormField label="Leave Type" required fullWidth>
+                <SelectInput 
+                  options={['Casual Leave', 'Sick Leave', 'Work From Home', 'Earned Leave', 'Unpaid Leave']}
+                  value={newLeave.type}
+                  onChange={(e) => setNewLeave({...newLeave, type: e.target.value})}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Start Date" required>
+                <DateInput 
+                  value={newLeave.from}
+                  onChange={(e) => setNewLeave({...newLeave, from: e.target.value})}
+                  required
+                />
+              </FormField>
+
+              <FormField label="End Date" required>
+                <DateInput 
+                  value={newLeave.to}
+                  onChange={(e) => setNewLeave({...newLeave, to: e.target.value})}
+                  required
+                />
+              </FormField>
+              
+              <FormField fullWidth>
+                <Checkbox label="Half Day" />
+              </FormField>
+            </FormSection>
+
+            <FormSection title="Additional Information" description="Provide context and necessary documentation.">
+              <FormField label="Reason" required fullWidth>
+                <TextArea 
+                  placeholder="Explain why you are requesting this leave..."
+                  value={newLeave.reason}
+                  onChange={(e) => setNewLeave({...newLeave, reason: e.target.value})}
+                  required
+                />
+              </FormField>
+              
+              <FormField label="Emergency Contact" fullWidth>
+                <TextInput placeholder="Phone number or name..." />
+              </FormField>
+              
+              <FormField label="Supporting Documents" fullWidth>
+                <FileUpload hint="Upload medical certificates or relevant docs (Max 5MB)" />
+              </FormField>
+            </FormSection>
+          </FormBody>
+          
+          <FormFooter 
+            onCancel={() => setShowModal(false)} 
+            submitText="Submit Application" 
+          />
+        </form>
+      </EnterpriseModal>
+    </DashboardLayout>
   );
 }
 

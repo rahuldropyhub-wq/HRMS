@@ -6,8 +6,23 @@ import {
   User, Plus, SlidersHorizontal, ArrowUpDown, X, Send,
   Paperclip, Clock, CheckCircle2, AlertCircle, Circle,
   MoreHorizontal, CalendarDays, Timer, Layers, Download,
-  Trash2, Image, FileIcon, ChevronLeft, ChevronRight, Minus, Ticket, PackageOpen
+  Trash2, Image, FileIcon, ChevronLeft, ChevronRight, MoreVertical,
+  Minus, Ticket, PackageOpen
 } from 'lucide-react';
+import {
+  EnterpriseModal,
+  FormHeader,
+  FormBody,
+  FormSection,
+  FormField,
+  SelectInput,
+  DateInput,
+  TextArea,
+  TextInput,
+  FileUpload,
+  FormFooter
+} from '../components/EnterpriseForm';
+import DashboardLayout from '../components/DashboardLayout';
 import '../styles/dashboard.css';
 import '../styles/tasks.css';
 
@@ -343,63 +358,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-icon">D</div>
-          <div className="sidebar-logo-text"><h2>Dropyhub</h2><p>HRMS Portal</p></div>
-        </div>
-        <nav className="sidebar-nav">
-          <ul>
-            <li><Link to="/dashboard" className="nav-item-content"><LayoutDashboard size={18} /> Dashboard</Link></li>
-            <li><Link to="/attendance" className="nav-item-content"><CheckSquare size={18} /> Attendance</Link></li>
-            <li><Link to="/leave-management" className="nav-item-content"><Calendar size={18} /> Leave Management</Link></li>
-            <li><Link to="/worksheet" className="nav-item-content"><FileText size={18} /> Worksheet</Link></li>
-            <li className="active"><Link to="/tasks" className="nav-item-content"><ListTodo size={18} /> Task Management</Link></li>
-            <li><Link to="/tickets" className="nav-item-content"><Ticket size={18} /> Tickets</Link></li>
-            <li><Link to="/assets" className="nav-item-content"><PackageOpen size={18} /> Assets</Link></li>
-            <li><Link to="/settings" className="nav-item-content"><Settings size={18} /> Settings</Link></li>
-            <li className="logout-nav-item"><div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div></li>
-          </ul>
-        </nav>
-        <div className="sidebar-footer">
-          <div className="sidebar-user-card">
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}></div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>Ravi Sharma</p>
-              <p style={{ fontSize: 11, color: 'var(--text-gray)' }}>Frontend Developer</p>
-            </div>
-          </div>
-          <div className="copyright"><p>© 2025 Dropyhub HRMS</p></div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="dashboard-main" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="search-bar">
-            <Search size={20} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <input type="text" placeholder="Search anything..." />
-            <button className="search-btn">Search</button>
-          </div>
-          <div className="header-actions">
-            <button className="icon-btn notification"><Bell size={20} /><span className="dot">3</span></button>
-            <button className="icon-btn message"><MessageSquare size={20} /></button>
-            <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <div className="avatar"></div>
-              <div className="user-info"><h4>Balaji Kumar</h4><p>Frontend Developer</p></div>
-              <ChevronDown size={16} color="#6b7280" />
-              {isProfileOpen && (
-                <div className="profile-dropdown">
-                  <Link to="/profile" className="profile-dropdown-item"><User size={16} /> My Profile</Link>
-                  <Link to="/settings" className="profile-dropdown-item"><Settings size={16} /> Settings</Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+    <DashboardLayout>
 
         {/* Tasks Body */}
         <div className="tasks-body">
@@ -744,102 +703,138 @@ export default function Tasks() {
             )}
           </div>
         </div>
-      </main>
+      {/* ── CREATE TASK ENTERPRISE MODAL ── */}
+      <EnterpriseModal isOpen={showModal} onClose={() => setShowModal(false)}>
+        <FormHeader 
+          icon={CheckSquare} 
+          title="Create New Task" 
+          description="Assign and track a new task for your team." 
+        />
+        
+        <form onSubmit={handleCreateTask}>
+          <FormBody>
+            <FormSection title="Task Details" description="Basic information about the task.">
+              <FormField label="Task Name" required fullWidth>
+                <TextInput 
+                  placeholder="Enter task name" 
+                  value={newTask.name} 
+                  onChange={e => setNewTask(p => ({ ...p, name: e.target.value }))}
+                  required 
+                />
+              </FormField>
 
-      {/* ── CREATE TASK MODAL ── */}
-      {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
-          <div className="modal-box">
-            <div className="modal-header">
-              <span className="modal-title">Create New Task</span>
-              <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleCreateTask}>
-              <div className="modal-body">
-                <div className="modal-form-group full">
-                  <label>Task Name *</label>
-                  <input required placeholder="Enter task name" value={newTask.name} onChange={e => setNewTask(p => ({ ...p, name: e.target.value }))} />
+              <FormField label="Project">
+                <SelectInput 
+                  options={['HRMS Portal', 'Payroll Module', 'HR Operations', 'DevOps', 'Security']}
+                  value={newTask.project} 
+                  onChange={e => setNewTask(p => ({ ...p, project: e.target.value }))}
+                />
+              </FormField>
+              
+              <FormField label="Department">
+                <SelectInput 
+                  options={['Engineering', 'Design', 'HR', 'IT', 'Finance']}
+                  value={newTask.department} 
+                  onChange={e => setNewTask(p => ({ ...p, department: e.target.value }))}
+                />
+              </FormField>
+            </FormSection>
+
+            <FormSection title="Assignment & Scheduling" description="Who is responsible and when is it due.">
+              <FormField label="Assign Employee">
+                <SelectInput 
+                  options={['Ravi Sharma', 'Anjali Mehta', 'Priya Nair', 'Balaji Kumar']}
+                  value={newTask.assignedBy} 
+                  onChange={e => setNewTask(p => ({ ...p, assignedBy: e.target.value }))}
+                />
+              </FormField>
+              
+              <FormField label="Priority">
+                <SelectInput 
+                  options={[
+                    {value: 'low', label: 'Low'},
+                    {value: 'medium', label: 'Medium'},
+                    {value: 'high', label: 'High'},
+                    {value: 'critical', label: 'Critical'}
+                  ]}
+                  value={newTask.priority} 
+                  onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))}
+                />
+              </FormField>
+
+              <FormField label="Due Date">
+                <DateInput 
+                  value={newTask.dueDate} 
+                  onChange={e => setNewTask(p => ({ ...p, dueDate: e.target.value }))} 
+                />
+              </FormField>
+              
+              <FormField label="Estimated Hours">
+                <TextInput 
+                  placeholder="e.g. 04h 00m" 
+                  value={newTask.estimatedHours} 
+                  onChange={e => setNewTask(p => ({ ...p, estimatedHours: e.target.value }))} 
+                />
+              </FormField>
+            </FormSection>
+
+            <FormSection title="Task Requirements" description="Provide detailed instructions and checklists.">
+              <FormField label="Description" fullWidth>
+                <TextArea 
+                  placeholder="Describe the task requirements..." 
+                  value={newTask.description} 
+                  onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} 
+                />
+              </FormField>
+
+              <FormField label="Checklist Items" fullWidth>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {newTask.checklistInput.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: 10 }}>
+                      <input
+                        className="ent-input"
+                        placeholder={`Checklist item ${idx + 1}`}
+                        value={item}
+                        onChange={e => {
+                          const updated = [...newTask.checklistInput];
+                          updated[idx] = e.target.value;
+                          setNewTask(p => ({ ...p, checklistInput: updated }));
+                        }}
+                      />
+                      {newTask.checklistInput.length > 1 && (
+                        <button 
+                          type="button" 
+                          style={{ background: '#fef2f2', border: 'none', color: '#ef4444', padding: '0 12px', borderRadius: 8, cursor: 'pointer' }}
+                          onClick={() => setNewTask(p => ({ ...p, checklistInput: p.checklistInput.filter((_, i) => i !== idx) }))}
+                        >
+                          <Minus size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button 
+                    type="button" 
+                    style={{ background: '#eff6ff', color: '#2563eb', border: '1px dashed #bfdbfe', padding: '10px', borderRadius: 8, cursor: 'pointer', fontWeight: 500, marginTop: 5 }}
+                    onClick={() => setNewTask(p => ({ ...p, checklistInput: [...p.checklistInput, ''] }))}
+                  >
+                    + Add Checklist Item
+                  </button>
                 </div>
-                <div className="modal-row">
-                  <div className="modal-form-group">
-                    <label>Project</label>
-                    <select value={newTask.project} onChange={e => setNewTask(p => ({ ...p, project: e.target.value }))}>
-                      <option value="">Select Project</option>
-                      {['HRMS Portal', 'Payroll Module', 'HR Operations', 'DevOps', 'Security'].map(pr => <option key={pr}>{pr}</option>)}
-                    </select>
-                  </div>
-                  <div className="modal-form-group">
-                    <label>Department</label>
-                    <select value={newTask.department} onChange={e => setNewTask(p => ({ ...p, department: e.target.value }))}>
-                      <option value="">Select Department</option>
-                      {['Engineering', 'Design', 'HR', 'IT', 'Finance'].map(d => <option key={d}>{d}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="modal-row">
-                  <div className="modal-form-group">
-                    <label>Assign Employee</label>
-                    <select value={newTask.assignedBy} onChange={e => setNewTask(p => ({ ...p, assignedBy: e.target.value }))}>
-                      <option value="">Select Employee</option>
-                      {['Ravi Sharma', 'Anjali Mehta', 'Priya Nair', 'Balaji Kumar'].map(emp => <option key={emp}>{emp}</option>)}
-                    </select>
-                  </div>
-                  <div className="modal-form-group">
-                    <label>Priority</label>
-                    <select value={newTask.priority} onChange={e => setNewTask(p => ({ ...p, priority: e.target.value }))}>
-                      {['low', 'medium', 'high', 'critical'].map(pv => <option key={pv} value={pv}>{pv.charAt(0).toUpperCase() + pv.slice(1)}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="modal-row">
-                  <div className="modal-form-group">
-                    <label>Due Date</label>
-                    <input type="date" value={newTask.dueDate} onChange={e => setNewTask(p => ({ ...p, dueDate: e.target.value }))} />
-                  </div>
-                  <div className="modal-form-group">
-                    <label>Estimated Hours</label>
-                    <input placeholder="e.g. 04h 00m" value={newTask.estimatedHours} onChange={e => setNewTask(p => ({ ...p, estimatedHours: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="modal-form-group full">
-                  <label>Description</label>
-                  <textarea placeholder="Describe the task requirements..." value={newTask.description} onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))} />
-                </div>
-                <div className="modal-form-group full">
-                  <label>Checklist Items</label>
-                  <div className="modal-checklist-adder">
-                    {newTask.checklistInput.map((item, idx) => (
-                      <div key={idx} className="checklist-add-item">
-                        <input
-                          placeholder={`Checklist item ${idx + 1}`}
-                          value={item}
-                          onChange={e => {
-                            const updated = [...newTask.checklistInput];
-                            updated[idx] = e.target.value;
-                            setNewTask(p => ({ ...p, checklistInput: updated }));
-                          }}
-                        />
-                        {newTask.checklistInput.length > 1 && (
-                          <button type="button" className="btn-checklist-remove" onClick={() => setNewTask(p => ({ ...p, checklistInput: p.checklistInput.filter((_, i) => i !== idx) }))}>
-                            <Minus size={14} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button type="button" className="btn-add-checklist" onClick={() => setNewTask(p => ({ ...p, checklistInput: [...p.checklistInput, ''] }))}>
-                      <Plus size={14} /> Add Item
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn-submit-task">Create Task</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+              </FormField>
+              
+              <FormField label="Attachments" fullWidth>
+                <FileUpload hint="Upload requirements, mockups, or specs (Max 10MB)" />
+              </FormField>
+            </FormSection>
+          </FormBody>
+          
+          <FormFooter 
+            onCancel={() => setShowModal(false)} 
+            submitText="Create Task" 
+            saveDraft={true}
+          />
+        </form>
+      </EnterpriseModal>
+    </DashboardLayout>
   );
 }

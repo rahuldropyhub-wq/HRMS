@@ -35,11 +35,8 @@ function Login() {
       {/* Left Panel */}
       <div className="auth-left">
         <div className="auth-brand">
-          <div className="auth-logo">D</div>
-          <div className="auth-brand-text">
-            <h1>Dropyhub</h1>
-            <p>HRMS Portal</p>
-          </div>
+          <img src="/Fevicon.png" alt="Dropyhub Icon" className="auth-fevicon-img" />
+          <img src="/Logo.png" alt="Dropyhub Logo" className="auth-logo-img" />
         </div>
 
         <div className="auth-hero">

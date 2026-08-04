@@ -46,18 +46,17 @@
   margin-bottom: 40px;
 }
 
-.auth-logo {
-  width: 44px;
-  height: 44px;
-  background: #1d4ed8;
-  color: #fff;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  font-weight: 800;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+.auth-fevicon-img {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  transform: translateY(-6px);
+}
+
+.auth-logo-img {
+  height: 48px;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .auth-brand-text h1 {
