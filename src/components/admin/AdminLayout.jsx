@@ -8,9 +8,32 @@ import {
   RefreshCw, UserCircle, ShieldCheck, Building2, Briefcase,
   CalendarClock, BarChart3, LineChart, Megaphone, Bell,
   Settings, Sliders, Mail, Lock, Database, LogOut, Search,
-  Menu, X, ChevronLeft, ChevronRight, Plus, Moon
+  Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon
 } from 'lucide-react';
 import '../../styles/admin/admin-layout.css';
+
+const NavSection = ({ title, defaultExpanded = false, children }) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  return (
+    <div className="admin-nav-section">
+      {title ? (
+        <div 
+          className="admin-nav-heading" 
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <span>{title}</span>
+          {isExpanded ? <ChevronDown size={14} className="admin-nav-chevron" /> : <ChevronRight size={14} className="admin-nav-chevron" />}
+        </div>
+      ) : null}
+      
+      {(!title || isExpanded) && (
+        <ul className="admin-nav-list">
+          {children}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 const AdminLayout = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -22,7 +45,7 @@ const AdminLayout = ({ children }) => {
   const renderNavItem = (icon, label, path, badge = null) => {
     const Icon = icon;
     return (
-      <li>
+      <li key={path}>
         <Link to={path} className={`admin-nav-item ${isActive(path)}`} data-tooltip={label}>
           <Icon size={18} className="admin-nav-icon" />
           <span className="admin-nav-label">{label}</span>
@@ -56,71 +79,47 @@ const AdminLayout = ({ children }) => {
         </div>
 
         <div className="admin-nav-container">
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Main Menu</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(LayoutDashboard, 'Dashboard', '/admin/dashboard')}
-            </ul>
-          </div>
+          <NavSection>
+            {renderNavItem(LayoutDashboard, 'Dashboard', '/admin/dashboard')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Employee Management</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(Users, 'Employee Directory', '/admin/employees')}
-              {renderNavItem(UserPlus, 'Add Employee', '/admin/employees/add')}
-              {renderNavItem(FileBadge, 'Employee Documents', '/admin/employees/documents')}
-            </ul>
-          </div>
+          <NavSection title="Employee Management" defaultExpanded={false}>
+            {renderNavItem(Users, 'Employee Directory', '/admin/employees')}
+            {renderNavItem(UserPlus, 'Add Employee', '/admin/employees/add')}
+            {renderNavItem(FileBadge, 'Employee Documents', '/admin/employees/documents')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Attendance Management</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(Activity, 'Live Attendance', '/admin/attendance/live')}
-              {renderNavItem(Clock, 'Attendance History', '/admin/attendance/history')}
-              {renderNavItem(MapPin, 'WFH / GPS Tracking', '/admin/attendance/tracking')}
-            </ul>
-          </div>
+          <NavSection title="Attendance Management" defaultExpanded={false}>
+            {renderNavItem(Activity, 'Live Attendance', '/admin/attendance/live')}
+            {renderNavItem(Clock, 'Attendance History', '/admin/attendance/history')}
+            {renderNavItem(MapPin, 'WFH / GPS Tracking', '/admin/attendance/tracking')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Leave Management</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(CalendarDays, 'Leave Requests', '/admin/leaves', '12')}
-              {renderNavItem(CalendarRange, 'Leave Calendar', '/admin/leaves/calendar')}
-            </ul>
-          </div>
+          <NavSection title="Leave Management" defaultExpanded={false}>
+            {renderNavItem(CalendarDays, 'Leave Requests', '/admin/leaves', '12')}
+            {renderNavItem(CalendarRange, 'Leave Calendar', '/admin/leaves/calendar')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Task & Worksheet</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(ListTodo, 'Task Dashboard', '/admin/tasks')}
-              {renderNavItem(ClipboardCheck, 'Worksheets (Pending)', '/admin/worksheets', '5')}
-            </ul>
-          </div>
+          <NavSection title="Task & Worksheet" defaultExpanded={false}>
+            {renderNavItem(ListTodo, 'Task Dashboard', '/admin/tasks')}
+            {renderNavItem(ClipboardCheck, 'Worksheets (Pending)', '/admin/worksheets', '5')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Tickets & Assets</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(Ticket, 'Open Tickets', '/admin/tickets', '3')}
-              {renderNavItem(Package, 'Asset Inventory', '/admin/assets')}
-            </ul>
-          </div>
+          <NavSection title="Tickets & Assets" defaultExpanded={false}>
+            {renderNavItem(Ticket, 'Open Tickets', '/admin/tickets', '3')}
+            {renderNavItem(Package, 'Asset Inventory', '/admin/assets')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">Organization</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(Building2, 'Departments', '/admin/organization/departments')}
-              {renderNavItem(Briefcase, 'Designations', '/admin/organization/designations')}
-            </ul>
-          </div>
+          <NavSection title="Organization" defaultExpanded={false}>
+            {renderNavItem(Building2, 'Departments', '/admin/organization/departments')}
+            {renderNavItem(Briefcase, 'Designations', '/admin/organization/designations')}
+          </NavSection>
 
-          <div className="admin-nav-section">
-            <h4 className="admin-nav-heading">System</h4>
-            <ul className="admin-nav-list">
-              {renderNavItem(BarChart3, 'Reports & Analytics', '/admin/reports')}
-              {renderNavItem(Settings, 'System Settings', '/admin/settings')}
-              {renderNavItem(Database, 'Audit Logs', '/admin/logs')}
-            </ul>
-          </div>
+          <NavSection title="System" defaultExpanded={false}>
+            {renderNavItem(BarChart3, 'Reports & Analytics', '/admin/reports')}
+            {renderNavItem(Settings, 'System Settings', '/admin/settings')}
+            {renderNavItem(Database, 'Audit Logs', '/admin/logs')}
+          </NavSection>
         </div>
       </aside>
 
