@@ -26,9 +26,9 @@ import {
   PackageOpen
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import AttendanceControlCenter from '../components/AttendanceControlCenter';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
+import AttendanceControlCenter from '../../components/employee/AttendanceControlCenter';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
 
 const attendanceData = [
   { name: 'Mon', hours: 8.3 },

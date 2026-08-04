@@ -1,16 +1,18 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Attendance from './pages/Attendance';
-import LeaveManagement from './pages/LeaveManagement';
-import Worksheet from './pages/Worksheet';
-import Settings from './pages/Settings';
-import Tasks from './pages/Tasks';
-import Tickets from './pages/Tickets';
-import Assets from './pages/Assets';
-import Profile from './pages/Profile';
-import Holidays from './pages/Holidays';
+import Login from './pages/employee/Login';
+import Dashboard from './pages/employee/Dashboard';
+import Attendance from './pages/employee/Attendance';
+import LeaveManagement from './pages/employee/LeaveManagement';
+import Worksheet from './pages/employee/Worksheet';
+import Settings from './pages/employee/Settings';
+import Tasks from './pages/employee/Tasks';
+import Tickets from './pages/employee/Tickets';
+import Assets from './pages/employee/Assets';
+import Profile from './pages/employee/Profile';
+import Holidays from './pages/employee/Holidays';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLogin from './pages/admin/AdminLogin';
 
 function App() {
   return (
@@ -28,6 +30,10 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/holidays" element={<Holidays />} />
         <Route path="/settings" element={<Settings />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

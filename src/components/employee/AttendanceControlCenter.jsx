@@ -6,7 +6,7 @@ import {
   Calendar, TrendingUp, LogIn, LogOut, Briefcase, Building, Home,
   CheckCircle, ShieldAlert
 } from 'lucide-react';
-import '../styles/attendance-control.css';
+import '../../styles/employee/attendance-control.css';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const OFFICE_START = { h: 9, m: 30 };   // 09:30

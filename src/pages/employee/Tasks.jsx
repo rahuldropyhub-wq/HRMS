@@ -21,10 +21,10 @@ import {
   TextInput,
   FileUpload,
   FormFooter
-} from '../components/EnterpriseForm';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/tasks.css';
+} from '../../components/employee/EnterpriseForm';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/tasks.css';
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
 const INITIAL_TASKS = [

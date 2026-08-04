@@ -6,7 +6,7 @@ import {
   LogOut, Search, Bell, MessageSquare, ChevronDown, User,
   Menu, X, Mail
 } from 'lucide-react';
-import '../styles/dashboard.css';
+import '../../styles/employee/dashboard.css';
 
 const DashboardLayout = ({ children }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);

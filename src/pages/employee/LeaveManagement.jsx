@@ -39,10 +39,10 @@ import {
   FileUpload,
   Checkbox,
   FormFooter
-} from '../components/EnterpriseForm';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/leave-management.css';
+} from '../../components/employee/EnterpriseForm';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/leave-management.css';
 
 const leaveData = [
   { id: 'LV-2025-032', type: 'Casual Leave', from: '12 May 2025', to: '13 May 2025', days: 2, reason: 'Family function', status: 'Approved', appliedOn: '08 May 2025' },

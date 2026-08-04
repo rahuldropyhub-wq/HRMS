@@ -8,9 +8,9 @@ import {
   Image as FileImage, Shield, Smartphone, Monitor, Clock, CheckCircle2,
   AlertTriangle, History, Link as LinkIcon
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/profile.css';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/profile.css';
 
 const SECTIONS = [
   { id: 'personal', label: 'Personal Information', icon: <User size={16} /> },

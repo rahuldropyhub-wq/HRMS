@@ -17,10 +17,10 @@ import {
   TextArea,
   FileUpload,
   FormFooter
-} from '../components/EnterpriseForm';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/assets.css';
+} from '../../components/employee/EnterpriseForm';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/assets.css';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────
 const ASSET_CATEGORIES = ['Laptop', 'Desktop', 'Monitor', 'Mobile', 'Headset', 'Accessory', 'Furniture'];

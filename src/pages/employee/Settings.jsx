@@ -26,9 +26,9 @@ import {
   Ticket,
   PackageOpen
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/settings.css';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/settings.css';
 
 function Settings() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, UploadCloud, ChevronDown } from 'lucide-react';
-import '../styles/enterprise-form.css';
+import '../../styles/employee/enterprise-form.css';
 
 export const EnterpriseModal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;

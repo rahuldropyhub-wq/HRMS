@@ -7,10 +7,10 @@ import {
   ChevronLeft, ChevronRight, Clock, TrendingUp,
   AlertCircle, CheckCircle2, XCircle, Minus, Ticket, PackageOpen
 } from 'lucide-react';
-import AttendanceControlCenter from '../components/AttendanceControlCenter';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/attendance-report.css';
+import AttendanceControlCenter from '../../components/employee/AttendanceControlCenter';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/attendance-report.css';
 
 // ─── Mock Attendance Data ──────────────────────────────────────────────────
 const MOCK_DATA = [

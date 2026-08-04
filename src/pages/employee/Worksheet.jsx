@@ -38,10 +38,10 @@ import {
   TextInput,
   FileUpload,
   FormFooter
-} from '../components/EnterpriseForm';
-import DashboardLayout from '../components/DashboardLayout';
-import '../styles/dashboard.css';
-import '../styles/worksheet.css';
+} from '../../components/employee/EnterpriseForm';
+import DashboardLayout from '../../components/employee/DashboardLayout';
+import '../../styles/employee/dashboard.css';
+import '../../styles/employee/worksheet.css';
 
 const workEntries = [
   {

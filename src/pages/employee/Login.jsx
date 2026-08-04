@@ -11,7 +11,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/login.css';
+import '../../styles/employee/login.css';
 
 function Login() {
   const navigate = useNavigate();
