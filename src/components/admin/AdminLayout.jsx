@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, Outlet } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, UserPlus, FileBadge, History,
   Clock, CalendarRange, MapPin, Activity, CalendarDays,
@@ -8,49 +9,126 @@ import {
   RefreshCw, UserCircle, ShieldCheck, Building2, Briefcase,
   CalendarClock, BarChart3, LineChart, Megaphone, Bell,
   Settings, Sliders, Mail, Lock, Database, LogOut, Search,
-  Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon
+  Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon, Sun
 } from 'lucide-react';
 import '../../styles/admin/admin-layout.css';
 
-const NavSection = ({ title, defaultExpanded = false, children }) => {
+const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, children }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  
+  // Force expand when sidebar is collapsed so icons are always visible
+  const showContent = !title || isExpanded || isSidebarCollapsed;
+
   return (
     <div className="admin-nav-section">
-      {title ? (
+      {title && (
         <div 
           className="admin-nav-heading" 
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => !isSidebarCollapsed && setIsExpanded(!isExpanded)}
+          style={{ cursor: isSidebarCollapsed ? 'default' : 'pointer' }}
         >
-          <span>{title}</span>
-          {isExpanded ? <ChevronDown size={14} className="admin-nav-chevron" /> : <ChevronRight size={14} className="admin-nav-chevron" />}
+          <motion.span
+            initial={false}
+            animate={{ 
+              opacity: isSidebarCollapsed ? 0 : 1, 
+              height: isSidebarCollapsed ? 0 : 'auto',
+              display: isSidebarCollapsed ? 'none' : 'block' 
+            }}
+          >
+            {title}
+          </motion.span>
+          {!isSidebarCollapsed && (
+            isExpanded ? <ChevronDown size={14} className="admin-nav-chevron" /> : <ChevronRight size={14} className="admin-nav-chevron" />
+          )}
         </div>
-      ) : null}
-      
-      {(!title || isExpanded) && (
-        <ul className="admin-nav-list">
-          {children}
-        </ul>
       )}
+      
+      <AnimatePresence initial={false}>
+        {showContent && (
+          <motion.ul 
+            className="admin-nav-list"
+            initial="collapsed"
+            animate="open"
+            exit="collapsed"
+            variants={{
+              open: { opacity: 1, height: 'auto' },
+              collapsed: { opacity: 0, height: 0 }
+            }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          >
+            {children}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+      {!isSidebarCollapsed && <div className="nav-section-divider" />}
     </div>
   );
 };
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('dropyhub-theme');
+    if (saved === 'dark') {
+      document.body.classList.add('dark-mode');
+      setIsDarkMode(true);
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    setIsDarkMode(isDark);
+    localStorage.setItem('dropyhub-theme', isDark ? 'dark' : 'light');
+  };
+
   const isActive = (path) => location.pathname === path ? 'active' : '';
+
+  const getBreadcrumbName = () => {
+    const path = location.pathname;
+    if (path === '/admin/dashboard' || path === '/admin') return 'Dashboard';
+    const segments = path.split('/').filter(Boolean);
+    const lastSegment = segments[segments.length - 1];
+    return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace(/-/g, ' ');
+  };
 
   const renderNavItem = (icon, label, path, badge = null) => {
     const Icon = icon;
     return (
-      <li key={path}>
-        <Link to={path} className={`admin-nav-item ${isActive(path)}`} data-tooltip={label}>
+      <li key={path} className="nav-item-wrapper" style={{ position: 'relative' }}>
+        <Link to={path} className={`admin-nav-item ${isActive(path)}`}>
           <Icon size={18} className="admin-nav-icon" />
-          <span className="admin-nav-label">{label}</span>
-          {badge && <span className="admin-nav-badge">{badge}</span>}
+          <motion.span 
+            className="admin-nav-label"
+            initial={false}
+            animate={{ 
+              opacity: isSidebarCollapsed ? 0 : 1,
+              width: isSidebarCollapsed ? 0 : 'auto',
+              display: isSidebarCollapsed ? 'none' : 'block'
+            }}
+          >
+            {label}
+          </motion.span>
+          {badge && (
+            <motion.span 
+              className="admin-nav-badge"
+              animate={{
+                opacity: isSidebarCollapsed ? 0 : 1,
+                display: isSidebarCollapsed ? 'none' : 'block'
+              }}
+            >
+              {badge}
+            </motion.span>
+          )}
         </Link>
+        {isSidebarCollapsed && (
+          <div className="nav-tooltip">{label}</div>
+        )}
       </li>
     );
   };
@@ -64,11 +142,22 @@ const AdminLayout = ({ children }) => {
       />
 
       {/* Sidebar */}
-      <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      <motion.aside 
+        className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''} ${isSidebarCollapsed ? 'collapsed' : ''}`}
+        initial={false}
+        animate={{ width: isSidebarCollapsed ? 80 : 280 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
         <div className="admin-sidebar-header">
           <div className="admin-brand">
             <img src="/Fevicon.png" alt="Icon" className="admin-logo-img" />
-            <span className="admin-brand-text">Dropyhub Admin</span>
+            <motion.span 
+              className="admin-brand-text"
+              initial={false}
+              animate={{ opacity: isSidebarCollapsed ? 0 : 1, display: isSidebarCollapsed ? 'none' : 'block' }}
+            >
+              Dropyhub Admin
+            </motion.span>
           </div>
           <button 
             className="admin-collapse-btn"
@@ -79,49 +168,58 @@ const AdminLayout = ({ children }) => {
         </div>
 
         <div className="admin-nav-container">
-          <NavSection>
+          <NavSection isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(LayoutDashboard, 'Dashboard', '/admin/dashboard')}
           </NavSection>
 
-          <NavSection title="Employee Management" defaultExpanded={false}>
+          <NavSection title="Employee Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(Users, 'Employee Directory', '/admin/employees')}
             {renderNavItem(UserPlus, 'Add Employee', '/admin/employees/add')}
             {renderNavItem(FileBadge, 'Employee Documents', '/admin/employees/documents')}
           </NavSection>
 
-          <NavSection title="Attendance Management" defaultExpanded={false}>
+          <NavSection title="Attendance Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(Activity, 'Live Attendance', '/admin/attendance/live')}
             {renderNavItem(Clock, 'Attendance History', '/admin/attendance/history')}
-            {renderNavItem(MapPin, 'WFH / GPS Tracking', '/admin/attendance/tracking')}
+            {renderNavItem(MapPin, 'WFH / GPS Tracking', '/admin/attendance/wfh-tracking')}
           </NavSection>
 
-          <NavSection title="Leave Management" defaultExpanded={false}>
-            {renderNavItem(CalendarDays, 'Leave Requests', '/admin/leaves', '12')}
-            {renderNavItem(CalendarRange, 'Leave Calendar', '/admin/leaves/calendar')}
+          <NavSection title="Leave Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
+            {renderNavItem(CalendarDays, 'Leave Requests', '/admin/leave/requests', '12')}
+            {renderNavItem(CalendarRange, 'Leave Calendar', '/admin/leave/calendar')}
           </NavSection>
 
-          <NavSection title="Task & Worksheet" defaultExpanded={false}>
+          <NavSection title="Task & Worksheet" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(ListTodo, 'Task Dashboard', '/admin/tasks')}
             {renderNavItem(ClipboardCheck, 'Worksheets (Pending)', '/admin/worksheets', '5')}
           </NavSection>
 
-          <NavSection title="Tickets & Assets" defaultExpanded={false}>
-            {renderNavItem(Ticket, 'Open Tickets', '/admin/tickets', '3')}
+          <NavSection title="Tickets & Assets" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
+            {renderNavItem(Ticket, 'Ticket Queue', '/admin/tickets', '3')}
             {renderNavItem(Package, 'Asset Inventory', '/admin/assets')}
           </NavSection>
 
-          <NavSection title="Organization" defaultExpanded={false}>
+          <NavSection title="Organization" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(Building2, 'Departments', '/admin/organization/departments')}
             {renderNavItem(Briefcase, 'Designations', '/admin/organization/designations')}
+            {renderNavItem(Users, 'Org Chart', '/admin/organization/chart')}
+            {renderNavItem(CalendarOff, 'Company Holidays', '/admin/organization/holidays')}
+            {renderNavItem(Megaphone, 'Announcements', '/admin/announcements')}
           </NavSection>
 
-          <NavSection title="System" defaultExpanded={false}>
-            {renderNavItem(BarChart3, 'Reports & Analytics', '/admin/reports')}
-            {renderNavItem(Settings, 'System Settings', '/admin/settings')}
-            {renderNavItem(Database, 'Audit Logs', '/admin/logs')}
+          <NavSection title="Reports & Analytics" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
+            {renderNavItem(BarChart3, 'Reports Dashboard', '/admin/reports')}
+            {renderNavItem(Activity, 'Attendance Report', '/admin/reports/attendance')}
+            {renderNavItem(CalendarRange, 'Leave Report', '/admin/reports/leave')}
+          </NavSection>
+
+          <NavSection title="Settings" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
+            {renderNavItem(Settings, 'Admin Settings', '/admin/settings')}
+            {renderNavItem(ShieldCheck, 'Roles & Permissions', '/admin/settings/roles')}
+            {renderNavItem(Database, 'Audit Logs', '/admin/audit-logs')}
           </NavSection>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content Area */}
       <div className="admin-main-wrapper">
@@ -134,7 +232,7 @@ const AdminLayout = ({ children }) => {
             <div className="admin-breadcrumb">
               <span>Admin</span>
               <ChevronRight size={14} />
-              <span className="admin-breadcrumb-current">Dashboard</span>
+              <span className="admin-breadcrumb-current">{getBreadcrumbName()}</span>
             </div>
           </div>
 
@@ -150,8 +248,8 @@ const AdminLayout = ({ children }) => {
               <Plus size={18} />
               <span>Create</span>
             </button>
-            <button className="admin-header-icon-btn">
-              <Moon size={18} />
+            <button className="admin-header-icon-btn" onClick={toggleDarkMode} aria-label="Toggle theme">
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button className="admin-header-icon-btn">
               <Bell size={18} />
@@ -165,7 +263,7 @@ const AdminLayout = ({ children }) => {
 
         {/* Dynamic Content */}
         <main className="admin-content-area">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

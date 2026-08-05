@@ -1,0 +1,175 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Search, Plus, Eye, SearchX } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import '../../../styles/admin/tickets/ticket-queue.css';
+import EmptyState from '../../../components/admin/EmptyState';
+import CustomDropdown from '../../../components/admin/CustomDropdown';
+
+const MOCK_TICKETS = [
+  { id: 'TKT-001', subject: 'Laptop not working', raisedBy: 'Rahul Sharma', dept: 'IT', priority: 'Critical', assignedTo: 'Unassigned', status: 'Open', created: '04 Aug 2026' },
+  { id: 'TKT-002', subject: 'Salary slip missing', raisedBy: 'Priya Patel', dept: 'Payroll', priority: 'High', assignedTo: 'Finance Admin', status: 'In Progress', created: '03 Aug 2026' },
+  { id: 'TKT-003', subject: 'VPN access needed', raisedBy: 'Amit Kumar', dept: 'IT', priority: 'Medium', assignedTo: 'Network Admin', status: 'Resolved', created: '02 Aug 2026' },
+  { id: 'TKT-004', subject: 'Leave balance incorrect', raisedBy: 'Neha Gupta', dept: 'HR', priority: 'High', assignedTo: 'HR Manager', status: 'Open', created: '04 Aug 2026' },
+  { id: 'TKT-005', subject: 'Monitor flickering', raisedBy: 'Vikram Singh', dept: 'IT', priority: 'Low', assignedTo: 'IT Support', status: 'Closed', created: '20 Jul 2026' },
+  { id: 'TKT-006', subject: 'Software license expired', raisedBy: 'Anjali Desai', dept: 'IT', priority: 'Critical', assignedTo: 'Unassigned', status: 'Open', created: '05 Aug 2026' },
+  { id: 'TKT-007', subject: 'AC not working in Bay 3', raisedBy: 'Rohan Verma', dept: 'Admin', priority: 'Medium', assignedTo: 'Facilities', status: 'In Progress', created: '04 Aug 2026' },
+  { id: 'TKT-008', subject: 'Reimbursement pending', raisedBy: 'Pooja Iyer', dept: 'Finance', priority: 'High', assignedTo: 'Finance Admin', status: 'Resolved', created: '01 Aug 2026' },
+];
+
+const TicketQueue = () => {
+  const [activeTab, setActiveTab] = useState('Open');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+
+  const filteredTickets = MOCK_TICKETS.filter(t => {
+    const matchesTab = activeTab === 'All' ? true : t.status === activeTab;
+    const matchesSearch = t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          t.raisedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          t.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept = deptFilter ? t.dept === deptFilter : true;
+    const matchesPri = priorityFilter ? t.priority === priorityFilter : true;
+    return matchesTab && matchesSearch && matchesDept && matchesPri;
+  });
+
+  return (
+    <motion.div 
+      className="ticket-queue-container"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="page-header">
+        <div className="page-title">
+          <h1>Ticket Queue</h1>
+          <p>Manage internal support requests across the company</p>
+        </div>
+        <Link to="/admin/tickets/create" className="btn-primary">
+          <Plus size={18} /> Create Ticket
+        </Link>
+      </div>
+
+      <div className="tabs-bar">
+        {['Open', 'In Progress', 'Resolved', 'Closed', 'All'].map(tab => {
+          const count = tab === 'All' 
+            ? MOCK_TICKETS.length 
+            : MOCK_TICKETS.filter(t => t.status === tab).length;
+          return (
+            <button 
+              key={tab} 
+              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="filter-bar">
+        <div className="search-box">
+          <Search size={18} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Search tickets..." 
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div style={{ width: '180px' }}>
+          <CustomDropdown
+            value={deptFilter}
+            onChange={setDeptFilter}
+            options={[
+              { value: '', label: 'All Departments' },
+              { value: 'IT', label: 'IT' },
+              { value: 'HR', label: 'HR' },
+              { value: 'Finance', label: 'Finance' },
+              { value: 'Payroll', label: 'Payroll' },
+              { value: 'Admin', label: 'Admin' }
+            ]}
+          />
+        </div>
+        <div style={{ width: '180px' }}>
+          <CustomDropdown
+            value={priorityFilter}
+            onChange={setPriorityFilter}
+            options={[
+              { value: '', label: 'All Priorities' },
+              { value: 'Critical', label: 'Critical' },
+              { value: 'High', label: 'High' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'Low', label: 'Low' }
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="table-container">
+        {filteredTickets.length === 0 ? (
+          <EmptyState 
+            icon={<SearchX size={32} />}
+            title="No tickets found"
+            message="No tickets match your current filters"
+          />
+        ) : (
+          <table>
+            <thead>
+            <tr>
+              <th>Ticket ID & Subject</th>
+              <th>Raised By</th>
+              <th>Department</th>
+              <th>Priority</th>
+              <th>Assigned To</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTickets.map(ticket => (
+              <tr key={ticket.id}>
+                <td>
+                  <div className="ticket-subject truncate" style={{ maxWidth: '200px' }}>{ticket.subject}</div>
+                  <div className="ticket-id">{ticket.id}</div>
+                </td>
+                <td>{ticket.raisedBy}</td>
+                <td>{ticket.dept}</td>
+                <td>
+                  <span className={`badge priority-${ticket.priority.toLowerCase()}`}>
+                    {ticket.priority}
+                  </span>
+                </td>
+                <td>{ticket.assignedTo}</td>
+                <td>
+                  <span className={`badge status-${ticket.status.toLowerCase().replace(' ', '')}`}>
+                    {ticket.status}
+                  </span>
+                </td>
+                <td>{ticket.created}</td>
+                <td>
+                  <div className="action-btn-group">
+                    <Link to={`/admin/tickets/${ticket.id}`} className="action-btn ghost icon-only" title="View Details">
+                      <Eye size={16} />
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {filteredTickets.length === 0 && (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
+                  No tickets found matching your criteria.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+export default TicketQueue;

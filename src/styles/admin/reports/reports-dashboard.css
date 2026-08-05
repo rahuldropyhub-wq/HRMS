@@ -1,0 +1,129 @@
+.reports-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.page-title p {
+  color: var(--text-tertiary);
+  margin: 0;
+  font-size: 14px;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.report-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  padding: 24px;
+  box-shadow: 0 1px 2px var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.report-card.active:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  border-color: #3b82f6;
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.report-card.active .card-icon {
+  background: #eff6ff;
+  color: var(--brand-primary);
+}
+
+.report-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.report-card p {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin: 0 0 24px 0;
+  flex-grow: 1;
+  line-height: 1.5;
+}
+
+.btn-view-report {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-view-report:hover {
+  background: var(--bg-primary);
+}
+
+.report-card.active .btn-view-report {
+  background: var(--brand-primary);
+  color: var(--card-bg);
+  border-color: var(--brand-primary);
+}
+
+.report-card.active .btn-view-report:hover {
+  background: #1d4ed8;
+}
+
+.badge-coming-soon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .reports-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .reports-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,234 @@
+.add-employee-container {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.wizard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.wizard-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-secondary);
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--border-primary);
+  z-index: 0;
+}
+
+.step-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background-color: transparent;
+}
+
+.step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.step-item.active .step-circle {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+.step-item.completed .step-circle {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--card-bg);
+}
+
+.step-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.step-item.active .step-label,
+.step-item.completed .step-label {
+  color: var(--text-primary);
+}
+
+/* Form Container */
+.form-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  padding: 32px;
+  box-shadow: 0 1px 3px var(--card-shadow);
+  margin-bottom: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.form-grid.full {
+  grid-template-columns: 1fr;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-label span {
+  color: #ef4444;
+}
+
+.form-input, .form-select {
+  padding: 10px 12px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-error {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Document Upload Area */
+.upload-area {
+  border: 2px dashed var(--border-secondary);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.upload-area:hover {
+  border-color: var(--text-muted);
+}
+
+.upload-icon {
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+/* Summary view */
+.summary-section {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 16px;
+}
+
+.summary-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.summary-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Form Navigation */
+.form-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-primary);
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .step-label {
+    display: none;
+  }
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

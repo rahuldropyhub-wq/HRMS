@@ -354,7 +354,7 @@
 
 .prof-tl-title { font-size: 14px; font-weight: 700; color: #111827; }
 .prof-tl-dept { font-size: 13px; color: #4b5563; margin-top: 2px; }
-.prof-tl-date { font-size: 12px; color: #9ca3af; margin-top: 4px; display: flex; alignItems: center; gap: 4px; }
+.prof-tl-date { font-size: 12px; color: #9ca3af; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 
 /* ── Table (Security, Sessions) ── */
 .prof-table {

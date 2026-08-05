@@ -10,38 +10,41 @@
 /* Sidebar */
 .admin-sidebar {
   width: 280px;
-  background-color: #ffffff;
-  color: #1e293b;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   z-index: 100;
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
 }
 
 .admin-sidebar.collapsed {
-  width: 80px;
+  /* Handled by framer-motion */
 }
 
 /* Custom Scrollbar for Sidebar */
 .admin-sidebar::-webkit-scrollbar {
   width: 4px;
 }
-
 .admin-sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .admin-sidebar::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
-
 .admin-sidebar:hover::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
+}
+.dark-mode .admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+.dark-mode .admin-sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Sidebar Header / Brand */
@@ -55,7 +58,7 @@
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   z-index: 10;
 }
 
@@ -77,33 +80,26 @@
 .admin-brand-text {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   white-space: nowrap;
-  opacity: 1;
-  transition: opacity 0.2s;
-}
-
-.admin-sidebar.collapsed .admin-brand-text {
-  opacity: 0;
-  width: 0;
 }
 
 .admin-collapse-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .admin-collapse-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #0f172a;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* Sidebar Navigation */
@@ -113,40 +109,31 @@
 }
 
 .admin-nav-section {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .admin-nav-heading {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #000000;
+  color: var(--text-tertiary);
   font-weight: 700;
   padding: 8px 12px;
   margin-bottom: 4px;
   white-space: nowrap;
-  transition: opacity 0.2s;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
   border-radius: 6px;
+  transition: color 0.3s ease;
 }
 
 .admin-nav-heading:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #000000;
+  color: var(--text-primary);
 }
 
 .admin-nav-chevron {
-  transition: transform 0.2s;
-}
-
-.admin-sidebar.collapsed .admin-nav-heading {
-  opacity: 0;
-  height: 0;
-  margin-bottom: 0;
-  overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
 .admin-nav-list {
@@ -155,7 +142,19 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.nav-section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 12px 4px 12px;
+  opacity: 0.6;
+}
+
+.nav-item-wrapper {
+  position: relative;
 }
 
 .admin-nav-item {
@@ -163,80 +162,111 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
-  color: #000000;
+  border-radius: 6px;
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: 15px;
-  font-weight: 700;
-  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
   white-space: nowrap;
+  border-left: 3px solid transparent;
 }
 
 .admin-nav-item:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #000000;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .admin-nav-item.active {
-  background: var(--primary);
-  color: #ffffff;
+  background: rgba(29, 78, 216, 0.08); /* subtle primary */
+  color: var(--primary);
+  border-left-color: var(--primary);
+}
+.dark-mode .admin-nav-item.active {
+  background: rgba(96, 165, 250, 0.1);
+  color: var(--primary-light);
+  border-left-color: var(--primary-light);
 }
 
 .admin-nav-icon {
   flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.admin-nav-item.active .admin-nav-icon,
+.admin-nav-item:hover .admin-nav-icon {
+  opacity: 1;
 }
 
 .admin-nav-label {
   flex-grow: 1;
-  transition: opacity 0.2s;
-}
-
-.admin-sidebar.collapsed .admin-nav-label {
-  opacity: 0;
-  width: 0;
   overflow: hidden;
 }
 
+.admin-nav-badge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dark-mode .admin-nav-badge {
+  background: var(--primary-light);
+  color: var(--background);
+}
+
 /* Floating Tooltip for Collapsed Sidebar */
-.admin-sidebar.collapsed .admin-nav-item:hover::after {
-  content: attr(data-tooltip);
+.nav-tooltip {
   position: absolute;
   left: 100%;
   top: 50%;
-  transform: translateY(-50%);
-  margin-left: 16px;
+  transform: translateY(-50%) translateX(10px);
   background: #1e293b;
-  color: #ffffff;
+  color: #f8fafc;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   z-index: 1000;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
 }
 
-.admin-nav-badge {
-  background: #ef4444;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 10px;
-  transition: opacity 0.2s;
+.dark-mode .nav-tooltip {
+  background: #f8fafc;
+  color: #0f172a;
 }
 
-.admin-sidebar.collapsed .admin-nav-badge {
+.nav-item-wrapper:hover .nav-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(16px);
+}
+
+/* Tooltip Arrow */
+.nav-tooltip::before {
+  content: '';
   position: absolute;
-  top: 4px;
-  right: 4px;
-  padding: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  color: transparent;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent #1e293b transparent transparent;
+}
+.dark-mode .nav-tooltip::before {
+  border-color: transparent #f8fafc transparent transparent;
 }
 
 /* Main Content Area */
@@ -250,7 +280,7 @@
 /* Admin Header */
 .admin-header {
   height: 72px;
-  background: var(--white);
+  background: var(--var(--card-bg));
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -340,7 +370,7 @@
   align-items: center;
   gap: 8px;
   background: var(--primary);
-  color: var(--white);
+  color: var(--var(--card-bg));
   border: none;
   padding: 8px 16px;
   border-radius: 8px;
@@ -378,7 +408,7 @@
   top: -2px;
   right: -2px;
   background: #ef4444;
-  color: white;
+  color: var(--card-bg);
   font-size: 10px;
   font-weight: 700;
   width: 18px;
@@ -387,7 +417,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--white);
+  border: 2px solid var(--var(--card-bg));
 }
 
 .admin-profile-trigger {
@@ -492,4 +522,55 @@
 .admin-mobile-overlay.active {
   opacity: 1;
   visibility: visible;
+}
+/* Action Dropdown Global Styles */
+.action-cell {
+  position: relative;
+}
+
+.action-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  min-width: 180px;
+  z-index: 50;
+  padding: 4px;
+}
+
+.action-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+}
+
+.action-dropdown-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.action-dropdown-item.danger {
+  color: var(--danger);
+}
+
+/* Global Card Hover Effects */
+.card, .admin-card, .kpi-card, .stat-card, .dashboard-card {
+  transition: all 0.2s ease;
+}
+
+.card:hover, .admin-card:hover, .kpi-card:hover, .stat-card:hover, .dashboard-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
 }

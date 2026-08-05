@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Users, UserCheck, Building, Home, Ticket, ClipboardList,
   Check, X, FileText, CheckCircle, Package, UserPlus, FileBadge,
   Megaphone, Calendar as CalendarIcon, Download, Clock
 } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
 import '../../styles/admin/admin-dashboard.css';
 
 const AdminDashboard = () => {
@@ -25,9 +25,8 @@ const AdminDashboard = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="admin-dashboard-wrapper">
-        
+    <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{ duration: 0.3 }} className="admin-dashboard-wrapper">
+      
         {/* SECTION 1: Welcome Banner */}
         <section className="welcome-banner">
           <div className="welcome-text">
@@ -413,8 +412,7 @@ const AdminDashboard = () => {
           <div>&copy; 2026 Dropyhub. All rights reserved.</div>
         </footer>
 
-      </div>
-    </AdminLayout>
+    </motion.div>
   );
 };
 

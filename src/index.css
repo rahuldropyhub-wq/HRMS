@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "./styles/admin/theme-variables.css";
 
 :root {
   --primary: #1d5ef2;
@@ -75,11 +76,11 @@ body {
   right: 0;
   bottom: 0;
   background: radial-gradient(circle at 100% 0%, rgba(29, 94, 242, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 0% 100%, rgba(29, 94, 242, 0.1) 0%, transparent 50%);
+    radial-gradient(circle at 0% 100%, rgba(29, 94, 242, 0.1) 0%, transparent 50%);
   z-index: 1;
 }
 
-.left-panel > * {
+.left-panel>* {
   position: relative;
   z-index: 2;
 }
@@ -109,6 +110,7 @@ body {
   font-weight: 700;
   line-height: 1.2;
 }
+
 .brand-text p {
   font-size: 14px;
   color: #a5b4fc;
@@ -125,7 +127,7 @@ body {
   color: #4f80ff;
 }
 
-.welcome-content > p {
+.welcome-content>p {
   font-size: 15px;
   line-height: 1.6;
   color: #d1d5db;
@@ -179,9 +181,21 @@ body {
   justify-content: center;
   flex-shrink: 0;
 }
-.feature-icon.blue { background-color: rgba(29, 94, 242, 0.2); color: #4f80ff; }
-.feature-icon.purple { background-color: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-.feature-icon.green { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.feature-icon.blue {
+  background-color: rgba(29, 94, 242, 0.2);
+  color: #4f80ff;
+}
+
+.feature-icon.purple {
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+}
+
+.feature-icon.green {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
 
 .feature-text h4 {
   font-size: 14px;
@@ -337,8 +351,13 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.divider::before { margin-right: 16px; }
-.divider::after { margin-left: 16px; }
+.divider::before {
+  margin-right: 16px;
+}
+
+.divider::after {
+  margin-left: 16px;
+}
 
 .info-box {
   background-color: #f0f4ff;
@@ -394,8 +413,9 @@ body {
     max-height: none;
     overflow-y: auto;
   }
-  
-  .left-panel, .right-panel {
+
+  .left-panel,
+  .right-panel {
     padding: 40px;
     flex: none;
   }
@@ -424,7 +444,8 @@ body {
   }
 
   .illustration-container {
-    display: none; /* Hide illustration on mobile to save space */
+    display: none;
+    /* Hide illustration on mobile to save space */
   }
 
   .features {
@@ -443,4 +464,178 @@ body {
   .login-header h2 {
     font-size: 26px;
   }
+}
+
+
+/* Theme Utility Classes for Refactored JSX */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.bg-card {
+  background-color: var(--card-bg);
+}
+
+.bg-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+.border-primary {
+  border-color: var(--border-primary);
+}
+
+.border-secondary {
+  border-color: var(--border-secondary);
+}
+
+
+/* ============================================
+   TABLE ACTION BUTTONS — Global Design System
+   ============================================ */
+
+.action-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  font-family: inherit;
+  line-height: 1;
+  text-decoration: none;
+  background: #f9fafb;
+  color: #374151;
+}
+
+/* Primary — blue filled */
+.action-btn.primary {
+  background: var(--brand-primary);
+  color: #fff;
+  border-color: var(--brand-primary);
+}
+.action-btn.primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* Secondary — outlined grey (Edit) */
+.action-btn.secondary {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #d1d5db;
+}
+.action-btn.secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  transform: translateY(-1px);
+}
+
+/* Ghost — soft outlined (View, Pin) */
+.action-btn.ghost {
+  background: #f9fafb;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+.action-btn.ghost:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  transform: translateY(-1px);
+}
+
+/* Success — green (Approve) */
+.action-btn.success {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #6ee7b7;
+}
+.action-btn.success:hover {
+  background: #059669;
+  color: #fff;
+  border-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+}
+
+/* Danger — red outlined (Delete, Reject) */
+.action-btn.danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.action-btn.danger:hover {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+}
+
+/* Warning — amber (Send Back) */
+.action-btn.warning {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fcd34d;
+}
+.action-btn.warning:hover {
+  background: #d97706;
+  color: #fff;
+  border-color: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);
+}
+
+/* Icon-only — square icon button */
+.action-btn.icon-only {
+  padding: 6px;
+  width: 34px;
+  height: 34px;
+}
+
+/* Sizes */
+.action-btn.sm { padding: 5px 10px; font-size: 12px; }
+.action-btn.lg { padding: 9px 18px; font-size: 14px; }
+
+/* Disabled */
+.action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
