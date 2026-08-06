@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, Calendar, FileText,
@@ -11,6 +11,8 @@ import AttendanceControlCenter from '../../components/employee/AttendanceControl
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/attendance-report.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyAttendance } from '../../services/employeeService';
 
 // ─── Mock Attendance Data ──────────────────────────────────────────────────
 const MOCK_DATA = [
@@ -64,17 +66,31 @@ const MONTHS = [
 export default function Attendance() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState(4); // May (0-indexed)
-  const [selectedYear]  = useState(2025);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-indexed
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const workingDays = MOCK_DATA.filter(d => d.status !== 'weekend');
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getMyAttendance(user.id, selectedMonth + 1, selectedYear);
+      setAttendanceData(data || []);
+      setLoading(false);
+    };
+    load();
+  }, [user, selectedMonth, selectedYear]);
+
+  const workingDays = attendanceData.filter(d => d.status !== 'weekend');
   const present   = workingDays.filter(d => d.status === 'present').length;
   const late      = workingDays.filter(d => d.status === 'late').length;
   const absent    = workingDays.filter(d => d.status === 'absent').length;
   const holidays  = workingDays.filter(d => d.status === 'holiday').length;
   const earlyOut  = workingDays.filter(d => d.status === 'early').length;
 
-  const filtered = MOCK_DATA.filter(d => {
+  const filtered = attendanceData.filter(d => {
     if (statusFilter === 'all') return true;
     return d.status === statusFilter;
   });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -43,6 +43,8 @@ import {
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/leave-management.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyLeaves, applyLeave } from '../../services/employeeService';
 
 const leaveData = [
   { id: 'LV-2025-032', type: 'Casual Leave', from: '12 May 2025', to: '13 May 2025', days: 2, reason: 'Family function', status: 'Approved', appliedOn: '08 May 2025' },
@@ -55,41 +57,51 @@ const leaveData = [
 
 function LeaveManagement() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [leaves, setLeaves] = useState(leaveData);
+  const [leaves, setLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Leave History');
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newLeave, setNewLeave] = useState({
-    type: 'Casual Leave',
-    from: '',
-    to: '',
+    leave_type: 'Casual Leave',
+    start_date: '',
+    end_date: '',
     reason: ''
   });
+  const { user } = useAuth();
 
-  const handleApplyLeave = (e) => {
-    e.preventDefault();
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    
-    // Calculate days roughly
-    const fromDate = new Date(newLeave.from);
-    const toDate = new Date(newLeave.to);
-    const diffTime = Math.abs(toDate - fromDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    const leaveObj = {
-      id: `LV-${today.getFullYear()}-0${Math.floor(Math.random() * 100) + 10}`,
-      type: newLeave.type,
-      from: fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      to: toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      days: diffDays || 1,
-      reason: newLeave.reason,
-      status: 'Pending',
-      appliedOn: formattedDate
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getMyLeaves(user.id);
+      setLeaves(data || []);
+      setLoading(false);
     };
+    load();
+  }, [user]);
 
-    setLeaves([leaveObj, ...leaves]);
-    setShowModal(false);
-    setNewLeave({ type: 'Casual Leave', from: '', to: '', reason: '' });
+  const handleApplyLeave = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    const { data, error } = await applyLeave({
+      employee_id: user.id,
+      leave_type: newLeave.leave_type,
+      start_date: newLeave.start_date,
+      end_date: newLeave.end_date,
+      reason: newLeave.reason,
+      status: 'pending'
+    });
+
+    if (data) {
+      setLeaves([data, ...leaves]);
+      setShowModal(false);
+      setNewLeave({ leave_type: 'Casual Leave', start_date: '', end_date: '', reason: '' });
+    } else {
+      alert('Error: ' + error?.message);
+    }
+    setSubmitting(false);
   };
 
   return (

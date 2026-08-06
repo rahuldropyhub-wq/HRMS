@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -42,6 +42,8 @@ import {
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/worksheet.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyWorksheets, submitWorksheet } from '../../services/employeeService';
 
 const workEntries = [
   {
@@ -89,26 +91,48 @@ const workEntries = [
 
 function Worksheet() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [entries, setEntries] = useState(workEntries);
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newEntry, setNewEntry] = useState({
-    title: '',
     project: '',
     description: '',
-    timeRange: '',
-    status: 'In Progress'
+    hours: '',
+    date: new Date().toISOString().split('T')[0]
   });
+  const { user } = useAuth();
 
-  const handleAddEntry = (e) => {
-    e.preventDefault();
-    const entryObj = {
-      id: entries.length + 1,
-      ...newEntry,
-      attachments: []
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getMyWorksheets(user.id);
+      setEntries(data || []);
+      setLoading(false);
     };
-    setEntries([entryObj, ...entries]);
-    setShowModal(false);
-    setNewEntry({ title: '', project: '', description: '', timeRange: '', status: 'In Progress' });
+    load();
+  }, [user]);
+
+  const handleAddEntry = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const { data, error } = await submitWorksheet({
+      employee_id: user.id,
+      project: newEntry.project,
+      description: newEntry.description,
+      hours: newEntry.hours,
+      date: newEntry.date,
+      status: 'submitted'
+    });
+    if (data) {
+      setEntries([data, ...entries]);
+      setShowModal(false);
+      setNewEntry({ project: '', description: '', hours: '', date: new Date().toISOString().split('T')[0] });
+    } else {
+      alert('Error: ' + error?.message);
+    }
+    setSubmitting(false);
   };
 
   return (

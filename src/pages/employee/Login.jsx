@@ -12,9 +12,16 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/employee/login.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { Key } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
+  const { loginWithOtp } = useAuth();
+  const [email, setEmail] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
 
   // Dynamic greeting based on time of day
   const getGreeting = () => {
@@ -24,10 +31,20 @@ function Login() {
     return 'Good Evening!';
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login and redirect to dashboard
-    navigate('/dashboard');
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    const { error } = await loginWithOtp(email);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess('Magic link sent! Please check your email to log in.');
+    }
+    setLoading(false);
   };
 
   return (
@@ -96,20 +113,23 @@ function Login() {
           </div>
           
           <h3>Login to Your Account</h3>
-          <p>Enter your work email and we'll send you a one-time password (OTP)</p>
+          <p>Enter your work email and we'll send you a secure magic link (OTP) to log in.</p>
+          
+          {error && <div style={{ color: 'red', marginBottom: '16px', fontSize: '14px', padding: '10px', backgroundColor: '#fee2e2', borderRadius: '4px' }}>{error}</div>}
+          {success && <div style={{ color: 'green', marginBottom: '16px', fontSize: '14px', padding: '10px', backgroundColor: '#dcfce7', borderRadius: '4px' }}>{success}</div>}
 
           <form className="auth-form" onSubmit={handleLogin}>
             <div className="auth-form-group">
               <label className="auth-form-label">Work Email</label>
               <div className="auth-input-wrap">
                 <Mail size={18} className="auth-input-icon" />
-                <input type="email" placeholder="Enter your work email" required />
+                <input type="email" placeholder="Enter your work email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
             </div>
 
-            <button type="submit" className="auth-submit-btn">
-              Send OTP
-              <ArrowRight size={18} />
+            <button type="submit" className="auth-submit-btn" disabled={loading || success}>
+              {loading ? 'Sending...' : 'Send Magic Link (OTP)'}
+              {!loading && <ArrowRight size={18} />}
             </button>
           </form>
 

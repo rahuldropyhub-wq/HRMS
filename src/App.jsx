@@ -44,6 +44,7 @@ import Announcements from './pages/admin/communication/Announcements';
 import AdminSettings from './pages/admin/settings/AdminSettings';
 import RolesPermissions from './pages/admin/settings/RolesPermissions';
 import AuditLogs from './pages/admin/audit/AuditLogs';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
   return (
@@ -51,21 +52,25 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/attendance" element={<Attendance />} />
-        <Route path="/leave-management" element={<LeaveManagement />} />
-        <Route path="/worksheet" element={<Worksheet />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/tickets" element={<Tickets />} />
-        <Route path="/assets" element={<Assets />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/holidays" element={<Holidays />} />
-        <Route path="/settings" element={<Settings />} />
-        
-        {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Protected Employee Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['employee', 'admin']} />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/attendance" element={<Attendance />} />
+          <Route path="/leave-management" element={<LeaveManagement />} />
+          <Route path="/worksheet" element={<Worksheet />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/tickets" element={<Tickets />} />
+          <Route path="/assets" element={<Assets />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/holidays" element={<Holidays />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
         
-        <Route path="/admin" element={<AdminLayout />}>
+        {/* Protected Admin Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="employees" element={<EmployeeDirectory />} />
           <Route path="employees/add" element={<AddEmployee />} />
@@ -103,6 +108,7 @@ function App() {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="settings/roles" element={<RolesPermissions />} />
           <Route path="audit-logs" element={<AuditLogs />} />
+        </Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -29,6 +29,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import AttendanceControlCenter from '../../components/employee/AttendanceControlCenter';
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyAttendance, getMyTasks, getMyLeaves } from '../../services/employeeService';
 
 const attendanceData = [
   { name: 'Mon', hours: 8.3 },
@@ -43,6 +45,43 @@ const attendanceData = [
 function Dashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  const [todayAttendance, setTodayAttendance] = useState(null);
+  const [pendingTasks, setPendingTasks] = useState(0);
+  const [pendingLeaves, setPendingLeaves] = useState(0);
+
+  const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good Morning';
+    if (h < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const now = new Date();
+      const { data: att } = await getMyAttendance(user.id, now.getMonth() + 1, now.getFullYear());
+      if (att) {
+        const todayDate = now.toISOString().split('T')[0];
+        const todayRecord = att.find(a => a.date === todayDate);
+        setTodayAttendance(todayRecord || null);
+      }
+
+      const { data: tasks } = await getMyTasks(user.id);
+      if (tasks) setPendingTasks(tasks.filter(t => t.status !== 'completed').length);
+
+      const { data: leaves } = await getMyLeaves(user.id);
+      if (leaves) setPendingLeaves(leaves.filter(l => l.status === 'pending').length);
+    };
+    load();
+  }, [user]);
+
+  const firstName = profile?.first_name || user?.email?.split('@')[0] || 'there';
 
   return (
     <DashboardLayout>
@@ -51,11 +90,11 @@ function Dashboard() {
         <div className="dashboard-content">
           <div className="welcome-banner">
             <div>
-              <h1>Good Morning, Balaji! 👋</h1>
+              <h1>{getGreeting()}, {firstName}! 👋</h1>
               <p>Here's what's happening with your work today.</p>
             </div>
             <div className="date-picker">
-              Friday, 08 May 2025
+              {todayStr}
               <CalendarDays size={18} color="#6b7280" />
             </div>
           </div>
@@ -74,8 +113,10 @@ function Dashboard() {
               </div>
               <div className="stat-info">
                 <p className="stat-label">Attendance Status</p>
-                <h3 className="stat-value">Present</h3>
-                <p className="stat-meta success"><CheckCircle2 size={12} /> Checked in at 09:05 AM</p>
+                <h3 className="stat-value">{todayAttendance ? 'Present' : 'Not Marked'}</h3>
+                <p className="stat-meta success">
+                  <CheckCircle2 size={12} /> {todayAttendance?.check_in ? `Checked in at ${todayAttendance.check_in}` : 'Not checked in yet'}
+                </p>
               </div>
             </div>
 
@@ -86,7 +127,7 @@ function Dashboard() {
               </div>
               <div className="stat-info">
                 <p className="stat-label">Working Hours</p>
-                <h3 className="stat-value">02h 45m</h3>
+                <h3 className="stat-value">{todayAttendance?.total_hours ? `${todayAttendance.total_hours}h` : '—'}</h3>
                 <p className="stat-meta">Today</p>
               </div>
             </div>
@@ -94,12 +135,12 @@ function Dashboard() {
             {/* Card 3 */}
             <div className="stat-card">
               <div className="stat-icon-wrapper purple">
-                <Coffee size={20} />
+                <CheckSquare size={20} />
               </div>
               <div className="stat-info">
-                <p className="stat-label">Break Time</p>
-                <h3 className="stat-value">00h 30m</h3>
-                <p className="stat-meta">Today</p>
+                <p className="stat-label">Pending Tasks</p>
+                <h3 className="stat-value">{pendingTasks}</h3>
+                <p className="stat-meta">Open tasks</p>
               </div>
             </div>
 
@@ -109,9 +150,9 @@ function Dashboard() {
                 <Briefcase size={20} />
               </div>
               <div className="stat-info">
-                <p className="stat-label">Leave Balance</p>
-                <h3 className="stat-value">12</h3>
-                <p className="stat-meta">Days Available</p>
+                <p className="stat-label">Leave Requests</p>
+                <h3 className="stat-value">{pendingLeaves}</h3>
+                <p className="stat-meta">Pending approval</p>
               </div>
             </div>
           </div>

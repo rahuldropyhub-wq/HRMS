@@ -11,14 +11,29 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/admin/admin-login.css';
+import { useAuth } from '../../contexts/AuthContext';
 
 function AdminLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login and redirect to admin dashboard
-    navigate('/admin/dashboard');
+    setError('');
+    setLoading(true);
+
+    const { error } = await login(email, password);
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      navigate('/admin/dashboard');
+    }
   };
 
   return (
@@ -89,12 +104,14 @@ function AdminLogin() {
           <h3>Admin Authentication</h3>
           <p>Enter your administrator credentials to access the system.</p>
 
+          {error && <div style={{ color: 'red', marginBottom: '16px', fontSize: '14px', padding: '10px', backgroundColor: '#fee2e2', borderRadius: '4px' }}>{error}</div>}
+
           <form className="admin-auth-form" onSubmit={handleLogin}>
             <div className="admin-auth-form-group">
               <label className="admin-auth-form-label">Admin Email</label>
               <div className="admin-auth-input-wrap">
                 <Mail size={18} className="admin-auth-input-icon" />
-                <input type="email" placeholder="admin@dropyhub.com" required />
+                <input type="email" placeholder="admin@dropyhub.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
             </div>
 
@@ -102,13 +119,13 @@ function AdminLogin() {
               <label className="admin-auth-form-label">Password</label>
               <div className="admin-auth-input-wrap">
                 <Lock size={18} className="admin-auth-input-icon" />
-                <input type="password" placeholder="••••••••" required />
+                <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
             </div>
 
-            <button type="submit" className="admin-auth-submit-btn">
-              Secure Login
-              <ArrowRight size={18} />
+            <button type="submit" className="admin-auth-submit-btn" disabled={loading}>
+              {loading ? 'Authenticating...' : 'Secure Login'}
+              {!loading && <ArrowRight size={18} />}
             </button>
           </form>
 

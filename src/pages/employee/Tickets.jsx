@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, Calendar, FileText, Settings,
@@ -25,6 +25,8 @@ import {
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/tickets.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyTickets, raiseTicket } from '../../services/employeeService';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────
 const DEPARTMENTS = ['IT Support', 'HR', 'Admin', 'Finance', 'Payroll'];
@@ -201,8 +203,21 @@ export default function Tickets() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [tickets, setTickets] = useState(MOCK_TICKETS);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState('');
+  const { user, profile } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getMyTickets(user.id);
+      setTickets(data || []);
+      setLoading(false);
+    };
+    load();
+  }, [user]);
 
   // Form state
   const [form, setForm] = useState({ dept: 'IT Support', priority: 'medium', subject: '', description: '' });
@@ -210,32 +225,31 @@ export default function Tickets() {
   const filtered = tickets.filter(t => {
     const tabOk = TAB_FILTERS[activeTab](t);
     const searchOk = !search || t.subject.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase());
-    const deptOk = deptFilter === 'all' || t.department === deptFilter;
+    const deptOk = deptFilter === 'all' || t.category === deptFilter;
     const priorOk = priorityFilter === 'all' || t.priority === priorityFilter;
     return tabOk && searchOk && deptOk && priorOk;
   });
 
   const selected = tickets.find(t => t.id === selectedId);
 
-  const handleCreateTicket = () => {
+  const handleCreateTicket = async () => {
     if (!form.subject.trim() || !form.description.trim()) return;
-    const newTicket = {
-      id: `TKT-2025-00${50 + tickets.length}`,
+    const { data, error } = await raiseTicket({
+      employee_id: user.id,
       subject: form.subject,
-      department: form.dept,
+      category: form.dept,
       priority: form.priority,
-      status: 'open',
-      createdAt: new Date().toISOString().slice(0, 10),
-      assignedTo: null,
       description: form.description,
-      attachments: [],
-      timeline: [{ type: 'created', action: 'Ticket Created', sub: 'by Balaji Kumar', time: 'Just now' }],
-      conversation: [],
-    };
-    setTickets(prev => [newTicket, ...prev]);
-    setSelectedId(newTicket.id);
-    setShowCreateModal(false);
-    setForm({ dept: 'IT Support', priority: 'medium', subject: '', description: '' });
+      status: 'open'
+    });
+    if (data) {
+      setTickets(prev => [data, ...prev]);
+      setSelectedId(data.id);
+      setShowCreateModal(false);
+      setForm({ dept: 'IT Support', priority: 'medium', subject: '', description: '' });
+    } else {
+      alert('Error: ' + error?.message);
+    }
   };
 
   const handleSendComment = () => {

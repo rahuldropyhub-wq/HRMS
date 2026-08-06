@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, Calendar, FileText, Settings,
@@ -25,6 +25,8 @@ import {
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/tasks.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyTasks, updateTaskStatus } from '../../services/employeeService';
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
 const INITIAL_TASKS = [
@@ -245,9 +247,10 @@ function PriorityBadge({ priority }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function Tasks() {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('My Tasks');
-  const [selectedTask, setSelectedTask] = useState(tasks[0]);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProject, setFilterProject] = useState('All Projects');
   const [filterPriority, setFilterPriority] = useState('All Priority');
@@ -256,6 +259,21 @@ export default function Tasks() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getMyTasks(user.id);
+      if (data) {
+        setTasks(data);
+        setSelectedTask(data[0] || null);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user]);
 
   // Modal form state
   const [newTask, setNewTask] = useState({
