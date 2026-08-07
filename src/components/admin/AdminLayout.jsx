@@ -11,6 +11,7 @@ import {
   Settings, Sliders, Mail, Lock, Database, LogOut, Search,
   Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon, Sun
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/admin/admin-layout.css';
 
 const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, children }) => {
@@ -66,6 +67,7 @@ const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, childr
 };
 
 const AdminLayout = () => {
+  const { logout } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -174,8 +176,6 @@ const AdminLayout = () => {
 
           <NavSection title="Employee Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(Users, 'Employee Directory', '/admin/employees')}
-            {renderNavItem(UserPlus, 'Add Employee', '/admin/employees/add')}
-            {renderNavItem(FileBadge, 'Employee Documents', '/admin/employees/documents')}
           </NavSection>
 
           <NavSection title="Attendance Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
@@ -218,6 +218,24 @@ const AdminLayout = () => {
             {renderNavItem(ShieldCheck, 'Roles & Permissions', '/admin/settings/roles')}
             {renderNavItem(Database, 'Audit Logs', '/admin/audit-logs')}
           </NavSection>
+
+          {/* Logout Button */}
+          <div className="admin-nav-section" style={{ marginTop: 'auto' }}>
+            <button 
+              className={`admin-nav-item ${isSidebarCollapsed ? 'collapsed' : ''}`} 
+              onClick={logout}
+              style={{ width: '100%', background: 'transparent', border: 'none', color: '#ef4444', justifyContent: 'flex-start' }}
+            >
+              <LogOut size={18} />
+              <motion.span 
+                className="admin-nav-text"
+                initial={false}
+                animate={{ opacity: isSidebarCollapsed ? 0 : 1, display: isSidebarCollapsed ? 'none' : 'block' }}
+              >
+                Logout
+              </motion.span>
+            </button>
+          </div>
         </div>
       </motion.aside>
 
@@ -244,13 +262,6 @@ const AdminLayout = () => {
           </div>
 
           <div className="admin-header-right">
-            <button className="admin-create-btn">
-              <Plus size={18} />
-              <span>Create</span>
-            </button>
-            <button className="admin-header-icon-btn" onClick={toggleDarkMode} aria-label="Toggle theme">
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <button className="admin-header-icon-btn">
               <Bell size={18} />
               <span className="admin-header-badge">3</span>

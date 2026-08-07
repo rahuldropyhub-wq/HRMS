@@ -45,12 +45,42 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
     
+    // Fallback: If the database trigger failed and no profile exists, create it manually on first login
+    if (!data) {
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData?.user?.email;
+      
+      if (email) {
+        // Find their invitation
+        const { data: invitation } = await supabase.from('employee_invitations').select('*').eq('email', email).single();
+        
+        if (invitation) {
+          // Create the profile now
+          const { data: newProfile, error: insertError } = await supabase.from('profiles').insert({
+            id: userId,
+            email: email,
+            first_name: invitation.first_name,
+            last_name: invitation.last_name,
+            role: 'employee',
+            status: 'active'
+          }).select().single();
+          
+          if (!insertError && newProfile) {
+            setProfile(newProfile);
+            return;
+          } else {
+            console.error('Error creating profile manually:', insertError);
+          }
+        }
+      }
+    }
+
     if (data) {
       setProfile(data);
     } else {
@@ -73,6 +103,15 @@ export const AuthProvider = ({ children }) => {
         // You can set the redirect URL here if needed when deploying
         // emailRedirectTo: 'http://localhost:5173/dashboard'
       }
+    });
+    return { data, error };
+  };
+
+  const verifyOtp = async (email, token) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email'
     });
     return { data, error };
   };
@@ -107,6 +146,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     login,
     loginWithOtp,
+    verifyOtp,
     logout,
     mockLogin,
     loading

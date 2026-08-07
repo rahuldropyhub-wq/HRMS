@@ -2,48 +2,180 @@ import { supabase } from '../lib/supabaseClient';
 
 // ─── EMPLOYEES (Profiles) ─────────────────────────────────────────────────────
 export const getAllEmployees = async () => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*, departments(name), designations(title)')
-    .order('created_at', { ascending: false });
-  return { data, error };
+  const [profilesRes, invitationsRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*, departments(name), designations(title)')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('employee_invitations')
+      .select('id, email, first_name, last_name, phone, department, designation, created_at, raw_data->empId, raw_data->status, raw_data->employmentType')
+      .order('created_at', { ascending: false })
+  ]);
+
+  const profiles = (profilesRes.data || []).map(p => ({
+    id: p.emp_id || p.id,
+    firstName: p.first_name,
+    lastName: p.last_name,
+    email: p.email,
+    phone: p.phone,
+    department: p.departments?.name || p.department || '-',
+    designation: p.designations?.title || p.designation || '-',
+    employmentType: p.employment_type || '-',
+    status: p.status || 'Active',
+    created_at: p.created_at
+  }));
+
+  const invitations = (invitationsRes.data || []).map(inv => ({
+    id: inv.empId || inv.id,
+    firstName: inv.first_name,
+    lastName: inv.last_name,
+    email: inv.email,
+    phone: inv.phone,
+    department: inv.department || '-',
+    designation: inv.designation || '-',
+    employmentType: inv.employmentType || '-',
+    status: inv.status || 'Active',
+    created_at: inv.created_at
+  }));
+
+  const combined = [...profiles, ...invitations].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  return { data: combined, error: profilesRes.error || invitationsRes.error };
 };
 
 export const getEmployeeById = async (id) => {
-  const { data, error } = await supabase
+  // Try profiles first
+  let { data, error } = await supabase
     .from('profiles')
     .select('*, departments(name), designations(title)')
-    .eq('id', id)
-    .single();
-  return { data, error };
+    .or(`id.eq.${id},emp_id.eq.${id}`)
+    .maybeSingle();
+
+  if (data) {
+    return { 
+      data: {
+        ...data,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        department: data.departments?.name || data.department,
+        designation: data.designations?.title || data.designation,
+        officialEmail: data.email,
+        empId: data.emp_id || data.id,
+        leaveBalance: data.leave_balance || 0,
+        activeTasks: 0,
+        attendanceScore: 'N/A',
+        assetsAllocated: 0,
+        documents: [],
+        activity: [],
+      }, 
+      error: null 
+    };
+  }
+
+  // Try finding in invitations
+  let invData = null;
+  let invError = null;
+  if (id.includes('-')) {
+    const { data, error } = await supabase.from('employee_invitations').select('*').eq('id', id).maybeSingle();
+    invData = data;
+    invError = error;
+  } else {
+    const { data, error } = await supabase.from('employee_invitations').select('*').eq('raw_data->>empId', id).maybeSingle();
+    invData = data;
+    invError = error;
+  }
+  
+  if (invData) {
+      const mapped = {
+        ...invData.raw_data, // Pull in all the raw_data fields so the form fully pre-fills!
+        id: invData.id,
+        empId: invData.raw_data?.empId || invData.id,
+        firstName: invData.first_name || invData.raw_data?.firstName,
+        lastName: invData.last_name || invData.raw_data?.lastName,
+        email: invData.email,
+        officialEmail: invData.email, // mapped for the form
+        phone: invData.phone || invData.raw_data?.phone,
+        department: invData.department || invData.raw_data?.department || '-',
+        designation: invData.designation || invData.raw_data?.designation || '-',
+        status: invData.raw_data?.status || 'Active',
+        leaveBalance: invData.raw_data?.leaveBalance || 0,
+        activeTasks: 0,
+        attendanceScore: 'N/A',
+        assetsAllocated: 0,
+        skills: invData.raw_data?.skills || [],
+        emergency: invData.raw_data?.emergency || [],
+        documents: invData.raw_data?.documents || [],
+        activity: []
+      };
+      return { data: mapped, error: null };
+  }
+
+  return { data: null, error: invError || new Error("Employee not found") };
 };
 
 export const createEmployee = async (employeeData) => {
-  // Create auth user first
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: employeeData.email,
-    password: employeeData.password || Math.random().toString(36).slice(-8),
-    email_confirm: true,
-  });
-  if (authError) return { data: null, error: authError };
-
-  // Create profile
+  // Instead of creating the auth user directly (which is blocked in browsers),
+  // we add them to the invitations table. The database trigger will automatically
+  // create their real profile when they log in for the first time via OTP.
   const { data, error } = await supabase
-    .from('profiles')
-    .insert({ ...employeeData, id: authData.user.id })
+    .from('employee_invitations')
+    .insert({
+      email: employeeData.email,
+      first_name: employeeData.firstName || employeeData.first_name,
+      last_name: employeeData.lastName || employeeData.last_name,
+      department: employeeData.department,
+      designation: employeeData.designation,
+      phone: employeeData.phone,
+      raw_data: employeeData.raw_data
+    })
     .select()
     .single();
+
   return { data, error };
 };
 
 export const updateEmployee = async (id, updates) => {
-  const { data, error } = await supabase
+  const dbUpdates = {};
+  if (updates.firstName !== undefined) dbUpdates.first_name = updates.firstName;
+  if (updates.lastName !== undefined) dbUpdates.last_name = updates.lastName;
+  if (updates.department !== undefined) dbUpdates.department = updates.department;
+  if (updates.designation !== undefined) dbUpdates.designation = updates.designation;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+
+  const { data: prof } = await supabase
     .from('profiles')
-    .update(updates)
-    .eq('id', id)
+    .update(dbUpdates)
+    .or(`id.eq.${id},emp_id.eq.${id}`)
     .select()
-    .single();
-  return { data, error };
+    .maybeSingle();
+
+  if (prof) return { data: prof, error: null };
+
+  let inv = null;
+  if (id.includes('-')) {
+    const { data } = await supabase.from('employee_invitations').select('id, raw_data').eq('id', id).maybeSingle();
+    inv = data;
+  } else {
+    const { data } = await supabase.from('employee_invitations').select('id, raw_data').eq('raw_data->>empId', id).maybeSingle();
+    inv = data;
+  }
+
+  if (inv) {
+    const { data: invUpdated, error: invUpdateErr } = await supabase
+      .from('employee_invitations')
+      .update({
+        ...dbUpdates,
+        raw_data: { ...inv.raw_data, ...(updates.raw_data || updates) }
+      })
+      .eq('id', inv.id)
+      .select()
+      .single();
+    return { data: invUpdated, error: invUpdateErr };
+  }
+
+  return { data: null, error: new Error('Employee not found') };
 };
 
 // ─── DEPARTMENTS ──────────────────────────────────────────────────────────────
@@ -310,16 +442,29 @@ export const createAnnouncement = async (announcement) => {
 // ─── ADMIN DASHBOARD STATS ────────────────────────────────────────────────────
 export const getDashboardStats = async () => {
   const today = new Date().toISOString().split('T')[0];
-  const [employees, attendanceToday, pendingLeaves, openTickets] = await Promise.all([
-    supabase.from('profiles').select('id, status', { count: 'exact' }),
-    supabase.from('attendance').select('id', { count: 'exact' }).eq('date', today),
+  const [employees, invitations, attendanceToday, pendingLeaves, openTickets, leavesToday] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact' }),
+    supabase.from('employee_invitations').select('id', { count: 'exact' }),
+    supabase.from('attendance').select('id, status', { count: 'exact' }).eq('date', today),
     supabase.from('leave_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
     supabase.from('tickets').select('id', { count: 'exact' }).eq('status', 'open'),
+    supabase.from('leave_requests').select('id', { count: 'exact' }).eq('status', 'approved').lte('start_date', today).gte('end_date', today),
   ]);
+
+  const totalEmps = (employees.count || 0) + (invitations.count || 0);
+  const present = attendanceToday.count || 0;
+  const onLeave = leavesToday.count || 0;
+  const absent = Math.max(0, totalEmps - present - onLeave);
+
   return {
-    totalEmployees: employees.count || 0,
-    presentToday: attendanceToday.count || 0,
+    totalEmployees: totalEmps,
+    presentToday: present,
     pendingLeaves: pendingLeaves.count || 0,
     openTickets: openTickets.count || 0,
+    absentToday: absent,
+    onLeaveToday: onLeave,
+    workingNow: present,
+    onBreakNow: 0,
+    lateToday: 0
   };
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, UserCheck, Building, Home, Ticket, ClipboardList,
@@ -8,11 +8,13 @@ import {
 } from 'lucide-react';
 import '../../styles/admin/admin-dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getDashboardStats } from '../../services/adminService';
+import { getDashboardStats, getAllAttendanceToday } from '../../services/adminService';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [stats, setStats] = useState({ totalEmployees: 0, presentToday: 0, pendingLeaves: 0, openTickets: 0 });
+  const [liveEmployees, setLiveEmployees] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const { profile } = useAuth();
 
@@ -24,8 +26,14 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadStats = async () => {
       setLoadingStats(true);
-      const data = await getDashboardStats();
+      const [data, attendanceRes] = await Promise.all([
+        getDashboardStats(),
+        getAllAttendanceToday()
+      ]);
       setStats(data);
+      if (attendanceRes.data) {
+        setLiveEmployees(attendanceRes.data.slice(0, 5)); // Show top 5
+      }
       setLoadingStats(false);
     };
     loadStats();
@@ -120,54 +128,39 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>
-                        <div className="employee-cell">
-                          <img src="https://i.pravatar.cc/150?img=11" alt="Profile" />
-                          <div className="employee-info">
-                            <h4>Rahul Sharma</h4>
-                            <p>EMP-001</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td>Engineering</td>
-                      <td><span className="status-badge working">Working</span></td>
-                      <td>Office</td>
-                      <td>4h 15m</td>
-                      <td>Frontend Development</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div className="employee-cell">
-                          <img src="https://i.pravatar.cc/150?img=5" alt="Profile" />
-                          <div className="employee-info">
-                            <h4>Priya Patel</h4>
-                            <p>EMP-042</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td>Marketing</td>
-                      <td><span className="status-badge meeting">In Meeting</span></td>
-                      <td>WFH</td>
-                      <td>3h 45m</td>
-                      <td>Q3 Planning Sync</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div className="employee-cell">
-                          <img src="https://i.pravatar.cc/150?img=12" alt="Profile" />
-                          <div className="employee-info">
-                            <h4>Amit Kumar</h4>
-                            <p>EMP-028</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td>Sales</td>
-                      <td><span className="status-badge break">On Break</span></td>
-                      <td>Office</td>
-                      <td>5h 20m</td>
-                      <td>Lunch Break</td>
-                    </tr>
+                    {loadingStats ? (
+                      <tr>
+                        <td colSpan="6" style={{textAlign: 'center', padding: '24px', color: '#6b7280'}}>Loading live data...</td>
+                      </tr>
+                    ) : liveEmployees.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{textAlign: 'center', padding: '24px', color: '#6b7280'}}>No live tracking data available</td>
+                      </tr>
+                    ) : (
+                      liveEmployees.map(emp => (
+                        <tr key={emp.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                                {emp.profiles?.first_name?.[0]}{emp.profiles?.last_name?.[0]}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: '500', color: '#111827' }}>{emp.profiles?.first_name} {emp.profiles?.last_name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{emp.profiles?.departments?.name || '-'}</td>
+                          <td>
+                            <span style={{ padding: '4px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: '500', background: emp.status === 'working' ? '#dcfce7' : '#fee2e2', color: emp.status === 'working' ? '#166534' : '#991b1b' }}>
+                              {emp.status === 'working' ? 'Working' : 'Away'}
+                            </span>
+                          </td>
+                          <td>{emp.work_mode === 'remote' ? 'Remote' : 'Office'}</td>
+                          <td>{emp.total_hours ? emp.total_hours.toFixed(1) + ' hrs' : '-'}</td>
+                          <td style={{ color: '#6b7280', fontSize: '14px' }}>Active in IDE</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -181,27 +174,27 @@ const AdminDashboard = () => {
               </div>
               <div className="attendance-overview-grid">
                 <div className="attendance-stat">
-                  <h3>118</h3>
+                  <h3>{loadingStats ? '...' : stats.presentToday}</h3>
                   <p>Present</p>
                 </div>
                 <div className="attendance-stat">
-                  <h3 style={{ color: '#ef4444' }}>6</h3>
+                  <h3 style={{ color: '#ef4444' }}>{loadingStats ? '...' : stats.absentToday}</h3>
                   <p>Absent</p>
                 </div>
                 <div className="attendance-stat">
-                  <h3 style={{ color: '#f97316' }}>12</h3>
+                  <h3 style={{ color: '#f97316' }}>{loadingStats ? '...' : stats.lateToday}</h3>
                   <p>Late</p>
                 </div>
                 <div className="attendance-stat">
-                  <h3>4</h3>
+                  <h3>{loadingStats ? '...' : stats.onLeaveToday}</h3>
                   <p>On Leave</p>
                 </div>
                 <div className="attendance-stat">
-                  <h3 style={{ color: '#22c55e' }}>98</h3>
+                  <h3 style={{ color: '#22c55e' }}>{loadingStats ? '...' : stats.workingNow}</h3>
                   <p>Working</p>
                 </div>
                 <div className="attendance-stat">
-                  <h3 style={{ color: '#3b82f6' }}>20</h3>
+                  <h3 style={{ color: '#3b82f6' }}>{loadingStats ? '...' : stats.onBreakNow}</h3>
                   <p>On Break</p>
                 </div>
               </div>
@@ -213,27 +206,27 @@ const AdminDashboard = () => {
                 <h3 className="admin-card-title">Quick Actions</h3>
               </div>
               <div className="quick-actions-grid">
-                <button className="quick-action-btn">
+                <button className="quick-action-btn" onClick={() => navigate('/admin/employees/add')}>
                   <UserPlus size={24} color="#3b82f6" />
                   Add Employee
                 </button>
-                <button className="quick-action-btn">
+                <button className="quick-action-btn" onClick={() => navigate('/admin/tasks/create')}>
                   <CheckCircle size={24} color="#22c55e" />
                   Create Task
                 </button>
-                <button className="quick-action-btn">
+                <button className="quick-action-btn" onClick={() => navigate('/admin/leave/requests')}>
                   <CalendarIcon size={24} color="#f97316" />
                   Approve Leave
                 </button>
-                <button className="quick-action-btn">
+                <button className="quick-action-btn" onClick={() => navigate('/admin/assets/assign')}>
                   <Package size={24} color="#a855f7" />
                   Issue Asset
                 </button>
-                <button className="quick-action-btn">
+                <button className="quick-action-btn" onClick={() => navigate('/admin/announcements')}>
                   <Megaphone size={24} color="#ef4444" />
                   Publish Announcement
                 </button>
-                <button className="quick-action-btn">
+                <button className="quick-action-btn" onClick={() => navigate('/admin/reports')}>
                   <Download size={24} color="#64748b" />
                   Generate Report
                 </button>
@@ -251,70 +244,8 @@ const AdminDashboard = () => {
                 <Link to="/admin/approvals" className="admin-card-action">View All</Link>
               </div>
               <div className="approval-list">
-                <div className="approval-item">
-                  <div className="approval-info">
-                    <div className="approval-icon"><CalendarIcon size={16} /></div>
-                    <div className="approval-details">
-                      <h4>Leave Request</h4>
-                      <p>Sick Leave • Priya Patel</p>
-                    </div>
-                  </div>
-                  <div className="approval-actions">
-                    <button className="btn-icon approve" title="Approve"><Check size={14} /></button>
-                    <button className="btn-icon reject" title="Reject"><X size={14} /></button>
-                  </div>
-                </div>
-                <div className="approval-item">
-                  <div className="approval-info">
-                    <div className="approval-icon"><FileText size={16} /></div>
-                    <div className="approval-details">
-                      <h4>Worksheet Review</h4>
-                      <p>Jul 15, 2026 • Amit Kumar</p>
-                    </div>
-                  </div>
-                  <div className="approval-actions">
-                    <button className="btn-icon approve" title="Approve"><Check size={14} /></button>
-                    <button className="btn-icon reject" title="Reject"><X size={14} /></button>
-                  </div>
-                </div>
-                <div className="approval-item">
-                  <div className="approval-info">
-                    <div className="approval-icon"><CheckCircle size={16} /></div>
-                    <div className="approval-details">
-                      <h4>Task Review</h4>
-                      <p>Homepage Redesign • Rahul S.</p>
-                    </div>
-                  </div>
-                  <div className="approval-actions">
-                    <button className="btn-icon approve" title="Approve"><Check size={14} /></button>
-                    <button className="btn-icon reject" title="Reject"><X size={14} /></button>
-                  </div>
-                </div>
-                <div className="approval-item">
-                  <div className="approval-info">
-                    <div className="approval-icon"><Package size={16} /></div>
-                    <div className="approval-details">
-                      <h4>Asset Request</h4>
-                      <p>MacBook Pro • Neha G.</p>
-                    </div>
-                  </div>
-                  <div className="approval-actions">
-                    <button className="btn-icon approve" title="Approve"><Check size={14} /></button>
-                    <button className="btn-icon reject" title="Reject"><X size={14} /></button>
-                  </div>
-                </div>
-                <div className="approval-item">
-                  <div className="approval-info">
-                    <div className="approval-icon"><FileBadge size={16} /></div>
-                    <div className="approval-details">
-                      <h4>Document Verification</h4>
-                      <p>Aadhar Card • Vikram S.</p>
-                    </div>
-                  </div>
-                  <div className="approval-actions">
-                    <button className="btn-icon approve" title="Approve"><Check size={14} /></button>
-                    <button className="btn-icon reject" title="Reject"><X size={14} /></button>
-                  </div>
+                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>
+                  No pending approvals
                 </div>
               </div>
             </section>
@@ -325,37 +256,8 @@ const AdminDashboard = () => {
                 <h3 className="admin-card-title">Recent Activities</h3>
               </div>
               <div className="timeline">
-                <div className="timeline-item">
-                  <div className="timeline-icon"><CheckCircle size={16} /></div>
-                  <div className="timeline-content">
-                    <h4>Task Completed</h4>
-                    <p>Rahul Sharma completed "API Integration"</p>
-                    <span className="timeline-time">10 mins ago</span>
-                  </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon" style={{ borderColor: '#22c55e', color: '#22c55e' }}><UserCheck size={16} /></div>
-                  <div className="timeline-content">
-                    <h4>Employee Started Work</h4>
-                    <p>Priya Patel punched in</p>
-                    <span className="timeline-time">45 mins ago</span>
-                  </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon" style={{ borderColor: '#f97316', color: '#f97316' }}><Ticket size={16} /></div>
-                  <div className="timeline-content">
-                    <h4>Ticket Raised</h4>
-                    <p>IT Support: "Monitor not working" by Amit</p>
-                    <span className="timeline-time">2 hours ago</span>
-                  </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon" style={{ borderColor: '#a855f7', color: '#a855f7' }}><Megaphone size={16} /></div>
-                  <div className="timeline-content">
-                    <h4>Announcement Published</h4>
-                    <p>Townhall Meeting Scheduled</p>
-                    <span className="timeline-time">3 hours ago</span>
-                  </div>
+                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>
+                  No recent activities
                 </div>
               </div>
             </section>
@@ -366,35 +268,8 @@ const AdminDashboard = () => {
                 <h3 className="admin-card-title">Today's Calendar</h3>
               </div>
               <div className="calendar-list">
-                <div className="calendar-item">
-                  <div className="date-block">
-                    <span className="month">Aug</span>
-                    <span className="day">04</span>
-                  </div>
-                  <div className="item-content">
-                    <h4>All Hands Meeting</h4>
-                    <p>10:00 AM - 11:30 AM</p>
-                  </div>
-                </div>
-                <div className="calendar-item">
-                  <div className="date-block" style={{ background: '#fef2f2', color: '#ef4444' }}>
-                    <span className="month">Aug</span>
-                    <span className="day">04</span>
-                  </div>
-                  <div className="item-content">
-                    <h4>Rahul's Birthday</h4>
-                    <p>Engineering Team</p>
-                  </div>
-                </div>
-                <div className="calendar-item">
-                  <div className="date-block" style={{ background: '#fff7ed', color: '#f97316' }}>
-                    <span className="month">Aug</span>
-                    <span className="day">15</span>
-                  </div>
-                  <div className="item-content">
-                    <h4>Independence Day</h4>
-                    <p>Company Holiday</p>
-                  </div>
+                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>
+                  No calendar events today
                 </div>
               </div>
             </section>

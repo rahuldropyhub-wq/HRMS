@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, Plus, MoreVertical, Eye, Edit, 
-  UserX, ChevronLeft, ChevronRight, Download, SearchX
+  UserX, UserCheck, ChevronLeft, ChevronRight, Download, SearchX
 } from 'lucide-react';
 import '../../../styles/admin/employee/employee-directory.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-import { getAllEmployees } from '../../../services/adminService';
+import { getAllEmployees, updateEmployee } from '../../../services/adminService';
 
 // Mock Data
 const MOCK_EMPLOYEES = [];
@@ -21,9 +21,11 @@ const getStatusBadgeClass = (status) => {
     default: return 'badge';
   }
 };
-
-const getInitials = (first, last) => `${first[0]}${last[0]}`;
-
+const getInitials = (first, last) => {
+  const f = first ? String(first).trim() : '';
+  const l = last ? String(last).trim() : '';
+  return `${f ? f[0] : ''}${l ? l[0] : ''}`.toUpperCase() || '?';
+};
 const EmployeeDirectory = () => {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
@@ -31,17 +33,19 @@ const EmployeeDirectory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+  const load = async () => {
+    setLoading(true);
+    const { data } = await getAllEmployees();
+    setEmployees(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data } = await getAllEmployees();
-      setEmployees(data || []);
-      setLoading(false);
-    };
     load();
   }, []);
 
@@ -57,11 +61,12 @@ const EmployeeDirectory = () => {
 
   // Filtering Logic
   const filteredEmployees = employees.filter(emp => {
-    const name = `${emp.first_name || ''} ${emp.last_name || ''} ${emp.email || ''}`;
+    const name = `${emp.firstName || ''} ${emp.lastName || ''} ${emp.email || ''}`;
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = deptFilter ? emp.departments?.name === deptFilter : true;
+    const matchesDept = deptFilter ? emp.department === deptFilter : true;
     const matchesStatus = statusFilter ? emp.status === statusFilter : true;
-    return matchesSearch && matchesDept && matchesStatus;
+    const matchesType = typeFilter ? emp.employmentType === typeFilter : true;
+    return matchesSearch && matchesDept && matchesStatus && matchesType;
   });
 
   // Pagination Logic
@@ -79,11 +84,34 @@ const EmployeeDirectory = () => {
     else setActiveDropdown(id);
   };
 
-  const handleAction = (action, id) => {
+  const handleAction = async (action, id) => {
     setActiveDropdown(null);
-    if (action === 'view') navigate(`/admin/employees/${id}`);
-    // Handle other actions as needed
+    if (action === 'view') {
+      navigate(`/admin/employees/${id}`);
+    } else if (action === 'edit') {
+      navigate(`/admin/employees/edit/${id}`);
+    } else if (action === 'deactivate') {
+      if (window.confirm("Are you sure you want to deactivate this employee?")) {
+        await updateEmployee(id, { status: 'Inactive' });
+        setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'Inactive' } : emp));
+      }
+    } else if (action === 'activate') {
+      if (window.confirm("Are you sure you want to activate this employee?")) {
+        await updateEmployee(id, { status: 'Active' });
+        setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'Active' } : emp));
+      }
+    }
   };
+
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter(emp => emp.status === 'Active').length;
+  const onLeaveEmployees = employees.filter(emp => emp.status === 'On Leave').length;
+  const newThisMonth = employees.filter(emp => {
+    if (!emp.created_at) return false;
+    const createdDate = new Date(emp.created_at);
+    const now = new Date();
+    return createdDate.getMonth() === now.getMonth() && createdDate.getFullYear() === now.getFullYear();
+  }).length;
 
   return (
     <motion.div 
@@ -165,19 +193,19 @@ const EmployeeDirectory = () => {
       {/* Stats Row */}
       <div className="stats-row">
         <div className="stat-item">
-          Total: <span>124</span>
+          Total: <span>{totalEmployees}</span>
         </div>
         <div className="stat-divider"></div>
         <div className="stat-item">
-          Active: <span>118</span>
+          Active: <span>{activeEmployees}</span>
         </div>
         <div className="stat-divider"></div>
         <div className="stat-item">
-          On Leave: <span>4</span>
+          On Leave: <span>{onLeaveEmployees}</span>
         </div>
         <div className="stat-divider"></div>
         <div className="stat-item">
-          New This Month: <span>3</span>
+          New This Month: <span>{newThisMonth}</span>
         </div>
       </div>
 
@@ -232,9 +260,15 @@ const EmployeeDirectory = () => {
                           <button className="action-dropdown-item" onClick={() => handleAction('edit', emp.id)}>
                             <Edit size={16} /> Edit Details
                           </button>
-                          <button className="action-dropdown-item danger" onClick={() => handleAction('deactivate', emp.id)}>
-                            <UserX size={16} /> Deactivate
-                          </button>
+                          {emp.status === 'Active' ? (
+                            <button className="action-dropdown-item danger" onClick={() => handleAction('deactivate', emp.id)}>
+                              <UserX size={16} /> Deactivate
+                            </button>
+                          ) : (
+                            <button className="action-dropdown-item" onClick={() => handleAction('activate', emp.id)} style={{ color: '#10b981' }}>
+                              <UserCheck size={16} /> Activate
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -315,7 +349,6 @@ const EmployeeDirectory = () => {
           </div>
         ))}
       </div>
-      
     </motion.div>
   );
 };

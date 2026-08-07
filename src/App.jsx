@@ -75,6 +75,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="employees" element={<EmployeeDirectory />} />
           <Route path="employees/add" element={<AddEmployee />} />
+          <Route path="employees/edit/:id" element={<AddEmployee />} />
           <Route path="employees/:id" element={<EmployeeProfile />} />
           <Route path="employees/documents" element={<EmployeeDocuments />} />
           

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -58,16 +58,93 @@ const EMPLOYEE_DATA = {
   ]
 };
 
-const TABS = ['Personal', 'Company', 'Bank', 'Emergency', 'Documents', 'Skills', 'Activity Log'];
+import { getEmployeeById, updateEmployee } from '../../../services/adminService';
+
+const TABS = ['Personal', 'Company', 'Bank', 'Emergency', 'Documents', 'Activity Log'];
 
 const EmployeeProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Personal');
-  
-  // In a real app we would fetch based on id, here we just use the mock
-  const emp = EMPLOYEE_DATA;
-  const initials = `${emp.firstName[0]}${emp.lastName[0]}`;
+  const [emp, setEmp] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const handleDownload = (doc) => {
+    const link = document.createElement('a');
+    link.href = doc.url;
+    link.download = doc.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleView = (doc) => {
+    try {
+      const base64Data = doc.url;
+      const base64Parts = base64Data.split(',');
+      if (base64Parts.length < 2) return;
+      const mimeString = base64Parts[0].split(':')[1].split(';')[0];
+      const byteString = atob(base64Parts[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (e) {
+      console.error("Error displaying document:", e);
+      alert("Unable to open document. It may be corrupted.");
+    }
+  };
+
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      setLoading(true);
+      const { data, error } = await getEmployeeById(id);
+      if (data) {
+        setEmp(data);
+      } else {
+        console.error("Failed to load employee:", error);
+      }
+      setLoading(false);
+    };
+    fetchEmployee();
+  }, [id]);
+
+  const handleToggleStatus = async () => {
+    const isCurrentlyInactive = emp.status === 'Inactive';
+    const newStatus = isCurrentlyInactive ? (emp.raw_data?.status || 'Active') : 'Inactive';
+    if(window.confirm(`Are you sure you want to ${isCurrentlyInactive ? 'activate' : 'deactivate'} this employee?`)) {
+       const { error } = await updateEmployee(id, { status: newStatus });
+       if (!error) {
+         setEmp(prev => ({ ...prev, status: newStatus }));
+       } else {
+         alert('Failed to update status');
+       }
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: '40px', textAlign: 'center' }}>Loading profile...</div>;
+  }
+
+  if (!emp) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <h2>Employee not found</h2>
+        <button className="btn-secondary" onClick={() => navigate('/admin/employees')}>Back to Directory</button>
+      </div>
+    );
+  }
+
+  const getInitials = (first, last) => {
+    const f = first ? String(first).trim() : '';
+    const l = last ? String(last).trim() : '';
+    return `${f ? f[0] : ''}${l ? l[0] : ''}`.toUpperCase() || '?';
+  };
+  const initials = getInitials(emp.firstName, emp.lastName);
 
   return (
     <motion.div 
@@ -114,11 +191,19 @@ const EmployeeProfile = () => {
           </div>
         </div>
         <div className="profile-actions">
-          <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button 
+            className="btn-secondary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            onClick={() => navigate(`/admin/employees/edit/${emp.id}`)}
+          >
             <Edit size={16} /> Edit Profile
           </button>
-          <button className="btn-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <UserX size={16} /> Deactivate
+          <button 
+            className={emp.status === 'Inactive' ? "btn-secondary" : "btn-danger"}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: emp.status === 'Inactive' ? '#10b981' : undefined, color: emp.status === 'Inactive' ? 'white' : undefined }}
+            onClick={handleToggleStatus}
+          >
+            <UserX size={16} /> {emp.status === 'Inactive' ? 'Activate' : 'Deactivate'}
           </button>
         </div>
       </div>
@@ -244,30 +329,30 @@ const EmployeeProfile = () => {
         )}
 
         {activeTab === 'Documents' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="docs-grid">
-            {emp.documents.map((doc, idx) => (
-              <div key={idx} className="doc-card">
-                <FileText size={32} className="doc-icon" />
-                <div>
-                  <div className="doc-name">{doc.name}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Uploaded: {doc.date}</div>
-                </div>
-                <div className="doc-actions">
-                  <button><Eye size={16} color="#4b5563" /></button>
-                  <button><Download size={16} color="#4b5563" /></button>
-                </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {emp.documents && emp.documents.length > 0 ? (
+              <div className="docs-grid">
+                {emp.documents.map((doc, idx) => (
+                  <div key={idx} className="doc-card">
+                    <FileText size={32} className="doc-icon" />
+                    <div>
+                      <div className="doc-name">{doc.name}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Uploaded: {doc.uploadDate || 'Unknown'}</div>
+                    </div>
+                    <div className="doc-actions" style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => handleView(doc)} title="View Document" style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', borderRadius: '6px', border: 'none', cursor: 'pointer' }}><Eye size={16} color="#4b5563" /></button>
+                      <button onClick={() => handleDownload(doc)} title="Download" style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', borderRadius: '6px', border: 'none', cursor: 'pointer' }}><Download size={16} color="#4b5563" /></button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </motion.div>
-        )}
-
-        {activeTab === 'Skills' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {emp.skills.map((skill, idx) => (
-              <span key={idx} style={{ background: '#eff6ff', color: '#1d4ed8', padding: '6px 12px', borderRadius: '9999px', fontSize: '14px', fontWeight: '500' }}>
-                {skill}
-              </span>
-            ))}
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280', background: '#f9fafb', borderRadius: '12px', border: '1px dashed #d1d5db', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <FileText size={48} color="#9ca3af" style={{ marginBottom: '16px' }} />
+                <h3 style={{ color: '#374151', margin: '0 0 8px 0' }}>No Documents Found</h3>
+                <p style={{ margin: 0 }}>This employee hasn't uploaded any documents yet.</p>
+              </div>
+            )}
           </motion.div>
         )}
 

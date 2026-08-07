@@ -6,9 +6,11 @@ import {
   LogOut, Search, Bell, MessageSquare, ChevronDown, User,
   Menu, X, Mail
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/employee/dashboard.css';
 
 const DashboardLayout = ({ children }) => {
+  const { logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -78,7 +80,9 @@ const DashboardLayout = ({ children }) => {
             </li>
 
             <li className="logout-nav-item">
-              <div className="nav-item-content logout-item"><LogOut size={18} /> Logout</div>
+              <div className="nav-item-content logout-item" onClick={logout} style={{ cursor: 'pointer' }}>
+                <LogOut size={18} /> Logout
+              </div>
             </li>
           </ul>
         </nav>
