@@ -7,6 +7,8 @@ import {
   CheckCircle, ShieldAlert
 } from 'lucide-react';
 import '../../styles/employee/attendance-control.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getTodayAttendance, checkIn, startBreak, endBreak, checkOut } from '../../services/employeeService';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const OFFICE_START = { h: 9, m: 30 };   // 09:30
@@ -78,6 +80,7 @@ const BREAK_REASONS = [
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function AttendanceControlCenter({ compact = false }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Live clock
   const [now, setNow] = useState(new Date());
@@ -105,6 +108,8 @@ export default function AttendanceControlCenter({ compact = false }) {
   const [showWfhModal, setShowWfhModal] = useState(false);
   const [wfhReason, setWfhReason] = useState('Client Meeting');
 
+  const [attendanceId, setAttendanceId] = useState(null);
+
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [breakReason, setBreakReason] = useState('Tea Break');
   const [showEndModal, setShowEndModal] = useState(false);
@@ -116,6 +121,48 @@ export default function AttendanceControlCenter({ compact = false }) {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Hydrate from DB
+  useEffect(() => {
+    const loadAttendance = async () => {
+      if (!user?.id) return;
+      const { data, error } = await getTodayAttendance(user.id);
+      
+      if (data) {
+        setAttendanceId(data.id);
+        
+        if (data.check_in) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const st = new Date(`${todayStr}T${data.check_in}`);
+          setWorkStartTime(st);
+          
+          if (data.check_out) {
+            setStatus('completed');
+            setWorkEndTime(new Date(`${todayStr}T${data.check_out}`));
+          } else {
+            setStatus('working');
+          }
+          
+          if (data.breaks && Array.isArray(data.breaks)) {
+            const parsedBreaks = data.breaks.map(b => ({
+              ...b,
+              start: new Date(`${todayStr}T${b.start}`),
+              end: b.end ? new Date(`${todayStr}T${b.end}`) : null
+            }));
+            setBreaks(parsedBreaks);
+            
+            // Check if there is an ongoing break
+            const ongoingBreak = parsedBreaks.find(b => !b.end);
+            if (ongoingBreak && status !== 'completed') {
+              setStatus('onBreak');
+              setCurrentBreakStart(ongoingBreak.start);
+            }
+          }
+        }
+      }
+    };
+    loadAttendance();
+  }, [user]);
 
   // Live timer calculation
   useEffect(() => {
@@ -158,7 +205,18 @@ export default function AttendanceControlCenter({ compact = false }) {
     }
   };
 
-  const handleStartWork = useCallback((mode, details) => {
+  const handleStartWork = useCallback(async (mode, details) => {
+    if (!user?.id) return;
+    
+    // Call backend
+    const { data, error } = await checkIn(user.id, mode, details.reason, { lat: details.lat, lng: details.lng, address: details.address });
+    if (error) {
+      console.error('Check-in failed:', error);
+      // Fallback to local state if offline or error
+    } else if (data) {
+      setAttendanceId(data.id);
+    }
+
     const t = new Date();
     setWorkStartTime(t);
     setStatus('working');
@@ -175,7 +233,7 @@ export default function AttendanceControlCenter({ compact = false }) {
       time: formatTime(t),
       ts: t,
     }]);
-  }, []);
+  }, [user]);
 
   const handleGpsSuccess = () => {
     handleStartWork('office', {
@@ -200,7 +258,11 @@ export default function AttendanceControlCenter({ compact = false }) {
     setShowBreakModal(true);
   };
 
-  const handleStartBreak = useCallback(() => {
+  const handleStartBreak = useCallback(async () => {
+    if (attendanceId) {
+      await startBreak(attendanceId, breaks, breakReason);
+    }
+
     const t = new Date();
     setCurrentBreakStart(t);
     setStatus('onBreak');
@@ -212,11 +274,16 @@ export default function AttendanceControlCenter({ compact = false }) {
       time: formatTime(t),
       ts: t,
     }]);
-  }, [breakReason]);
+  }, [breakReason, attendanceId, breaks]);
 
-  const handleResumeWork = useCallback(() => {
+  const handleResumeWork = useCallback(async () => {
     const t = new Date();
     const dur = Math.floor((t - currentBreakStart) / 1000);
+    
+    if (attendanceId) {
+      await endBreak(attendanceId, breaks, breaks.length); // Next break index
+    }
+
     setBreaks(prev => [...prev, { start: currentBreakStart, end: t, reason: breakReason, duration: dur }]);
     setCurrentBreakStart(null);
     setStatus('working');
@@ -227,7 +294,7 @@ export default function AttendanceControlCenter({ compact = false }) {
       time: formatTime(t),
       ts: t,
     }]);
-  }, [currentBreakStart, breakReason]);
+  }, [currentBreakStart, breakReason, attendanceId, breaks]);
 
   const handleClickEndWork = () => {
     if (status === 'onBreak') return; // must resume first
@@ -238,7 +305,11 @@ export default function AttendanceControlCenter({ compact = false }) {
     confirmEndWork();
   };
 
-  const confirmEndWork = () => {
+  const confirmEndWork = async () => {
+    if (user?.id) {
+      await checkOut(user.id);
+    }
+    
     const t = new Date();
     setWorkEndTime(t);
     setStatus('completed');

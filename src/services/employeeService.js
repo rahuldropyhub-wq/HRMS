@@ -35,7 +35,18 @@ export const getMyAttendance = async (userId, month, year) => {
   return { data, error };
 };
 
-export const checkIn = async (userId) => {
+export const getTodayAttendance = async (userId) => {
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('employee_id', userId)
+    .eq('date', today)
+    .single();
+  return { data, error };
+};
+
+export const checkIn = async (userId, workMode, wfhReason, gpsLocation) => {
   const today = new Date().toISOString().split('T')[0];
   const now = new Date().toTimeString().slice(0, 5); // HH:MM
 
@@ -50,7 +61,61 @@ export const checkIn = async (userId) => {
 
   const { data, error } = await supabase
     .from('attendance')
-    .insert({ employee_id: userId, date: today, check_in: now, status: 'present' })
+    .insert({ 
+      employee_id: userId, 
+      date: today, 
+      check_in: now, 
+      status: 'present',
+      work_mode: workMode || 'office',
+      wfh_reason: wfhReason || null,
+      gps_location: gpsLocation || null,
+      breaks: [],
+      total_break_hours: 0
+    })
+    .select()
+    .single();
+  return { data, error };
+};
+
+export const startBreak = async (attendanceId, breaksArray, reason) => {
+  const now = new Date().toTimeString().slice(0, 5);
+  const newBreak = { start: now, end: null, reason, duration: 0 };
+  const updatedBreaks = [...(breaksArray || []), newBreak];
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({ breaks: updatedBreaks })
+    .eq('id', attendanceId)
+    .select()
+    .single();
+  return { data, error };
+};
+
+export const endBreak = async (attendanceId, breaksArray, breakIndex) => {
+  const today = new Date().toISOString().split('T')[0];
+  const now = new Date().toTimeString().slice(0, 5);
+  
+  const updatedBreaks = [...breaksArray];
+  const currentBreak = updatedBreaks[breakIndex];
+  
+  if (!currentBreak || currentBreak.end) {
+    return { error: { message: 'Invalid break state.' } };
+  }
+
+  currentBreak.end = now;
+  
+  const startTime = new Date(`${today}T${currentBreak.start}`);
+  const endTime = new Date(`${today}T${now}`);
+  const durationSecs = Math.floor((endTime - startTime) / 1000);
+  currentBreak.duration = durationSecs;
+
+  const totalBreakSecs = updatedBreaks.reduce((acc, b) => acc + (b.duration || 0), 0);
+  const totalBreakHours = (totalBreakSecs / 3600).toFixed(2);
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({ breaks: updatedBreaks, total_break_hours: totalBreakHours })
+    .eq('id', attendanceId)
     .select()
     .single();
   return { data, error };
@@ -62,7 +127,7 @@ export const checkOut = async (userId) => {
 
   const { data: record } = await supabase
     .from('attendance')
-    .select('id, check_in')
+    .select('id, check_in, total_break_hours')
     .eq('employee_id', userId)
     .eq('date', today)
     .single();
@@ -72,11 +137,12 @@ export const checkOut = async (userId) => {
   // Calculate total hours
   const checkInTime = new Date(`${today}T${record.check_in}`);
   const checkOutTime = new Date(`${today}T${now}`);
-  const totalHours = ((checkOutTime - checkInTime) / 3600000).toFixed(2);
+  const grossHours = (checkOutTime - checkInTime) / 3600000;
+  const netHours = Math.max(0, grossHours - (record.total_break_hours || 0)).toFixed(2);
 
   const { data, error } = await supabase
     .from('attendance')
-    .update({ check_out: now, total_hours: totalHours })
+    .update({ check_out: now, total_hours: netHours })
     .eq('id', record.id)
     .select()
     .single();
