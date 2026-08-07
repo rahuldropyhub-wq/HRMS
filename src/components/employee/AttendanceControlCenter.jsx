@@ -4,7 +4,7 @@ import {
   Play, Coffee, SkipForward, Square, CheckCircle2, Clock,
   MapPin, Monitor, Wifi, AlertTriangle, X, Zap, Timer,
   Calendar, TrendingUp, LogIn, LogOut, Briefcase, Building, Home,
-  CheckCircle, ShieldAlert
+  CheckCircle, ShieldAlert, MoreHorizontal, ShieldCheck, ArrowRight
 } from 'lucide-react';
 import '../../styles/employee/attendance-control.css';
 import { useAuth } from '../../contexts/AuthContext';
@@ -378,177 +378,196 @@ export default function AttendanceControlCenter({ compact = false }) {
       </div>
 
       {/* ── MAIN GRID ── */}
-      <div className="acc-main-grid">
+      <div className="acc-dark-theme">
 
         {/* ── COLUMN 1: ACTION CARD ── */}
-        <div className="acc-action-card">
-          <div className="acc-card-title"><Zap size={13} /> Actions</div>
+        <div className="acc-dark-card action-card">
+          <div className="acc-landscape"></div>
+          <div className="acc-dark-header">
+            <div className="acc-dark-title">
+              <div className="acc-icon-box lightning">
+                <Zap size={14} fill="currentColor" />
+              </div>
+              ACTIONS
+            </div>
+            <MoreHorizontal size={20} color="#64748b" style={{cursor: 'pointer'}} />
+          </div>
 
-          {status === 'notStarted' && (
-            <div className="acc-not-started-hero">
-              <div className="acc-not-started-icon">
-                <Briefcase size={28} color="#16a34a" />
-              </div>
-              <h3>Ready to Start?</h3>
-              <p>Click below to record your office check-in.</p>
-              <button className="acc-btn start-work" onClick={handleInitiateWork}>
-                <Play size={18} /> Start Work
-              </button>
+          <div className="acc-hero-section">
+            <div className="glowing-ring" style={status === 'working' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #4ade80, #10b981) border-box', boxShadow: '0 0 30px rgba(34,197,94,0.2), inset 0 0 20px rgba(34,197,94,0.1)'} : status === 'onBreak' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #c084fc, #a855f7) border-box', boxShadow: '0 0 30px rgba(168,85,247,0.2), inset 0 0 20px rgba(168,85,247,0.1)'} : {}}>
+              {status === 'notStarted' && <Briefcase size={40} strokeWidth={1.5} color="#00f2fe" />}
+              {status === 'working' && <Clock size={40} strokeWidth={1.5} color="#4ade80" />}
+              {status === 'onBreak' && <Coffee size={40} strokeWidth={1.5} color="#c084fc" />}
+              {status === 'completed' && <CheckCircle2 size={40} strokeWidth={1.5} color="#00f2fe" />}
             </div>
-          )}
-
-          {status === 'working' && (
-            <>
-              <div className="acc-alert success" style={{ marginBottom: 16 }}>
-                <CheckCircle2 size={14} />
-                Checked in at {workStartTime ? formatTime(workStartTime) : '--'}
-              </div>
-              <button className="acc-btn start-break" onClick={handleOpenBreakModal}>
-                <Coffee size={18} /> Start Break
-              </button>
-              <button className="acc-btn end-work" style={{ marginTop: 10 }} onClick={handleClickEndWork}>
-                <Square size={16} /> End Work
-              </button>
-            </>
-          )}
-
-          {status === 'onBreak' && (
-            <>
-              <div className="acc-alert warn" style={{ marginBottom: 16 }}>
-                <Coffee size={14} />
-                Break started at {currentBreakStart ? formatTime(currentBreakStart) : '--'}
-              </div>
-              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '14px', textAlign: 'center', marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: '#9a3412', fontWeight: 600, marginBottom: 6 }}>BREAK TIMER</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#ea580c', fontVariantNumeric: 'tabular-nums' }}>
-                  {currentBreakStart ? formatDuration(Math.floor((now - currentBreakStart) / 1000)) : '00h 00m 00s'}
-                </div>
-              </div>
-              <button className="acc-btn resume-work" onClick={handleResumeWork}>
-                <SkipForward size={18} /> Resume Work
-              </button>
-              <button className="acc-btn end-work" style={{ marginTop: 10 }} disabled>
-                <Square size={16} /> End Work (Resume First)
-              </button>
-            </>
-          )}
-
-          {status === 'completed' && (
-            <>
-              <div className="acc-alert success" style={{ marginBottom: 16 }}>
-                <CheckCircle2 size={14} /> Work session completed!
-              </div>
-              <button className="acc-btn completed-btn" disabled>
-                <CheckCircle2 size={16} /> Session Closed
-              </button>
-              <div style={{ marginTop: 14, fontSize: 12, color: '#6b7280', textAlign: 'center' }}>
-                Checked out at {workEndTime ? formatTime(workEndTime) : '--'}
-              </div>
-            </>
-          )}
-
-          {/* Breaks History */}
-          {breaks.length > 0 && (
-            <div style={{ marginTop: 16, borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 8 }}>
-                Breaks Taken ({breaks.length})
-              </div>
-              {breaks.map((b, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
-                  <span>#{i + 1} {b.reason}</span>
-                  <span style={{ color: '#ea580c', fontWeight: 600 }}>{formatHM(b.duration)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── COLUMN 2: SESSION INFO ── */}
-        <div className="acc-card">
-          <div className="acc-card-title"><Timer size={13} /> Work Session</div>
-          <div className="acc-session-rows">
-            <div className="acc-session-row">
-              <span className="acc-session-label"><LogIn size={12} style={{ display: 'inline', marginRight: 4 }} />Check In</span>
-              <span className="acc-session-value">{workStartTime ? formatTime(workStartTime) : <span className="gray">—</span>}</span>
-            </div>
-            <div className="acc-session-row">
-              <span className="acc-session-label">Office Timing</span>
-              <span className="acc-session-value">09:30 AM – 06:30 PM</span>
-            </div>
-            <div className="acc-session-row">
-              <span className="acc-session-label">Expected Logout</span>
-              <span className="acc-session-value">06:30 PM</span>
-            </div>
-            <div className="acc-session-row">
-              <span className="acc-session-label">Current Working Time</span>
-              <span className={`acc-session-value ${workStartTime ? 'working-color' : 'gray'}`}>
-                {workStartTime ? formatDuration(totalWorkSecs) : '—'}
-              </span>
-            </div>
-            <div className="acc-session-row">
-              <span className="acc-session-label">Break Time</span>
-              <span className={`acc-session-value ${totalBreakSecs > 0 ? 'break-color' : 'gray'}`}>
-                {totalBreakSecs > 0 ? formatDuration(totalBreakSecs) : '—'}
-              </span>
-            </div>
-            <div className="acc-session-row">
-              <span className="acc-session-label"><TrendingUp size={12} style={{ display: 'inline', marginRight: 4 }} />Net Working Time</span>
-              <span className={`acc-session-value ${netWorkSecs > 0 ? 'net-color' : 'gray'}`}>
-                {netWorkSecs > 0 ? formatHM(netWorkSecs) : '—'}
-              </span>
-            </div>
-            {lateMinutes && (
-              <div className="acc-session-row">
-                <span className="acc-session-label">Late Login</span>
-                <span className="acc-session-value late-color">+{lateMinutes} min</span>
-              </div>
-            )}
-            {overtimeMinutes && (
-              <div className="acc-session-row">
-                <span className="acc-session-label">Overtime</span>
-                <span className="acc-session-value overtime-color">+{formatHM(overtimeMinutes * 60)}</span>
-              </div>
-            )}
-            {earlyMinutes && (
-              <div className="acc-session-row">
-                <span className="acc-session-label">Early Logout</span>
-                <span className="acc-session-value late-color">−{earlyMinutes} min</span>
-              </div>
-            )}
-            {workStartTime && (
+            
+            {status === 'notStarted' && (
               <>
-                <div className="acc-session-row">
-                  <span className="acc-session-label">Work Mode</span>
-                  <span className="acc-session-value" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {workMode === 'office' ? <Building size={14} color="#3b82f6" /> : <Home size={14} color="#8b5cf6" />}
-                    {workMode === 'office' ? 'Work From Office' : 'Work From Home'}
-                  </span>
-                </div>
-                {workMode === 'home' && locationDetails?.reason && (
-                  <div className="acc-session-row">
-                    <span className="acc-session-label">Reason</span>
-                    <span className="acc-session-value">{locationDetails.reason}</span>
-                  </div>
-                )}
-                <div className="acc-session-row" style={{ borderBottom: 'none' }}>
-                  <div className="acc-device-info" style={{ width: '100%' }}>
-                    <div className="acc-device-row"><Monitor size={12} /> <span>Chrome / Windows 11</span></div>
-                    <div className="acc-device-row"><Wifi size={12} /> <span>192.168.1.42</span></div>
-                    <div className="acc-device-row">
-                      <MapPin size={12} /> 
-                      <span>{locationDetails?.address || 'Hyderabad, India'}</span>
-                    </div>
-                    {locationDetails?.lat && (
-                      <div className="acc-device-row" style={{ fontSize: 10, color: '#9ca3af', marginTop: -4, marginLeft: 20 }}>
-                        Lat: {locationDetails.lat}, Lng: {locationDetails.lng}
-                      </div>
-                    )}
-                  </div>
+                <h3>Ready to Start?</h3>
+                <p>Click below to record your office check-in.</p>
+                <button className="acc-neon-btn" onClick={handleInitiateWork}>
+                  <Play size={18} fill="currentColor" /> START WORK
+                </button>
+              </>
+            )}
+
+            {status === 'working' && (
+              <>
+                <h3>Checked In</h3>
+                <p>You are currently logged in and working.</p>
+                <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                  <button className="acc-neon-btn" style={{ background: 'linear-gradient(to right, #f59e0b, #fbbf24)', color: '#000', padding: '12px 20px', fontSize: 13 }} onClick={handleOpenBreakModal}>
+                    <Coffee size={16} /> Break
+                  </button>
+                  <button className="acc-neon-btn" style={{ background: 'linear-gradient(to right, #ef4444, #f87171)', color: '#fff', padding: '12px 20px', fontSize: 13 }} onClick={handleClickEndWork}>
+                    <Square size={16} fill="currentColor" /> End Work
+                  </button>
                 </div>
               </>
             )}
+
+            {status === 'onBreak' && (
+              <>
+                <h3>On Break</h3>
+                <p>Your break timer is currently running.</p>
+                <button className="acc-neon-btn" style={{ background: 'linear-gradient(to right, #a855f7, #c084fc)', color: '#fff' }} onClick={handleResumeWork}>
+                  <SkipForward size={18} fill="currentColor" /> RESUME WORK
+                </button>
+              </>
+            )}
+
+            {status === 'completed' && (
+              <>
+                <h3>Session Closed</h3>
+                <p>Great job! Your attendance is recorded for today.</p>
+                <button className="acc-neon-btn" disabled>
+                  <CheckCircle2 size={18} /> COMPLETED
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="acc-mini-cards">
+            <div className="acc-mini-card">
+              <div className="acc-mini-icon purple">
+                <MapPin size={18} />
+              </div>
+              <h4>Smart Location</h4>
+              <p>Auto GPS Tracking</p>
+            </div>
+            <div className="acc-mini-card">
+              <div className="acc-mini-icon green">
+                <ShieldCheck size={18} />
+              </div>
+              <h4>Secure Check-In</h4>
+              <p>100% Verified</p>
+            </div>
+            <div className="acc-mini-card">
+              <div className="acc-mini-icon orange">
+                <Clock size={18} />
+              </div>
+              <h4>Live Sync</h4>
+              <p>Real-time Updates</p>
+            </div>
           </div>
         </div>
+
+        {/* ── COLUMN 2: SESSION INFO ── */}
+        <div className="acc-dark-card session-card">
+          <div className="acc-dark-header">
+            <div className="acc-dark-title">
+              <div className="acc-icon-box timer">
+                <Timer size={14} />
+              </div>
+              WORK SESSION
+            </div>
+            <MoreHorizontal size={20} color="#64748b" style={{cursor: 'pointer'}} />
+          </div>
+
+          <div className="acc-session-list">
+            <div className="acc-timeline-track"></div>
+
+            <div className="acc-session-row-dark">
+              <div className="acc-row-icon green">
+                <ArrowRight size={16} />
+              </div>
+              <div className="acc-row-content">
+                <span className="acc-row-label">Check In</span>
+                {workStartTime ? (
+                  <span className="acc-row-value">{formatTime(workStartTime)}</span>
+                ) : (
+                  <span className="acc-pill red">Not Checked In</span>
+                )}
+              </div>
+            </div>
+
+            <div className="acc-session-row-dark">
+              <div className="acc-row-icon blue">
+                <Building size={16} />
+              </div>
+              <div className="acc-row-content">
+                <span className="acc-row-label">Office Timing</span>
+                <span className="acc-row-value">
+                  09:30 AM – 06:30 PM
+                  <span className="sub">( 9h 0m Total )</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="acc-session-row-dark">
+              <div className="acc-row-icon teal">
+                <Clock size={16} />
+              </div>
+              <div className="acc-row-content">
+                <span className="acc-row-label">Expected Logout</span>
+                <span className="acc-row-value teal">06:30 PM</span>
+              </div>
+            </div>
+
+            <div className="acc-session-row-dark">
+              <div className="acc-row-icon orange">
+                <Timer size={16} />
+              </div>
+              <div className="acc-row-content">
+                <span className="acc-row-label">Current Working Time</span>
+                {workStartTime ? (
+                  <span className="acc-row-value">{formatDuration(totalWorkSecs)}</span>
+                ) : (
+                  <span className="acc-row-value muted">—<span className="sub">Not Started</span></span>
+                )}
+              </div>
+            </div>
+
+            <div className="acc-session-row-dark">
+              <div className="acc-row-icon purple">
+                <Coffee size={16} />
+              </div>
+              <div className="acc-row-content">
+                <span className="acc-row-label">Break Time</span>
+                {workStartTime ? (
+                  <span className="acc-row-value">{formatDuration(totalBreakSecs)}</span>
+                ) : (
+                  <span className="acc-row-value muted">—<span className="sub">Not Started</span></span>
+                )}
+              </div>
+            </div>
+
+            <div className="acc-session-row-dark" style={{ borderBottom: 'none' }}>
+              <div className="acc-row-icon pink">
+                <TrendingUp size={16} />
+              </div>
+              <div className="acc-row-content">
+                <span className="acc-row-label">Net Working Time</span>
+                {workStartTime ? (
+                  <span className="acc-row-value">{formatHM(netWorkSecs)}</span>
+                ) : (
+                  <span className="acc-row-value muted">—<span className="sub">Not Started</span></span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
         {/* ── COLUMN 3: TIMELINE ── */}
         <div className="acc-card">
@@ -609,7 +628,7 @@ export default function AttendanceControlCenter({ compact = false }) {
             </div>
           )}
         </div>
-      </div>
+        
 
       {/* ── SUMMARY STRIP ── */}
       {!compact && (
