@@ -38,6 +38,14 @@ function formatHM(totalSeconds) {
   return `${pad(h)}h ${pad(m)}m`;
 }
 
+function formatDurationDigital(seconds) {
+  if (seconds < 0) seconds = 0;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
 function formatDateFull(date) {
   return date.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 }
@@ -78,8 +86,8 @@ const BREAK_REASONS = [
 ];
 
 // ─── Circular Timer Helper ──────────────────────────────────────────────────
-function CircularTimer({ seconds, color }) {
-  const radius = 60;
+function CircularTimer({ seconds, color, backgroundRingColor }) {
+  const radius = 70;
   const circumference = 2 * Math.PI * radius;
   // assuming 9 hours (32400 seconds) is 100%
   const progress = Math.min(seconds / 32400, 1);
@@ -91,23 +99,24 @@ function CircularTimer({ seconds, color }) {
   const timeStr = `${pad(h)}:${pad(m)}:${pad(s)}`;
 
   return (
-    <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, marginTop: -10 }}>
-      <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
-        <circle cx="70" cy="70" r="60" stroke="rgba(255,255,255,0.05)" strokeWidth="10" fill="none" />
+    <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
+        <circle cx="80" cy="80" r="70" stroke={backgroundRingColor} strokeWidth="14" fill="none" />
         <circle 
-          cx="70" cy="70" r="60" 
+          cx="80" cy="80" r="70" 
           stroke={color} 
-          strokeWidth="10" 
+          strokeWidth="14" 
           fill="none" 
           strokeDasharray={circumference} 
           strokeDashoffset={offset} 
           strokeLinecap="round" 
-          style={{ transition: 'stroke-dashoffset 1s linear', filter: `drop-shadow(0 0 8px ${color})` }}
+          style={{ transition: 'stroke-dashoffset 1s linear' }}
         />
       </svg>
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontVariantNumeric: 'tabular-nums', letterSpacing: 1 }}>{timeStr}</div>
-        <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Hrs Today</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', fontVariantNumeric: 'tabular-nums', letterSpacing: 1 }}>{timeStr}</div>
+        <div style={{ fontSize: 13, color: '#475569', fontWeight: 600, marginTop: 4 }}>Hrs</div>
+        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Today</div>
       </div>
     </div>
   );
@@ -365,252 +374,99 @@ export default function AttendanceControlCenter({ compact = false }) {
   const earlyMinutes = workEndTime ? getEarlyLogoutInfo(workEndTime) : null;
   const overtimeMinutes = workEndTime ? getOvertimeInfo(workEndTime) : null;
   const netWorkSecs = Math.max(0, totalWorkSecs);
+  const overtimeSecs = Math.max(0, totalWorkSecs - (9 * 3600));
 
   const expectedLogout = () => {
     if (!workStartTime) return `${pad(OFFICE_END.h > 12 ? OFFICE_END.h - 12 : OFFICE_END.h)}:${pad(OFFICE_END.m)} PM`;
     return `06:30 PM`;
   };
 
-  // ── Status Label ──
-  const statusMeta = {
-    notStarted: { label: 'Not Started', cls: 'not-started' },
-    working: { label: 'Working', cls: 'working' },
-    onBreak: { label: 'On Break', cls: 'on-break' },
-    completed: { label: 'Completed', cls: 'completed' },
-  }[status];
-
-  // ── Current time string ──
-  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
-
   return (
     <div className="acc-wrapper">
 
-      {/* ── STATUS BAR ── */}
-      <div className="acc-status-bar">
-        <div className="acc-status-left">
-          <div className="acc-status-title">Attendance Control Center</div>
-          <div className={`acc-status-badge ${statusMeta.cls}`}>
-            <span className="acc-status-dot" />
-            {statusMeta.label}
+      <div className="acc-light-overview">
+        {/* Header */}
+        <div className="acc-lo-header">
+          <div className="acc-lo-title">
+            <Briefcase size={18} fill="currentColor" strokeWidth={0} color="#0f172a" />
+            Attendance Overview
           </div>
-          {lateMinutes && status !== 'notStarted' && (
-            <div className="acc-alert warn" style={{ padding: '4px 10px', fontSize: 12 }}>
-              <AlertTriangle size={13} /> Late by {lateMinutes} min
-            </div>
-          )}
-          {status === 'completed' && (
-            <div className="acc-alert success" style={{ padding: '4px 10px', fontSize: 12 }}>
-              <CheckCircle2 size={13} /> Attendance Closed
-            </div>
-          )}
+          <a className="acc-lo-link">View All</a>
         </div>
-        <div className="acc-status-right">
-          <div className="acc-date-time">
-            <div className="acc-live-time">{timeStr} <span style={{ fontSize: 13, fontWeight: 500 }}>{ampm}</span></div>
-            <div className="acc-live-date">{formatDateFull(now)}</div>
+
+        {/* Body */}
+        <div className="acc-lo-body">
+          {/* Timer */}
+          <div className="acc-lo-timer-wrapper">
+            <CircularTimer 
+              seconds={status === 'onBreak' ? Math.floor((now - currentBreakStart) / 1000) : totalWorkSecs} 
+              color={status === 'onBreak' ? '#f59e0b' : '#10b981'} 
+              backgroundRingColor={status === 'onBreak' ? '#fef3c7' : '#d1fae5'} 
+            />
           </div>
+
+          {/* Stats */}
+          <div className="acc-lo-stats">
+            <div className="acc-lo-stat-row">
+              <span className="acc-lo-stat-label">Check In</span>
+              <span className="acc-lo-stat-value green">{workStartTime ? formatTime(workStartTime) : '--:--'}</span>
+            </div>
+            <div className="acc-lo-stat-row">
+              <span className="acc-lo-stat-label">Check Out</span>
+              <span className="acc-lo-stat-value">{workEndTime ? formatTime(workEndTime) : '--:-- --'}</span>
+            </div>
+            <div className="acc-lo-stat-row">
+              <span className="acc-lo-stat-label">Break Time</span>
+              <span className="acc-lo-stat-value">{totalBreakSecs > 0 ? formatDurationDigital(totalBreakSecs) : '00:00'}</span>
+            </div>
+            <div className="acc-lo-divider" />
+            <div className="acc-lo-stat-row">
+              <span className="acc-lo-stat-label">Working Time</span>
+              <span className="acc-lo-stat-value">{totalWorkSecs > 0 ? formatDurationDigital(totalWorkSecs) : '00:00'}</span>
+            </div>
+            <div className="acc-lo-stat-row">
+              <span className="acc-lo-stat-label">Overtime</span>
+              <span className="acc-lo-stat-value green">{overtimeSecs > 0 ? formatDurationDigital(overtimeSecs) : '00:00'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="acc-lo-footer">
+          <div className="acc-lo-location">
+            <MapPin size={16} strokeWidth={2.5} /> Office
+          </div>
+          <div className="acc-lo-status">
+            On Time <div className="acc-lo-dot" />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="acc-lo-btn-container">
+          {status === 'notStarted' && (
+            <button className="acc-lo-btn primary" onClick={handleInitiateWork}>
+              <Play size={16} fill="currentColor" /> Start Work
+            </button>
+          )}
+          {status === 'working' && (
+            <>
+              <button className="acc-lo-btn break" onClick={handleOpenBreakModal}>
+                <Coffee size={16} /> Break
+              </button>
+              <button className="acc-lo-btn end" onClick={handleClickEndWork}>
+                <Square size={16} fill="currentColor" /> End Work
+              </button>
+            </>
+          )}
+          {status === 'onBreak' && (
+            <button className="acc-lo-btn primary" onClick={handleResumeWork}>
+              <Play size={16} fill="currentColor" /> Resume Work
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ── MAIN GRID ── */}
-      <div className="acc-dark-theme">
-
-        {/* ── COLUMN 1: ACTION CARD ── */}
-        <div className="acc-dark-card action-card">
-          <div className="acc-landscape"></div>
-          <div className="acc-dark-header">
-            <div className="acc-dark-title">
-              <div className="acc-icon-box lightning">
-                <Zap size={14} fill="currentColor" />
-              </div>
-              ACTIONS
-            </div>
-            <MoreHorizontal size={20} color="#64748b" style={{cursor: 'pointer'}} />
-          </div>
-
-          <div className="acc-hero-section">
-            {status === 'notStarted' ? (
-              <img src="/assets/images/neon-briefcase-3d.png" alt="3D Neon Briefcase" style={{ width: '160px', height: '160px', objectFit: 'cover', mixBlendMode: 'screen', marginBottom: '10px' }} />
-            ) : status === 'working' ? (
-              <CircularTimer seconds={totalWorkSecs} color="#4ade80" />
-            ) : status === 'onBreak' ? (
-              <CircularTimer seconds={Math.floor((now - currentBreakStart) / 1000)} color="#c084fc" />
-            ) : (
-              <div className="glowing-ring" style={{background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #00f2fe, #4facfe) border-box', boxShadow: '0 0 30px rgba(0,242,254,0.2), inset 0 0 20px rgba(0,242,254,0.1)'}}>
-                <CheckCircle2 size={40} strokeWidth={1.5} color="#00f2fe" />
-              </div>
-            )}
-            
-            {status === 'notStarted' && (
-              <>
-                <h3>Ready to Start?</h3>
-                <p>Click below to record your office check-in.</p>
-                <button className="acc-neon-btn" onClick={handleInitiateWork}>
-                  <Play size={18} fill="currentColor" /> START WORK
-                </button>
-              </>
-            )}
-
-            {status === 'working' && (
-              <>
-                <h3>Checked In</h3>
-                <p>You are currently logged in and working.</p>
-                <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                  <button className="acc-neon-btn" style={{ background: 'linear-gradient(to right, #f59e0b, #fbbf24)', color: '#000', padding: '12px 20px', fontSize: 13 }} onClick={handleOpenBreakModal}>
-                    <Coffee size={16} /> Break
-                  </button>
-                  <button className="acc-neon-btn" style={{ background: 'linear-gradient(to right, #ef4444, #f87171)', color: '#fff', padding: '12px 20px', fontSize: 13 }} onClick={handleClickEndWork}>
-                    <Square size={16} fill="currentColor" /> End Work
-                  </button>
-                </div>
-              </>
-            )}
-
-            {status === 'onBreak' && (
-              <>
-                <h3>On Break</h3>
-                <p>Your break timer is currently running.</p>
-                <button className="acc-neon-btn" style={{ background: 'linear-gradient(to right, #a855f7, #c084fc)', color: '#fff' }} onClick={handleResumeWork}>
-                  <SkipForward size={18} fill="currentColor" /> RESUME WORK
-                </button>
-              </>
-            )}
-
-            {status === 'completed' && (
-              <>
-                <h3>Session Closed</h3>
-                <p>Great job! Your attendance is recorded for today.</p>
-                <button className="acc-neon-btn" disabled>
-                  <CheckCircle2 size={18} /> COMPLETED
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="acc-mini-cards">
-            <div className="acc-mini-card">
-              <div className="acc-mini-icon purple">
-                <MapPin size={18} />
-              </div>
-              <h4>Smart Location</h4>
-              <p>Auto GPS Tracking</p>
-            </div>
-            <div className="acc-mini-card">
-              <div className="acc-mini-icon green">
-                <ShieldCheck size={18} />
-              </div>
-              <h4>Secure Check-In</h4>
-              <p>100% Verified</p>
-            </div>
-            <div className="acc-mini-card">
-              <div className="acc-mini-icon orange">
-                <Clock size={18} />
-              </div>
-              <h4>Live Sync</h4>
-              <p>Real-time Updates</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── COLUMN 2: SESSION INFO ── */}
-        <div className="acc-dark-card session-card">
-          <div className="acc-dark-header">
-            <div className="acc-dark-title">
-              <div className="acc-icon-box timer">
-                <Timer size={14} />
-              </div>
-              WORK SESSION
-            </div>
-            <MoreHorizontal size={20} color="#64748b" style={{cursor: 'pointer'}} />
-          </div>
-
-          <div className="acc-session-list">
-            <div className="acc-timeline-track"></div>
-
-            <div className="acc-session-row-dark">
-              <div className="acc-row-icon green">
-                <ArrowRight size={16} />
-              </div>
-              <div className="acc-row-content">
-                <span className="acc-row-label">Check In</span>
-                {workStartTime ? (
-                  <span className="acc-row-value">{formatTime(workStartTime)}</span>
-                ) : (
-                  <span className="acc-pill red">Not Checked In</span>
-                )}
-              </div>
-            </div>
-
-            <div className="acc-session-row-dark">
-              <div className="acc-row-icon blue">
-                <Building size={16} />
-              </div>
-              <div className="acc-row-content">
-                <span className="acc-row-label">Office Timing</span>
-                <span className="acc-row-value">
-                  09:30 AM – 06:30 PM
-                  <span className="sub">( 9h 0m Total )</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="acc-session-row-dark">
-              <div className="acc-row-icon teal">
-                <Clock size={16} />
-              </div>
-              <div className="acc-row-content">
-                <span className="acc-row-label">Expected Logout</span>
-                <span className="acc-row-value teal">06:30 PM</span>
-              </div>
-            </div>
-
-            <div className="acc-session-row-dark">
-              <div className="acc-row-icon orange">
-                <Timer size={16} />
-              </div>
-              <div className="acc-row-content">
-                <span className="acc-row-label">Current Working Time</span>
-                {workStartTime ? (
-                  <span className="acc-row-value">{formatDuration(totalWorkSecs)}</span>
-                ) : (
-                  <span className="acc-row-value muted">—<span className="sub">Not Started</span></span>
-                )}
-              </div>
-            </div>
-
-            <div className="acc-session-row-dark">
-              <div className="acc-row-icon purple">
-                <Coffee size={16} />
-              </div>
-              <div className="acc-row-content">
-                <span className="acc-row-label">Break Time</span>
-                {workStartTime ? (
-                  <span className="acc-row-value">{formatDuration(totalBreakSecs)}</span>
-                ) : (
-                  <span className="acc-row-value muted">—<span className="sub">Not Started</span></span>
-                )}
-              </div>
-            </div>
-
-            <div className="acc-session-row-dark" style={{ borderBottom: 'none' }}>
-              <div className="acc-row-icon pink">
-                <TrendingUp size={16} />
-              </div>
-              <div className="acc-row-content">
-                <span className="acc-row-label">Net Working Time</span>
-                {workStartTime ? (
-                  <span className="acc-row-value">{formatHM(netWorkSecs)}</span>
-                ) : (
-                  <span className="acc-row-value muted">—<span className="sub">Not Started</span></span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-        {/* ── COLUMN 3: TIMELINE ── */}
+      {/* ── COLUMN 3: TIMELINE ── */}
         <div className="acc-card">
           <div className="acc-card-title"><Calendar size={13} /> Today's Timeline</div>
           {timeline.length === 0 ? (
