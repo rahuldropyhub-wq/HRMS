@@ -15,7 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 function AdminLogin() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, mockLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -124,8 +124,20 @@ function AdminLogin() {
             </div>
 
             <button type="submit" className="admin-auth-submit-btn" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Secure Login'}
+              {loading ? 'Authenticating...' : 'Login to Dashboard'}
               {!loading && <ArrowRight size={18} />}
+            </button>
+
+            <button 
+              type="button" 
+              className="admin-auth-submit-btn" 
+              style={{ backgroundColor: '#10b981', marginTop: '10px' }}
+              onClick={() => {
+                mockLogin('admin');
+                navigate('/admin/dashboard');
+              }}
+            >
+              Bypass Login (Test UI)
             </button>
           </form>
 

@@ -17,7 +17,7 @@ import { Key } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
-  const { loginWithOtp } = useAuth();
+  const { loginWithOtp, mockLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -130,6 +130,18 @@ function Login() {
             <button type="submit" className="auth-submit-btn" disabled={loading || success}>
               {loading ? 'Sending...' : 'Send Magic Link (OTP)'}
               {!loading && <ArrowRight size={18} />}
+            </button>
+            
+            <button 
+              type="button" 
+              className="auth-submit-btn" 
+              style={{ backgroundColor: '#10b981', marginTop: '10px' }}
+              onClick={() => {
+                mockLogin('employee');
+                navigate('/dashboard');
+              }}
+            >
+              Bypass Login (Test UI)
             </button>
           </form>
 

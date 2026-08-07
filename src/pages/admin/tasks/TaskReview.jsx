@@ -5,13 +5,7 @@ import '../../../styles/admin/tasks/task-review.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import ActionBtn from '../../../components/admin/ActionBtn';
 
-const MOCK_REVIEW_TASKS = [
-  { id: 'TSK-003', title: 'Dashboard Charts', project: 'CRM System', assignee: 'Priya Patel', avatar: 'PP', completedOn: '05 Aug 2026, 14:30', timeTaken: '4.5 hrs', status: 'Under Review', description: 'Implement Recharts for the main dashboard including bar and line graphs.', notes: 'Completed as requested. Had to adjust the padding on the bar chart to fit mobile screens.', attachments: [{ name: 'chart_screenshot.png', size: '1.2 MB' }] },
-  { id: 'TSK-007', title: 'Database Migration', project: 'CRM System', assignee: 'Rohan Verma', avatar: 'RV', completedOn: '04 Aug 2026, 18:15', timeTaken: '12.0 hrs', status: 'Under Review', description: 'Migrate old user data to the new PostgreSQL schema.', notes: 'All records migrated successfully. Found 3 corrupted rows which I skipped and logged.', attachments: [{ name: 'migration_log.txt', size: '45 KB' }] },
-  { id: 'TSK-013', title: 'Social Media Assets', project: 'Marketing Campaign', assignee: 'Anjali Desai', avatar: 'AD', completedOn: '05 Aug 2026, 09:45', timeTaken: '3.0 hrs', status: 'Under Review', description: 'Create 3 Instagram posts and 1 LinkedIn banner for the new campaign.', notes: 'Designs attached. Kept the brand colors prominent as requested.', attachments: [{ name: 'ig_posts.zip', size: '15.4 MB' }, { name: 'linkedin_banner.png', size: '2.1 MB' }] },
-  { id: 'TSK-022', title: 'Update Privacy Policy', project: 'Website Redesign', assignee: 'Neha Gupta', avatar: 'NG', completedOn: '03 Aug 2026, 11:20', timeTaken: '1.5 hrs', status: 'Under Review', description: 'Update the legal text on the privacy policy page based on new compliance rules.', notes: 'Text updated and reviewed by legal team.', attachments: [] },
-  { id: 'TSK-025', title: 'Optimize Hero Image', project: 'Website Redesign', assignee: 'Amit Kumar', avatar: 'AK', completedOn: '02 Aug 2026, 16:00', timeTaken: '2.0 hrs', status: 'Under Review', description: 'Convert hero image to WebP and ensure it loads under 1s on 3G.', notes: 'Done. Current size is 120KB.', attachments: [{ name: 'hero_opt.webp', size: '120 KB' }] },
-];
+const MOCK_REVIEW_TASKS = [];
 
 const TaskReview = () => {
   const [tasks, setTasks] = useState(MOCK_REVIEW_TASKS);

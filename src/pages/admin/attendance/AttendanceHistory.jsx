@@ -9,16 +9,7 @@ import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 
 // Mock Data
-const MOCK_HISTORY = [
-  { id: 1, empName: 'Rahul Sharma', empId: 'EMP-001', dept: 'Engineering', date: '05 Aug 2026', checkIn: '09:02 AM', checkOut: '-', breakHrs: '0:30', workHrs: '4:15', mode: 'Office', status: 'Present', late: false, early: false, location: 'Bangalore HQ', device: 'MacBook Pro 14"', ip: '192.168.1.45', breaks: [{ start: '01:00 PM', end: '01:30 PM' }] },
-  { id: 2, empName: 'Amit Kumar', empId: 'EMP-003', dept: 'Design', date: '05 Aug 2026', checkIn: '-', checkOut: '-', breakHrs: '-', workHrs: '-', mode: '-', status: 'Absent', late: false, early: false, location: '-', device: '-', ip: '-', breaks: [] },
-  { id: 3, empName: 'Priya Patel', empId: 'EMP-002', dept: 'Marketing', date: '04 Aug 2026', checkIn: '09:15 AM', checkOut: '06:30 PM', breakHrs: '1:00', workHrs: '8:15', mode: 'WFH', status: 'Present', late: false, early: false, location: 'Mumbai, MH', device: 'Dell XPS 15', ip: '103.21.45.67', breaks: [{ start: '01:00 PM', end: '01:45 PM'}, {start: '04:00 PM', end: '04:15 PM'}] },
-  { id: 4, empName: 'Neha Gupta', empId: 'EMP-004', dept: 'HR', date: '04 Aug 2026', checkIn: '09:45 AM', checkOut: '06:00 PM', breakHrs: '1:00', workHrs: '7:15', mode: 'Office', status: 'Present', late: true, early: false, location: 'Bangalore HQ', device: 'Lenovo ThinkPad', ip: '192.168.1.112', breaks: [{ start: '01:30 PM', end: '02:30 PM' }] },
-  { id: 5, empName: 'Vikram Singh', empId: 'EMP-005', dept: 'Finance', date: '03 Aug 2026', checkIn: '09:00 AM', checkOut: '02:00 PM', breakHrs: '0:30', workHrs: '4:30', mode: 'Office', status: 'Half Day', late: false, early: true, location: 'Bangalore HQ', device: 'MacBook Air', ip: '192.168.1.77', breaks: [{ start: '01:00 PM', end: '01:30 PM' }] },
-  { id: 6, empName: 'Anjali Desai', empId: 'EMP-006', dept: 'Sales', date: '03 Aug 2026', checkIn: '-', checkOut: '-', breakHrs: '-', workHrs: '-', mode: '-', status: 'On Leave', late: false, early: false, location: '-', device: '-', ip: '-', breaks: [] },
-  { id: 7, empName: 'Rahul Sharma', empId: 'EMP-001', dept: 'Engineering', date: '04 Aug 2026', checkIn: '08:55 AM', checkOut: '06:10 PM', breakHrs: '1:00', workHrs: '8:15', mode: 'Office', status: 'Present', late: false, early: false, location: 'Bangalore HQ', device: 'MacBook Pro 14"', ip: '192.168.1.45', breaks: [{ start: '01:00 PM', end: '02:00 PM' }] },
-  { id: 8, empName: 'Rahul Sharma', empId: 'EMP-001', dept: 'Engineering', date: '03 Aug 2026', checkIn: '09:10 AM', checkOut: '07:00 PM', breakHrs: '1:00', workHrs: '8:50', mode: 'WFH', status: 'Present', late: false, early: false, location: 'Indiranagar, BLR', device: 'MacBook Pro 14"', ip: '45.112.56.89', breaks: [{ start: '01:30 PM', end: '02:30 PM' }] },
-];
+const MOCK_HISTORY = [];
 
 const AttendanceHistory = () => {
   const [searchTerm, setSearchTerm] = useState('');

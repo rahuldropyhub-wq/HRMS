@@ -8,16 +8,7 @@ import '../../../styles/admin/employee/employee-documents.css';
 import EmptyState from '../../../components/admin/EmptyState';
 
 // Mock Data
-const MOCK_DOCS = [
-  { id: 1, name: 'Aadhar Card', type: 'PDF', owner: 'Rahul Sharma', empId: 'EMP-001', status: 'Verified', date: '15 Mar 2023', size: '2.4 MB' },
-  { id: 2, name: 'PAN Card', type: 'JPG', owner: 'Rahul Sharma', empId: 'EMP-001', status: 'Pending', date: '15 Mar 2023', size: '1.1 MB' },
-  { id: 3, name: 'Resume_Updated', type: 'PDF', owner: 'Priya Patel', empId: 'EMP-002', status: 'Verified', date: '10 Jan 2024', size: '3.5 MB' },
-  { id: 4, name: 'Offer Letter', type: 'PDF', owner: 'Amit Kumar', empId: 'EMP-003', status: 'Verified', date: '01 Feb 2024', size: '1.8 MB' },
-  { id: 5, name: 'Relieving Letter', type: 'PDF', owner: 'Neha Gupta', empId: 'EMP-004', status: 'Pending', date: '20 Jul 2026', size: '4.2 MB' },
-  { id: 6, name: 'Degree Certificate', type: 'JPG', owner: 'Vikram Singh', empId: 'EMP-005', status: 'Verified', date: '12 Apr 2022', size: '5.6 MB' },
-  { id: 7, name: 'Aadhar Card', type: 'PDF', owner: 'Anjali Desai', empId: 'EMP-006', status: 'Verified', date: '05 May 2024', size: '2.1 MB' },
-  { id: 8, name: 'Address Proof', type: 'PDF', owner: 'Rohan Verma', empId: 'EMP-007', status: 'Verified', date: '18 Aug 2025', size: '1.4 MB' },
-];
+const MOCK_DOCS = [];
 
 const EmployeeDocuments = () => {
   const [viewMode, setViewMode] = useState('grid');

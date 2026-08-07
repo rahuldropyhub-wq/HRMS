@@ -15,39 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getMyAttendance } from '../../services/employeeService';
 
 // ─── Mock Attendance Data ──────────────────────────────────────────────────
-const MOCK_DATA = [
-  { date: '2025-05-01', day: 'Thu', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-02', day: 'Fri', checkIn: '09:45 AM', checkOut: '06:30 PM', workHrs: '08h 45m', breakHrs: '00h 45m', netHrs: '08h 00m', status: 'late',    overtime: null,       late: '15 min' },
-  { date: '2025-05-03', day: 'Sat', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-04', day: 'Sun', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-05', day: 'Mon', checkIn: '09:30 AM', checkOut: '07:30 PM', workHrs: '10h 00m', breakHrs: '00h 45m', netHrs: '09h 15m', status: 'present', overtime: '01h 00m', late: null },
-  { date: '2025-05-06', day: 'Tue', checkIn: '09:30 AM', checkOut: '05:30 PM', workHrs: '08h 00m', breakHrs: '00h 45m', netHrs: '07h 15m', status: 'early',   overtime: null,       late: null },
-  { date: '2025-05-07', day: 'Wed', checkIn: '09:40 AM', checkOut: '06:30 PM', workHrs: '08h 50m', breakHrs: '00h 45m', netHrs: '08h 05m', status: 'present', overtime: null,       late: '10 min' },
-  { date: '2025-05-08', day: 'Thu', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-09', day: 'Fri', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'absent',  overtime: null,       late: null },
-  { date: '2025-05-10', day: 'Sat', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-11', day: 'Sun', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-12', day: 'Mon', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-13', day: 'Tue', checkIn: '09:35 AM', checkOut: '06:30 PM', workHrs: '08h 55m', breakHrs: '00h 45m', netHrs: '08h 10m', status: 'present', overtime: null,       late: '5 min' },
-  { date: '2025-05-14', day: 'Wed', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-15', day: 'Thu', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'holiday', overtime: null,       late: null },
-  { date: '2025-05-16', day: 'Fri', checkIn: '10:00 AM', checkOut: '06:30 PM', workHrs: '08h 30m', breakHrs: '00h 45m', netHrs: '07h 45m', status: 'late',    overtime: null,       late: '30 min' },
-  { date: '2025-05-17', day: 'Sat', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-18', day: 'Sun', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-19', day: 'Mon', checkIn: '09:30 AM', checkOut: '06:45 PM', workHrs: '09h 15m', breakHrs: '00h 45m', netHrs: '08h 30m', status: 'present', overtime: '00h 15m', late: null },
-  { date: '2025-05-20', day: 'Tue', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-21', day: 'Wed', checkIn: '10:15 AM', checkOut: '06:30 PM', workHrs: '08h 15m', breakHrs: '00h 45m', netHrs: '07h 30m', status: 'late',    overtime: null,       late: '45 min' },
-  { date: '2025-05-22', day: 'Thu', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-23', day: 'Fri', checkIn: '09:30 AM', checkOut: '06:50 PM', workHrs: '09h 20m', breakHrs: '00h 45m', netHrs: '08h 35m', status: 'present', overtime: '00h 20m', late: null },
-  { date: '2025-05-24', day: 'Sat', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-25', day: 'Sun', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-  { date: '2025-05-26', day: 'Mon', checkIn: '09:30 AM', checkOut: '06:30 PM', workHrs: '09h 00m', breakHrs: '00h 45m', netHrs: '08h 15m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-27', day: 'Tue', checkIn: '09:30 AM', checkOut: '08:40 PM', workHrs: '11h 10m', breakHrs: '00h 45m', netHrs: '10h 25m', status: 'present', overtime: '02h 10m', late: null },
-  { date: '2025-05-28', day: 'Wed', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'absent',  overtime: null,       late: null },
-  { date: '2025-05-29', day: 'Thu', checkIn: '09:32 AM', checkOut: '06:30 PM', workHrs: '08h 58m', breakHrs: '00h 45m', netHrs: '08h 13m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-30', day: 'Fri', checkIn: '09:30 AM', checkOut: '06:35 PM', workHrs: '09h 05m', breakHrs: '00h 45m', netHrs: '08h 20m', status: 'present', overtime: null,       late: null },
-  { date: '2025-05-31', day: 'Sat', checkIn: null,       checkOut: null,       workHrs: '—',       breakHrs: '—',       netHrs: '—',       status: 'weekend', overtime: null,       late: null },
-];
+const MOCK_DATA = [];
 
 const STATUS_META = {
   present: { label: 'Present',  cls: 'badge-present',  icon: <CheckCircle2 size={12} /> },

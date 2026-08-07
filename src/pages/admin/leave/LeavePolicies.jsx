@@ -4,14 +4,7 @@ import { Plus, Edit2, X } from 'lucide-react';
 import '../../../styles/admin/leave/leave-policies.css';
 
 // Mock Data
-const MOCK_POLICIES = [
-  { id: 1, name: 'Casual Leave', icon: '🏖️', days: 12, carryFwd: true, maxCarry: 5, encashment: true, minDays: 0.5, maxDays: 3, notes: 'Available for all employees after 3 months' },
-  { id: 2, name: 'Sick Leave', icon: '🏥', days: 7, carryFwd: false, maxCarry: 0, encashment: false, minDays: 0.5, maxDays: 3, notes: 'Medical certificate required for > 2 days' },
-  { id: 3, name: 'Earned Leave', icon: '💼', days: 15, carryFwd: true, maxCarry: 30, encashment: true, minDays: 1, maxDays: 15, notes: 'Earned at 1.25 days per month' },
-  { id: 4, name: 'Maternity Leave', icon: '👶', days: 180, carryFwd: false, maxCarry: 0, encashment: false, minDays: 180, maxDays: 180, notes: 'Applicable for female employees' },
-  { id: 5, name: 'Paternity Leave', icon: '🍼', days: 5, carryFwd: false, maxCarry: 0, encashment: false, minDays: 1, maxDays: 5, notes: 'Must be taken within 2 months of birth' },
-  { id: 6, name: 'Compensatory Off', icon: '⚖️', days: 0, carryFwd: false, maxCarry: 0, encashment: false, minDays: 1, maxDays: 2, notes: 'Earned by working on weekends/holidays' },
-];
+const MOCK_POLICIES = [];
 
 const LeavePolicies = () => {
   const [policies, setPolicies] = useState(MOCK_POLICIES);

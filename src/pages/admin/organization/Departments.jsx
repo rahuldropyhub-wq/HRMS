@@ -6,18 +6,7 @@ import '../../../styles/admin/organization/departments.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
 import { getDepartments, createDepartment, deleteDepartment } from '../../../services/adminService';
 
-const MOCK_DEPTS = [
-  { id: 'D-01', name: 'Engineering', head: 'Rajesh Kumar', empCount: 42, openPos: 5, location: 'Floor 3', email: 'engg@dropyhub.com' },
-  { id: 'D-02', name: 'Marketing', head: 'Neha Gupta', empCount: 15, openPos: 2, location: 'Floor 2', email: 'marketing@dropyhub.com' },
-  { id: 'D-03', name: 'Design', head: 'Amit Kumar', empCount: 12, openPos: 1, location: 'Floor 2', email: 'design@dropyhub.com' },
-  { id: 'D-04', name: 'HR', head: 'Priya Patel', empCount: 8, openPos: 0, location: 'Floor 1', email: 'hr@dropyhub.com' },
-  { id: 'D-05', name: 'Finance', head: 'Vikram Singh', empCount: 10, openPos: 1, location: 'Floor 1', email: 'finance@dropyhub.com' },
-  { id: 'D-06', name: 'Sales', head: 'Rohan Verma', empCount: 25, openPos: 4, location: 'Floor 4', email: 'sales@dropyhub.com' },
-  { id: 'D-07', name: 'Operations', head: 'Anjali Desai', empCount: 18, openPos: 2, location: 'Floor 1', email: 'ops@dropyhub.com' },
-  { id: 'D-08', name: 'QA', head: 'Pooja Iyer', empCount: 14, openPos: 3, location: 'Floor 3', email: 'qa@dropyhub.com' },
-  { id: 'D-09', name: 'Customer Support', head: 'Suresh Raina', empCount: 30, openPos: 6, location: 'Floor 4', email: 'support@dropyhub.com' },
-  { id: 'D-10', name: 'Legal', head: 'Anita Desai', empCount: 4, openPos: 0, location: 'Floor 5', email: 'legal@dropyhub.com' },
-];
+const MOCK_DEPTS = [];
 
 const Departments = () => {
   const [departments, setDepartments] = useState([]);

@@ -6,18 +6,7 @@ import '../../../styles/admin/organization/company-holidays.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
 import { getHolidays, createHoliday, deleteHoliday } from '../../../services/adminService';
 
-const MOCK_HOLIDAYS = [
-  { id: 'H-01', name: 'Republic Day', date: '26 Jan 2026', type: 'National' },
-  { id: 'H-02', name: 'Holi', date: '04 Mar 2026', type: 'National' },
-  { id: 'H-03', name: 'Company Foundation Day', date: '15 Apr 2026', type: 'Company' },
-  { id: 'H-04', name: 'Labor Day', date: '01 May 2026', type: 'National' },
-  { id: 'H-05', name: 'Independence Day', date: '15 Aug 2026', type: 'National' },
-  { id: 'H-06', name: 'Ganesh Chaturthi', date: '14 Sep 2026', type: 'Regional' },
-  { id: 'H-07', name: 'Gandhi Jayanti', date: '02 Oct 2026', type: 'National' },
-  { id: 'H-08', name: 'Diwali', date: '08 Nov 2026', type: 'National' },
-  { id: 'H-09', name: 'Bhai Dooj', date: '10 Nov 2026', type: 'Optional' },
-  { id: 'H-10', name: 'Christmas', date: '25 Dec 2026', type: 'National' },
-];
+const MOCK_HOLIDAYS = [];
 
 const CompanyHolidays = () => {
   const [view, setView] = useState('calendar');

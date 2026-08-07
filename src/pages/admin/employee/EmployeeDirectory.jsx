@@ -11,28 +11,7 @@ import CustomDropdown from '../../../components/admin/CustomDropdown';
 import { getAllEmployees } from '../../../services/adminService';
 
 // Mock Data
-const MOCK_EMPLOYEES = [
-  { id: 'EMP-001', firstName: 'Rahul', lastName: 'Sharma', email: 'rahul.sharma@dropyhub.com', department: 'Engineering', designation: 'Sr. Frontend Developer', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-002', firstName: 'Priya', lastName: 'Patel', email: 'priya.p@dropyhub.com', department: 'Marketing', designation: 'Marketing Manager', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-003', firstName: 'Amit', lastName: 'Kumar', email: 'amit.k@dropyhub.com', department: 'Design', designation: 'UI/UX Designer', status: 'On Leave', type: 'Contract' },
-  { id: 'EMP-004', firstName: 'Neha', lastName: 'Gupta', email: 'neha.g@dropyhub.com', department: 'HR', designation: 'HR Executive', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-005', firstName: 'Vikram', lastName: 'Singh', email: 'vikram.s@dropyhub.com', department: 'Finance', designation: 'Financial Analyst', status: 'Inactive', type: 'Full-time' },
-  { id: 'EMP-006', firstName: 'Anjali', lastName: 'Desai', email: 'anjali.d@dropyhub.com', department: 'Sales', designation: 'Sales Executive', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-007', firstName: 'Rohan', lastName: 'Verma', email: 'rohan.v@dropyhub.com', department: 'Operations', designation: 'Operations Manager', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-008', firstName: 'Pooja', lastName: 'Iyer', email: 'pooja.i@dropyhub.com', department: 'QA', designation: 'QA Tester', status: 'Active', type: 'Intern' },
-  { id: 'EMP-009', firstName: 'Sanjay', lastName: 'Nair', email: 'sanjay.n@dropyhub.com', department: 'Engineering', designation: 'Backend Developer', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-010', firstName: 'Divya', lastName: 'Reddy', email: 'divya.r@dropyhub.com', department: 'Design', designation: 'Product Designer', status: 'On Leave', type: 'Full-time' },
-  { id: 'EMP-011', firstName: 'Arjun', lastName: 'Menon', email: 'arjun.m@dropyhub.com', department: 'Engineering', designation: 'DevOps Engineer', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-012', firstName: 'Kavita', lastName: 'Joshi', email: 'kavita.j@dropyhub.com', department: 'HR', designation: 'Recruiter', status: 'Active', type: 'Contract' },
-  { id: 'EMP-013', firstName: 'Mohit', lastName: 'Chauhan', email: 'mohit.c@dropyhub.com', department: 'Sales', designation: 'Sales Lead', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-014', firstName: 'Shruti', lastName: 'Hasan', email: 'shruti.h@dropyhub.com', department: 'Marketing', designation: 'Content Writer', status: 'Inactive', type: 'Part-time' },
-  { id: 'EMP-015', firstName: 'Raj', lastName: 'Malhotra', email: 'raj.m@dropyhub.com', department: 'Operations', designation: 'Logistics Coordinator', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-016', firstName: 'Sneha', lastName: 'Paul', email: 'sneha.p@dropyhub.com', department: 'Engineering', designation: 'Frontend Developer', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-017', firstName: 'Aditya', lastName: 'Roy', email: 'aditya.r@dropyhub.com', department: 'Finance', designation: 'Accountant', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-018', firstName: 'Manoj', lastName: 'Tiwari', email: 'manoj.t@dropyhub.com', department: 'QA', designation: 'QA Lead', status: 'Active', type: 'Full-time' },
-  { id: 'EMP-019', firstName: 'Ritu', lastName: 'Bhatia', email: 'ritu.b@dropyhub.com', department: 'Design', designation: 'Graphic Designer', status: 'On Leave', type: 'Intern' },
-  { id: 'EMP-020', firstName: 'Deepak', lastName: 'Kumar', email: 'deepak.k@dropyhub.com', department: 'Engineering', designation: 'Engineering Manager', status: 'Active', type: 'Full-time' },
-];
+const MOCK_EMPLOYEES = [];
 
 const getStatusBadgeClass = (status) => {
   switch (status) {

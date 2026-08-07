@@ -4,15 +4,7 @@ import { ChevronDown, ChevronUp, SearchX } from 'lucide-react';
 import '../../../styles/admin/audit/audit-logs.css';
 import EmptyState from '../../../components/admin/EmptyState';
 
-const MOCK_LOGS = [
-  { id: 1, timestamp: 'Aug 5, 11:02 AM', user: 'System Admin', role: 'Admin', action: 'Approved', module: 'Leave', desc: 'Approved sick leave for Priya Patel', ip: '103.21.x.x', device: 'Chrome/Win', details: null },
-  { id: 2, timestamp: 'Aug 5, 10:45 AM', user: 'Meera Nair', role: 'HR Manager', action: 'Created', module: 'Employee', desc: 'Added new employee Vikram Singh', ip: '103.21.x.x', device: 'Firefox/Mac', details: null },
-  { id: 3, timestamp: 'Aug 5, 09:15 AM', user: 'System Admin', role: 'Admin', action: 'Updated', module: 'Settings', desc: 'Changed office start time', ip: '103.21.x.x', device: 'Chrome/Win', details: { field: 'office_start_time', before: '09:30', after: '09:00' } },
-  { id: 4, timestamp: 'Aug 4, 05:30 PM', user: 'System Admin', role: 'Admin', action: 'Exported', module: 'Reports', desc: 'Exported Attendance Report to CSV', ip: '103.21.x.x', device: 'Chrome/Win', details: null },
-  { id: 5, timestamp: 'Aug 4, 02:10 PM', user: 'Rajesh Kumar', role: 'Manager', action: 'Rejected', module: 'Leave', desc: 'Rejected casual leave for Amit Kumar', ip: '103.22.x.x', device: 'Safari/Mac', details: { reason: 'Project Deadline' } },
-  { id: 6, timestamp: 'Aug 4, 11:00 AM', user: 'System Admin', role: 'Admin', action: 'Deleted', module: 'Asset', desc: 'Removed damaged Chair AC-004 from inventory', ip: '103.21.x.x', device: 'Chrome/Win', details: null },
-  { id: 7, timestamp: 'Aug 4, 09:00 AM', user: 'Meera Nair', role: 'HR Manager', action: 'Login', module: 'Auth', desc: 'Successful login', ip: '103.21.x.x', device: 'Firefox/Mac', details: null },
-];
+const MOCK_LOGS = [];
 
 const AuditLogs = () => {
   const [expandedId, setExpandedId] = useState(null);

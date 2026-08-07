@@ -25,69 +25,7 @@ import '../../styles/employee/assets.css';
 // ─── Mock Data ────────────────────────────────────────────────────────────
 const ASSET_CATEGORIES = ['Laptop', 'Desktop', 'Monitor', 'Mobile', 'Headset', 'Accessory', 'Furniture'];
 
-const MOCK_ASSETS = [
-  {
-    id: 'AST-LP-0145', name: 'MacBook Pro 16" M2', category: 'Laptop',
-    status: 'assigned', assignedTo: 'Balaji Kumar',
-    serialNumber: 'C02XD456Q9', brand: 'Apple', model: 'A2485',
-    purchaseDate: '2023-01-15', issueDate: '2023-02-01', expectedReturn: '2026-02-01',
-    warrantyExpiry: '2026-01-14',
-    timeline: [
-      { type: 'purchased', action: 'Asset Purchased', time: 'Jan 15, 2023' },
-      { type: 'assigned', action: 'Assigned to Balaji Kumar', time: 'Feb 1, 2023' },
-    ],
-    attachments: [{ name: 'invoice_macbook.pdf', size: '1.2 MB', type: 'pdf' }],
-  },
-  {
-    id: 'AST-MN-0089', name: 'Dell UltraSharp 27" 4K', category: 'Monitor',
-    status: 'assigned', assignedTo: 'Balaji Kumar',
-    serialNumber: 'CN-045G-7890-XYZ', brand: 'Dell', model: 'U2723QE',
-    purchaseDate: '2024-05-10', issueDate: '2024-05-15', expectedReturn: '2027-05-15',
-    warrantyExpiry: '2027-05-09',
-    timeline: [
-      { type: 'purchased', action: 'Asset Purchased', time: 'May 10, 2024' },
-      { type: 'assigned', action: 'Assigned to Balaji Kumar', time: 'May 15, 2024' },
-    ],
-    attachments: [],
-  },
-  {
-    id: 'AST-MB-0032', name: 'iPhone 14 Pro', category: 'Mobile',
-    status: 'repair', assignedTo: 'Balaji Kumar',
-    serialNumber: 'F2L89XCD00', brand: 'Apple', model: 'A2890',
-    purchaseDate: '2023-06-20', issueDate: '2023-06-25', expectedReturn: '2025-06-25',
-    warrantyExpiry: '2024-06-19',
-    timeline: [
-      { type: 'purchased', action: 'Asset Purchased', time: 'Jun 20, 2023' },
-      { type: 'assigned', action: 'Assigned to Balaji Kumar', time: 'Jun 25, 2023' },
-      { type: 'repair', action: 'Sent for Repair (Screen Issue)', time: 'Aug 2, 2025' },
-    ],
-    attachments: [{ name: 'repair_receipt.pdf', size: '450 KB', type: 'pdf' }],
-  },
-  {
-    id: 'AST-HS-0105', name: 'Jabra Evolve2 65', category: 'Headset',
-    status: 'assigned', assignedTo: 'Balaji Kumar',
-    serialNumber: 'JB-65-89012', brand: 'Jabra', model: 'Evolve2 65 UC',
-    purchaseDate: '2024-02-10', issueDate: '2024-02-12', expectedReturn: '2026-02-12',
-    warrantyExpiry: '2026-02-09',
-    timeline: [
-      { type: 'purchased', action: 'Asset Purchased', time: 'Feb 10, 2024' },
-      { type: 'assigned', action: 'Assigned to Balaji Kumar', time: 'Feb 12, 2024' },
-    ],
-    attachments: [],
-  },
-  {
-    id: 'AST-FR-0056', name: 'Ergonomic Office Chair', category: 'Furniture',
-    status: 'available', assignedTo: null,
-    serialNumber: 'CH-2025-001', brand: 'Herman Miller', model: 'Aeron',
-    purchaseDate: '2025-01-05', issueDate: null, expectedReturn: null,
-    warrantyExpiry: '2037-01-04',
-    timeline: [
-      { type: 'purchased', action: 'Asset Purchased', time: 'Jan 5, 2025' },
-      { type: 'returned', action: 'Available in Inventory', time: 'Jan 5, 2025' },
-    ],
-    attachments: [],
-  },
-];
+const MOCK_ASSETS = [];
 
 const TAB_FILTERS = {
   all: () => true,

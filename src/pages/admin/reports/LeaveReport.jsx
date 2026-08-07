@@ -3,29 +3,13 @@ import { motion } from 'framer-motion';
 import { Download, FileText } from 'lucide-react';
 import '../../../styles/admin/reports/leave-report.css';
 
-const MOCK_TREND = Array.from({ length: 12 }, (_, i) => {
-  const value = Math.floor(Math.random() * 40) + 10; 
-  return { month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i], value };
-});
+const MOCK_TREND = [];
 
-const MOCK_DIST = [
-  { name: 'Sick Leave', value: 45, color: '#ef4444' },
-  { name: 'Casual Leave', value: 30, color: '#3b82f6' },
-  { name: 'Earned Leave', value: 15, color: '#10b981' },
-  { name: 'Maternity/Paternity', value: 10, color: '#8b5cf6' },
-];
+const MOCK_DIST = [];
 
-const MOCK_TOP_TAKERS = [
-  { id: 1, name: 'Suresh Raina', type: 'Sick Leave', days: 12, dept: 'Sales' },
-  { id: 2, name: 'Anjali Desai', type: 'Casual Leave', days: 8, dept: 'Operations' },
-  { id: 3, name: 'Vikram Singh', type: 'Earned Leave', days: 7, dept: 'Finance' },
-];
+const MOCK_TOP_TAKERS = [];
 
-const MOCK_BALANCE = [
-  { id: 1, dept: 'Engineering', avgBalance: 14.5, totalEmployees: 42 },
-  { id: 2, dept: 'Marketing', avgBalance: 12.0, totalEmployees: 15 },
-  { id: 3, dept: 'HR', avgBalance: 16.2, totalEmployees: 8 },
-];
+const MOCK_BALANCE = [];
 
 const LeaveReport = () => {
   return (

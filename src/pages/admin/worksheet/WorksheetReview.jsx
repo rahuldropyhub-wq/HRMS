@@ -5,47 +5,7 @@ import '../../../styles/admin/worksheet/worksheet-review.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 
-const MOCK_WORKSHEETS = [
-  { 
-    id: 'WS-001', empId: 'EMP-023', empName: 'Rahul Sharma', avatar: 'RS', date: '05 Aug 2026', submittedAt: '18:30',
-    project: 'Website Redesign', totalHrs: 5.5, status: 'Pending',
-    tasks: [
-      { title: 'Login Page UI', project: 'Website Redesign', hrs: 3.5, status: 'Completed', notes: 'Built responsive login with OTP flow' },
-      { title: 'Dashboard Charts', project: 'Website Redesign', hrs: 2.0, status: 'In Progress', notes: 'Started integration of Recharts library' }
-    ]
-  },
-  { 
-    id: 'WS-002', empId: 'EMP-042', empName: 'Priya Patel', avatar: 'PP', date: '05 Aug 2026', submittedAt: '17:45',
-    project: 'CRM System', totalHrs: 8.0, status: 'Approved',
-    tasks: [
-      { title: 'Database Optimization', project: 'CRM System', hrs: 4.5, status: 'Completed', notes: 'Added missing indexes, query time down 40%' },
-      { title: 'Client Meeting', project: 'CRM System', hrs: 1.5, status: 'Completed', notes: 'Discussed phase 2 requirements' },
-      { title: 'API Documentation', project: 'CRM System', hrs: 2.0, status: 'Completed', notes: 'Updated swagger docs for new endpoints' }
-    ]
-  },
-  { 
-    id: 'WS-003', empId: 'EMP-015', empName: 'Amit Kumar', avatar: 'AK', date: '05 Aug 2026', submittedAt: '19:10',
-    project: 'Mobile App', totalHrs: 7.5, status: 'Pending',
-    tasks: [
-      { title: 'Push Notifications', project: 'Mobile App', hrs: 5.0, status: 'In Progress', notes: 'Configured Firebase, testing iOS delivery' },
-      { title: 'Bug Fixing', project: 'Mobile App', hrs: 2.5, status: 'Completed', notes: 'Fixed crash on startup for Android 12' }
-    ]
-  },
-  { 
-    id: 'WS-004', empId: 'EMP-088', empName: 'Neha Gupta', avatar: 'NG', date: '04 Aug 2026', submittedAt: '18:00',
-    project: 'Marketing Campaign', totalHrs: 6.0, status: 'Rejected',
-    tasks: [
-      { title: 'Ad Copywriting', project: 'Marketing Campaign', hrs: 6.0, status: 'Completed', notes: 'Drafted 15 ad variations for review' }
-    ]
-  },
-  { 
-    id: 'WS-005', empId: 'EMP-102', empName: 'Vikram Singh', avatar: 'VS', date: '04 Aug 2026', submittedAt: '18:15',
-    project: 'Finance Portal', totalHrs: 8.5, status: 'Approved',
-    tasks: [
-      { title: 'Payroll Processing', project: 'Finance Portal', hrs: 8.5, status: 'Completed', notes: 'Processed August salaries and verified tax deductions' }
-    ]
-  }
-];
+const MOCK_WORKSHEETS = [];
 
 const WorksheetReview = () => {
   const [activeTab, setActiveTab] = useState('Pending');

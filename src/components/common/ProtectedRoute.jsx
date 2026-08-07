@@ -11,6 +11,10 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
   if (!user) {
     // Not logged in
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/admin')) {
+      return <Navigate to="/admin/login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 

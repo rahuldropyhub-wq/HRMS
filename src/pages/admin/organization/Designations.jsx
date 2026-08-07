@@ -5,28 +5,7 @@ import { useForm } from 'react-hook-form';
 import '../../../styles/admin/organization/designations.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
 
-const MOCK_DESIGNATIONS = [
-  { id: 'DS-01', title: 'Software Engineer Intern', level: 'L1', dept: 'Engineering', count: 5 },
-  { id: 'DS-02', title: 'Software Engineer', level: 'L2', dept: 'Engineering', count: 12 },
-  { id: 'DS-03', title: 'Senior Software Engineer', level: 'L4', dept: 'Engineering', count: 8 },
-  { id: 'DS-04', title: 'Engineering Manager', level: 'L6', dept: 'Engineering', count: 3 },
-  { id: 'DS-05', title: 'VP Engineering', level: 'L8', dept: 'Engineering', count: 1 },
-  { id: 'DS-06', title: 'Marketing Executive', level: 'L2', dept: 'Marketing', count: 6 },
-  { id: 'DS-07', title: 'SEO Specialist', level: 'L3', dept: 'Marketing', count: 2 },
-  { id: 'DS-08', title: 'Marketing Manager', level: 'L6', dept: 'Marketing', count: 1 },
-  { id: 'DS-09', title: 'UI/UX Designer', level: 'L3', dept: 'Design', count: 4 },
-  { id: 'DS-10', title: 'Product Designer', level: 'L4', dept: 'Design', count: 3 },
-  { id: 'DS-11', title: 'HR Generalist', level: 'L3', dept: 'HR', count: 2 },
-  { id: 'DS-12', title: 'HR Manager', level: 'L6', dept: 'HR', count: 1 },
-  { id: 'DS-13', title: 'Financial Analyst', level: 'L3', dept: 'Finance', count: 3 },
-  { id: 'DS-14', title: 'Finance Controller', level: 'L6', dept: 'Finance', count: 1 },
-  { id: 'DS-15', title: 'Sales Representative', level: 'L2', dept: 'Sales', count: 15 },
-  { id: 'DS-16', title: 'Regional Sales Manager', level: 'L6', dept: 'Sales', count: 2 },
-  { id: 'DS-17', title: 'Operations Associate', level: 'L2', dept: 'Operations', count: 5 },
-  { id: 'DS-18', title: 'QA Tester', level: 'L2', dept: 'QA', count: 6 },
-  { id: 'DS-19', title: 'QA Automation Engineer', level: 'L4', dept: 'QA', count: 3 },
-  { id: 'DS-20', title: 'Customer Support Rep', level: 'L2', dept: 'Customer Support', count: 20 },
-];
+const MOCK_DESIGNATIONS = [];
 
 const Designations = () => {
   const [designations, setDesignations] = useState(MOCK_DESIGNATIONS);

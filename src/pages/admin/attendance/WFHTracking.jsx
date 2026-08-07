@@ -4,13 +4,7 @@ import { MapPin, Globe, Monitor, Shield, Clock } from 'lucide-react';
 import '../../../styles/admin/attendance/wfh-tracking.css';
 
 // Mock Data
-const MOCK_WFH = [
-  { id: 'EMP-002', name: 'Priya Patel', location: 'Mumbai, MH', status: 'Working', hours: '3h 45m', avatar: 'PP', coordinates: '19.0760° N, 72.8777° E', address: 'Andheri West, Mumbai, Maharashtra', ip: '103.21.45.67', device: 'MacBook Pro 14"', browser: 'Chrome 126.0', os: 'macOS Sonoma', timeIn: '9:15 AM' },
-  { id: 'EMP-005', name: 'Vikram Singh', location: 'Bangalore, KA', status: 'On Break', hours: '5h 20m', avatar: 'VS', coordinates: '12.9716° N, 77.5946° E', address: 'Koramangala, Bangalore, Karnataka', ip: '192.168.1.77', device: 'Dell XPS 15', browser: 'Firefox 120.0', os: 'Windows 11', timeIn: '9:00 AM' },
-  { id: 'EMP-010', name: 'Divya Reddy', location: 'Hyderabad, TS', status: 'Working', hours: '3h 15m', avatar: 'DR', coordinates: '17.3850° N, 78.4867° E', address: 'Banjara Hills, Hyderabad, Telangana', ip: '45.112.89.33', device: 'MacBook Air M2', browser: 'Safari 17.1', os: 'macOS Sonoma', timeIn: '10:00 AM' },
-  { id: 'EMP-012', name: 'Kavita Joshi', location: 'Pune, MH', status: 'In Meeting', hours: '3h 50m', avatar: 'KJ', coordinates: '18.5204° N, 73.8567° E', address: 'Viman Nagar, Pune, Maharashtra', ip: '117.20.55.99', device: 'Lenovo ThinkPad', browser: 'Edge 125.0', os: 'Windows 11', timeIn: '9:25 AM' },
-  { id: 'EMP-016', name: 'Sneha Paul', location: 'Chennai, TN', status: 'Working', hours: '3h 55m', avatar: 'SP', coordinates: '13.0827° N, 80.2707° E', address: 'T Nagar, Chennai, Tamil Nadu', ip: '103.45.67.89', device: 'MacBook Pro 16"', browser: 'Chrome 126.0', os: 'macOS Ventura', timeIn: '9:20 AM' },
-];
+const MOCK_WFH = [];
 
 const WFHTracking = () => {
   const [selectedEmp, setSelectedEmp] = useState(MOCK_WFH[0]);

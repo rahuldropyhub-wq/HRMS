@@ -6,48 +6,7 @@ import '../../../styles/admin/communication/announcements.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import ActionBtn from '../../../components/admin/ActionBtn';
 
-const MOCK_ANNOUNCEMENTS = [
-  {
-    id: 'A-01',
-    title: 'Q3 Goals & Targets',
-    body: 'Dear Team, please review the Q3 goals shared in the document below. Let us strive for excellence and achieve these milestones together. Reach out to your managers if you have any questions.',
-    attachment: 'Q3-Goals.pdf',
-    author: 'HR Admin',
-    date: 'Aug 1, 2026',
-    target: 'All Employees',
-    priority: 'High'
-  },
-  {
-    id: 'A-02',
-    title: 'Office Relocation Update',
-    body: 'We are moving to the new campus next week! Please pack your personal belongings in the provided boxes by this Friday.',
-    attachment: 'Moving-Guidelines.pdf',
-    author: 'Operations Admin',
-    date: 'Jul 28, 2026',
-    target: 'All Employees',
-    priority: 'Urgent'
-  },
-  {
-    id: 'A-03',
-    title: 'New Health Insurance Policy',
-    body: 'The updated health insurance policy details for the year 2026-2027 have been finalized. Check the portal for your updated coverage limits.',
-    attachment: null,
-    author: 'HR Admin',
-    date: 'Jul 15, 2026',
-    target: 'All Employees',
-    priority: 'Normal'
-  },
-  {
-    id: 'A-04',
-    title: 'Engineering All-Hands Meeting',
-    body: 'Reminder for the engineering all-hands tomorrow at 10 AM. We will be discussing the new microservices architecture rollout.',
-    attachment: null,
-    author: 'VP Engineering',
-    date: 'Jul 10, 2026',
-    target: 'Engineering Dept',
-    priority: 'Normal'
-  }
-];
+const MOCK_ANNOUNCEMENTS = [];
 
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState(MOCK_ANNOUNCEMENTS);

@@ -3,33 +3,13 @@ import { motion } from 'framer-motion';
 import { Download, FileText } from 'lucide-react';
 import '../../../styles/admin/reports/attendance-report.css';
 
-const MOCK_TREND = Array.from({ length: 30 }, (_, i) => {
-  const value = Math.floor(Math.random() * 40) + 60; // 60% to 100%
-  let color = '#22c55e'; // green
-  if (value < 70) color = '#ef4444'; // red
-  else if (value < 90) color = '#eab308'; // yellow
-  return { day: i + 1, value, color };
-});
+const MOCK_TREND = [];
 
-const MOCK_DEPTS = [
-  { name: 'Engineering', value: 96 },
-  { name: 'Marketing', value: 92 },
-  { name: 'HR', value: 88 },
-  { name: 'Sales', value: 85 },
-  { name: 'Operations', value: 94 },
-];
+const MOCK_DEPTS = [];
 
-const MOCK_LATE = [
-  { id: 1, name: 'Rohan Verma', time: '09:45 AM', count: 8, dept: 'Sales' },
-  { id: 2, name: 'Neha Gupta', time: '09:30 AM', count: 5, dept: 'Marketing' },
-  { id: 3, name: 'Amit Kumar', time: '09:25 AM', count: 4, dept: 'Design' },
-];
+const MOCK_LATE = [];
 
-const MOCK_EARLY = [
-  { id: 1, name: 'Vikram Singh', time: '04:30 PM', count: 6, dept: 'Finance' },
-  { id: 2, name: 'Pooja Iyer', time: '04:45 PM', count: 4, dept: 'QA' },
-  { id: 3, name: 'Anita Desai', time: '05:00 PM', count: 3, dept: 'Legal' },
-];
+const MOCK_EARLY = [];
 
 const AttendanceReport = () => {
   return (

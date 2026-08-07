@@ -8,16 +8,7 @@ import { getAllLeaveRequests, updateLeaveStatus } from '../../../services/adminS
 import { useAuth } from '../../../contexts/AuthContext';
 
 // Mock Data
-const MOCK_REQUESTS = [
-  { id: 'REQ-001', empId: 'EMP-042', empName: 'Priya Patel', dept: 'Marketing', type: 'Sick Leave', from: '06 Aug 2026', to: '08 Aug 2026', days: 3, reason: 'Feeling unwell, need rest as per doctor', appliedOn: '04 Aug 2026', status: 'Pending', avatar: 'PP' },
-  { id: 'REQ-002', empId: 'EMP-015', empName: 'Amit Kumar', dept: 'Engineering', type: 'Casual Leave', from: '10 Aug 2026', to: '11 Aug 2026', days: 2, reason: 'Personal work at hometown', appliedOn: '03 Aug 2026', status: 'Approved', avatar: 'AK' },
-  { id: 'REQ-003', empId: 'EMP-088', empName: 'Neha Gupta', dept: 'HR', type: 'Earned Leave', from: '20 Aug 2026', to: '25 Aug 2026', days: 6, reason: 'Family vacation', appliedOn: '01 Aug 2026', status: 'Pending', avatar: 'NG' },
-  { id: 'REQ-004', empId: 'EMP-023', empName: 'Rahul Sharma', dept: 'Sales', type: 'Sick Leave', from: '01 Aug 2026', to: '02 Aug 2026', days: 2, reason: 'Viral fever', appliedOn: '31 Jul 2026', status: 'Rejected', avatar: 'RS' },
-  { id: 'REQ-005', empId: 'EMP-102', empName: 'Vikram Singh', dept: 'Finance', type: 'Compensatory Off', from: '12 Aug 2026', to: '12 Aug 2026', days: 1, reason: 'Worked on previous weekend', appliedOn: '05 Aug 2026', status: 'Pending', avatar: 'VS' },
-  { id: 'REQ-006', empId: 'EMP-055', empName: 'Anjali Desai', dept: 'Design', type: 'Maternity Leave', from: '01 Sep 2026', to: '28 Feb 2027', days: 180, reason: 'Maternity leave as per policy', appliedOn: '20 Jul 2026', status: 'Approved', avatar: 'AD' },
-  { id: 'REQ-007', empId: 'EMP-034', empName: 'Rohan Verma', dept: 'Operations', type: 'Casual Leave', from: '16 Aug 2026', to: '16 Aug 2026', days: 1, reason: 'Attending a wedding', appliedOn: '02 Aug 2026', status: 'Pending', avatar: 'RV' },
-  { id: 'REQ-008', empId: 'EMP-077', empName: 'Pooja Iyer', dept: 'Engineering', type: 'Earned Leave', from: '15 Sep 2026', to: '30 Sep 2026', days: 16, reason: 'Europe trip', appliedOn: '15 Jul 2026', status: 'Approved', avatar: 'PI' },
-];
+const MOCK_REQUESTS = [];
 
 const LeaveRequests = () => {
   const [activeTab, setActiveTab] = useState('Pending');

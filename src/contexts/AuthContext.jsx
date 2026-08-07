@@ -80,6 +80,25 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Error logging out:', error);
+    
+    // Clear mock state if any
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+  };
+
+  // MOCK LOGIN FOR TESTING UI
+  const mockLogin = (role = 'employee') => {
+    const mockUser = { id: 'MOCK-123', email: 'test@dropyhub.com' };
+    const mockProfile = { 
+      id: 'MOCK-123', 
+      first_name: 'Test', 
+      last_name: role === 'admin' ? 'Admin' : 'Employee', 
+      role: role 
+    };
+    setUser(mockUser);
+    setProfile(mockProfile);
+    setSession({ user: mockUser });
   };
 
   const value = {
@@ -89,6 +108,7 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithOtp,
     logout,
+    mockLogin,
     loading
   };
 

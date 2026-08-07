@@ -6,28 +6,7 @@ import '../../../styles/admin/attendance/live-attendance.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 
 // Mock Data
-const MOCK_LIVE = [
-  { id: 'EMP-001', firstName: 'Rahul', lastName: 'Sharma', dept: 'Engineering', status: 'Working', mode: 'Office', timeIn: '9:02 AM', hours: '4h 15m', task: 'Frontend Dev' },
-  { id: 'EMP-002', firstName: 'Priya', lastName: 'Patel', dept: 'Marketing', status: 'On Break', mode: 'WFH', timeIn: '9:15 AM', hours: '3h 45m', task: 'Q3 Planning' },
-  { id: 'EMP-003', firstName: 'Amit', lastName: 'Kumar', dept: 'Design', status: 'In Meeting', mode: 'Office', timeIn: '8:45 AM', hours: '4h 30m', task: 'UI Review' },
-  { id: 'EMP-004', firstName: 'Neha', lastName: 'Gupta', dept: 'HR', status: 'Working', mode: 'Office', timeIn: '9:30 AM', hours: '3h 45m', task: 'Interviews' },
-  { id: 'EMP-005', firstName: 'Vikram', lastName: 'Singh', dept: 'Finance', status: 'Working', mode: 'WFH', timeIn: '9:00 AM', hours: '4h 15m', task: 'Payroll Processing' },
-  { id: 'EMP-006', firstName: 'Anjali', lastName: 'Desai', dept: 'Sales', status: 'Not In', mode: 'Office', timeIn: '-', hours: '-', task: '-' },
-  { id: 'EMP-007', firstName: 'Rohan', lastName: 'Verma', dept: 'Operations', status: 'Working', mode: 'Office', timeIn: '8:30 AM', hours: '4h 45m', task: 'Logistics Check' },
-  { id: 'EMP-008', firstName: 'Pooja', lastName: 'Iyer', dept: 'QA', status: 'Left for Day', mode: 'WFH', timeIn: '8:00 AM', hours: '9h 15m', task: 'Testing done' },
-  { id: 'EMP-009', firstName: 'Sanjay', lastName: 'Nair', dept: 'Engineering', status: 'Working', mode: 'Office', timeIn: '9:45 AM', hours: '3h 30m', task: 'API Integration' },
-  { id: 'EMP-010', firstName: 'Divya', lastName: 'Reddy', dept: 'Design', status: 'On Break', mode: 'WFH', timeIn: '10:00 AM', hours: '3h 15m', task: 'Coffee break' },
-  { id: 'EMP-011', firstName: 'Arjun', lastName: 'Menon', dept: 'Engineering', status: 'Working', mode: 'Office', timeIn: '9:10 AM', hours: '4h 05m', task: 'DevOps Setup' },
-  { id: 'EMP-012', firstName: 'Kavita', lastName: 'Joshi', dept: 'HR', status: 'In Meeting', mode: 'WFH', timeIn: '9:25 AM', hours: '3h 50m', task: 'Orientation' },
-  { id: 'EMP-013', firstName: 'Mohit', lastName: 'Chauhan', dept: 'Sales', status: 'Working', mode: 'Office', timeIn: '9:05 AM', hours: '4h 10m', task: 'Client Calls' },
-  { id: 'EMP-014', firstName: 'Shruti', lastName: 'Hasan', dept: 'Marketing', status: 'Working', mode: 'Office', timeIn: '8:55 AM', hours: '4h 20m', task: 'Content Draft' },
-  { id: 'EMP-015', firstName: 'Raj', lastName: 'Malhotra', dept: 'Operations', status: 'Not In', mode: 'WFH', timeIn: '-', hours: '-', task: '-' },
-  { id: 'EMP-016', firstName: 'Sneha', lastName: 'Paul', dept: 'Engineering', status: 'Working', mode: 'WFH', timeIn: '9:20 AM', hours: '3h 55m', task: 'Bug fixing' },
-  { id: 'EMP-017', firstName: 'Aditya', lastName: 'Roy', dept: 'Finance', status: 'Working', mode: 'Office', timeIn: '9:35 AM', hours: '3h 40m', task: 'Audit Report' },
-  { id: 'EMP-018', firstName: 'Manoj', lastName: 'Tiwari', dept: 'QA', status: 'On Break', mode: 'Office', timeIn: '8:40 AM', hours: '4h 35m', task: 'Lunch' },
-  { id: 'EMP-019', firstName: 'Ritu', lastName: 'Bhatia', dept: 'Design', status: 'Working', mode: 'WFH', timeIn: '9:15 AM', hours: '4h 00m', task: 'Wireframes' },
-  { id: 'EMP-020', firstName: 'Deepak', lastName: 'Kumar', dept: 'Engineering', status: 'In Meeting', mode: 'Office', timeIn: '9:00 AM', hours: '4h 15m', task: 'Sync up' },
-];
+const MOCK_LIVE = [];
 
 const getStatusBadgeClass = (status) => {
   switch (status) {

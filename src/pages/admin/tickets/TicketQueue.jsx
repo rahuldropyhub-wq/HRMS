@@ -6,16 +6,7 @@ import '../../../styles/admin/tickets/ticket-queue.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 
-const MOCK_TICKETS = [
-  { id: 'TKT-001', subject: 'Laptop not working', raisedBy: 'Rahul Sharma', dept: 'IT', priority: 'Critical', assignedTo: 'Unassigned', status: 'Open', created: '04 Aug 2026' },
-  { id: 'TKT-002', subject: 'Salary slip missing', raisedBy: 'Priya Patel', dept: 'Payroll', priority: 'High', assignedTo: 'Finance Admin', status: 'In Progress', created: '03 Aug 2026' },
-  { id: 'TKT-003', subject: 'VPN access needed', raisedBy: 'Amit Kumar', dept: 'IT', priority: 'Medium', assignedTo: 'Network Admin', status: 'Resolved', created: '02 Aug 2026' },
-  { id: 'TKT-004', subject: 'Leave balance incorrect', raisedBy: 'Neha Gupta', dept: 'HR', priority: 'High', assignedTo: 'HR Manager', status: 'Open', created: '04 Aug 2026' },
-  { id: 'TKT-005', subject: 'Monitor flickering', raisedBy: 'Vikram Singh', dept: 'IT', priority: 'Low', assignedTo: 'IT Support', status: 'Closed', created: '20 Jul 2026' },
-  { id: 'TKT-006', subject: 'Software license expired', raisedBy: 'Anjali Desai', dept: 'IT', priority: 'Critical', assignedTo: 'Unassigned', status: 'Open', created: '05 Aug 2026' },
-  { id: 'TKT-007', subject: 'AC not working in Bay 3', raisedBy: 'Rohan Verma', dept: 'Admin', priority: 'Medium', assignedTo: 'Facilities', status: 'In Progress', created: '04 Aug 2026' },
-  { id: 'TKT-008', subject: 'Reimbursement pending', raisedBy: 'Pooja Iyer', dept: 'Finance', priority: 'High', assignedTo: 'Finance Admin', status: 'Resolved', created: '01 Aug 2026' },
-];
+const MOCK_TICKETS = [];
 
 const TicketQueue = () => {
   const [activeTab, setActiveTab] = useState('Open');

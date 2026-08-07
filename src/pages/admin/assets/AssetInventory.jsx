@@ -7,18 +7,7 @@ import '../../../styles/admin/assets/asset-inventory.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 
-const MOCK_ASSETS = [
-  { id: 'AST-001', name: 'MacBook Pro 16"', category: 'Laptop', assignedTo: 'Rahul Sharma', status: 'Assigned', purchaseDate: '15 Jan 2024', warranty: '14 Jan 2027' },
-  { id: 'AST-002', name: 'Dell UltraSharp 27"', category: 'Monitor', assignedTo: 'Unassigned', status: 'Available', purchaseDate: '10 Feb 2024', warranty: '09 Feb 2027' },
-  { id: 'AST-003', name: 'Logitech MX Master 3', category: 'Mouse', assignedTo: 'Priya Patel', status: 'Assigned', purchaseDate: '20 Mar 2024', warranty: '19 Mar 2025' },
-  { id: 'AST-004', name: 'Herman Miller Aeron', category: 'Chair', assignedTo: 'Unassigned', status: 'In Repair', purchaseDate: '01 Jun 2023', warranty: '31 May 2035' },
-  { id: 'AST-005', name: 'iPhone 13 Pro', category: 'Phone', assignedTo: 'Amit Kumar', status: 'Assigned', purchaseDate: '15 Oct 2022', warranty: 'Expired' },
-  { id: 'AST-006', name: 'Lenovo ThinkPad X1', category: 'Laptop', assignedTo: 'Unassigned', status: 'Available', purchaseDate: '05 May 2024', warranty: '04 May 2027' },
-  { id: 'AST-007', name: 'Keychron K8 Pro', category: 'Keyboard', assignedTo: 'Neha Gupta', status: 'Assigned', purchaseDate: '12 Aug 2023', warranty: '11 Aug 2024' },
-  { id: 'AST-008', name: 'Jabra Evolve2 65', category: 'Headset', assignedTo: 'Vikram Singh', status: 'Assigned', purchaseDate: '22 Nov 2023', warranty: '21 Nov 2025' },
-  { id: 'AST-009', name: 'Old Dell Desktop', category: 'Desktop', assignedTo: 'Unassigned', status: 'Retired', purchaseDate: '10 Jan 2019', warranty: 'Expired' },
-  { id: 'AST-010', name: 'Access ID Card', category: 'ID Card', assignedTo: 'Anjali Desai', status: 'Assigned', purchaseDate: '01 Jul 2024', warranty: 'N/A' },
-];
+const MOCK_ASSETS = [];
 
 const AssetInventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
