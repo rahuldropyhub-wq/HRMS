@@ -97,6 +97,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithOtp = async (email) => {
+    // SECURITY CHECK: Ensure email exists in employee_invitations before sending OTP
+    const { data: invitation, error: invError } = await supabase
+      .from('employee_invitations')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (invError || !invitation) {
+      return { 
+        error: { 
+          message: 'This email is not registered. Please ask your administrator to add you first.' 
+        } 
+      };
+    }
+
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
