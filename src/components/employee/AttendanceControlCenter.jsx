@@ -394,12 +394,15 @@ export default function AttendanceControlCenter({ compact = false }) {
           </div>
 
           <div className="acc-hero-section">
-            <div className="glowing-ring" style={status === 'working' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #4ade80, #10b981) border-box', boxShadow: '0 0 30px rgba(34,197,94,0.2), inset 0 0 20px rgba(34,197,94,0.1)'} : status === 'onBreak' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #c084fc, #a855f7) border-box', boxShadow: '0 0 30px rgba(168,85,247,0.2), inset 0 0 20px rgba(168,85,247,0.1)'} : {}}>
-              {status === 'notStarted' && <Briefcase size={40} strokeWidth={1.5} color="#00f2fe" />}
-              {status === 'working' && <Clock size={40} strokeWidth={1.5} color="#4ade80" />}
-              {status === 'onBreak' && <Coffee size={40} strokeWidth={1.5} color="#c084fc" />}
-              {status === 'completed' && <CheckCircle2 size={40} strokeWidth={1.5} color="#00f2fe" />}
-            </div>
+            {status === 'notStarted' ? (
+              <img src="/assets/images/neon-briefcase-3d.png" alt="3D Neon Briefcase" style={{ width: '160px', height: '160px', objectFit: 'cover', mixBlendMode: 'screen', marginBottom: '10px' }} />
+            ) : (
+              <div className="glowing-ring" style={status === 'working' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #4ade80, #10b981) border-box', boxShadow: '0 0 30px rgba(34,197,94,0.2), inset 0 0 20px rgba(34,197,94,0.1)'} : status === 'onBreak' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #c084fc, #a855f7) border-box', boxShadow: '0 0 30px rgba(168,85,247,0.2), inset 0 0 20px rgba(168,85,247,0.1)'} : {}}>
+                {status === 'working' && <Clock size={40} strokeWidth={1.5} color="#4ade80" />}
+                {status === 'onBreak' && <Coffee size={40} strokeWidth={1.5} color="#c084fc" />}
+                {status === 'completed' && <CheckCircle2 size={40} strokeWidth={1.5} color="#00f2fe" />}
+              </div>
+            )}
             
             {status === 'notStarted' && (
               <>
