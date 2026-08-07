@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, LayoutGrid, List, MessageSquare, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../../../styles/admin/tasks/task-dashboard.css';
+import { getAllTasks } from '../../../services/adminService';
 
 // Mock Data
 const MOCK_TASKS = [
@@ -55,13 +56,25 @@ const TaskCard = ({ task }) => (
 );
 
 const TaskDashboard = () => {
-  const [view, setView] = useState('board'); // 'board' or 'list'
+  const [view, setView] = useState('board');
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getAllTasks();
+      setTasks(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   const columns = [
-    { id: 'To Do', label: 'To Do', class: 'col-todo' },
-    { id: 'In Progress', label: 'In Progress', class: 'col-in-progress' },
-    { id: 'Review', label: 'Review', class: 'col-review' },
-    { id: 'Done', label: 'Done', class: 'col-done' },
+    { id: 'todo', label: 'To Do', class: 'col-todo' },
+    { id: 'in-progress', label: 'In Progress', class: 'col-in-progress' },
+    { id: 'review', label: 'Review', class: 'col-review' },
+    { id: 'completed', label: 'Done', class: 'col-done' },
   ];
 
   return (

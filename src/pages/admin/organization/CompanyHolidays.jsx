@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarIcon, List, Plus, Edit, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import '../../../styles/admin/organization/company-holidays.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
+import { getHolidays, createHoliday, deleteHoliday } from '../../../services/adminService';
 
 const MOCK_HOLIDAYS = [
   { id: 'H-01', name: 'Republic Day', date: '26 Jan 2026', type: 'National' },
@@ -19,25 +20,41 @@ const MOCK_HOLIDAYS = [
 ];
 
 const CompanyHolidays = () => {
-  const [view, setView] = useState('calendar'); // 'calendar' or 'list'
-  const [holidays, setHolidays] = useState(MOCK_HOLIDAYS);
+  const [view, setView] = useState('calendar');
+  const [holidays, setHolidays] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
-  const onSubmit = (data) => {
-    // Basic date formatter for mock consistency
-    const d = new Date(data.date);
-    const formattedDate = !isNaN(d) ? `${d.getDate().toString().padStart(2, '0')} ${d.toLocaleString('default', { month: 'short' })} 2026` : data.date;
-    
-    const newHoliday = {
-      id: `H-${holidays.length + 1}`,
-      name: data.name,
-      date: formattedDate,
-      type: data.type
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getHolidays();
+      setHolidays(data || []);
+      setLoading(false);
     };
-    setHolidays([...holidays, newHoliday].sort((a,b) => new Date(a.date) - new Date(b.date)));
-    setIsModalOpen(false);
-    reset();
+    load();
+  }, []);
+
+  const onSubmit = async (data) => {
+    const { data: newHoliday, error } = await createHoliday({
+      name: data.name,
+      date: data.date,
+      type: data.type
+    });
+    if (newHoliday) {
+      setHolidays(prev => [...prev, newHoliday].sort((a, b) => new Date(a.date) - new Date(b.date)));
+      setIsModalOpen(false);
+      reset();
+    } else {
+      alert('Error: ' + error?.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this holiday?')) return;
+    const { error } = await deleteHoliday(id);
+    if (!error) setHolidays(prev => prev.filter(h => h.id !== id));
   };
 
   const getDayName = (dateStr) => {

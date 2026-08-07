@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, Briefcase, MapPin, Mail, Edit, Eye, X, Building } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import '../../../styles/admin/organization/departments.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
+import { getDepartments, createDepartment, deleteDepartment } from '../../../services/adminService';
 
 const MOCK_DEPTS = [
   { id: 'D-01', name: 'Engineering', head: 'Rajesh Kumar', empCount: 42, openPos: 5, location: 'Floor 3', email: 'engg@dropyhub.com' },
@@ -19,23 +20,41 @@ const MOCK_DEPTS = [
 ];
 
 const Departments = () => {
-  const [departments, setDepartments] = useState(MOCK_DEPTS);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
-  const onSubmit = (data) => {
-    const newDept = {
-      id: `D-${departments.length + 1}`,
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getDepartments();
+      setDepartments(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const onSubmit = async (data) => {
+    const { data: newDept, error } = await createDepartment({
       name: data.name,
       head: data.head,
-      empCount: 0,
-      openPos: 0,
       location: data.location || 'HQ',
       email: data.email || 'dept@dropyhub.com'
-    };
-    setDepartments([newDept, ...departments]);
-    setIsModalOpen(false);
-    reset();
+    });
+    if (newDept) {
+      setDepartments([newDept, ...departments]);
+      setIsModalOpen(false);
+      reset();
+    } else {
+      alert('Error: ' + error?.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this department?')) return;
+    const { error } = await deleteDepartment(id);
+    if (!error) setDepartments(prev => prev.filter(d => d.id !== id));
   };
 
   return (

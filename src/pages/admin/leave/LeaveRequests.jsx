@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Download, CheckCircle, XCircle, Eye, RefreshCw, X, Paperclip, SearchX, Check, Undo2 } from 'lucide-react';
 import '../../../styles/admin/leave/leave-requests.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
+import { getAllLeaveRequests, updateLeaveStatus } from '../../../services/adminService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // Mock Data
 const MOCK_REQUESTS = [
@@ -22,24 +24,36 @@ const LeaveRequests = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  
-  const [requests, setRequests] = useState(MOCK_REQUESTS);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // 'approve' or 'reject'
+  const [confirmAction, setConfirmAction] = useState(null);
   const [adminComment, setAdminComment] = useState('');
-  
+  const [submitting, setSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = async () => {
+    setLoading(true);
+    const { data } = await getAllLeaveRequests();
+    setRequests(data || []);
+    setLoading(false);
+  };
 
   // Filter Logic
   const filteredRequests = requests.filter(req => {
-    const matchesTab = activeTab === 'All' ? true : req.status === activeTab;
-    const matchesSearch = `${req.empName} ${req.empId}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = deptFilter ? req.dept === deptFilter : true;
-    const matchesType = typeFilter ? req.type === typeFilter : true;
+    const empName = req.profiles ? `${req.profiles.first_name} ${req.profiles.last_name}` : '';
+    const matchesTab = activeTab === 'All' ? true : req.status === activeTab.toLowerCase();
+    const matchesSearch = empName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept = deptFilter ? req.profiles?.departments?.name === deptFilter : true;
+    const matchesType = typeFilter ? req.leave_type === typeFilter : true;
     return matchesTab && matchesSearch && matchesDept && matchesType;
   });
 
@@ -68,13 +82,20 @@ const LeaveRequests = () => {
     setIsConfirmModalOpen(true);
   };
 
-  const confirmActionSubmit = () => {
-    const newStatus = confirmAction === 'approve' ? 'Approved' : 'Rejected';
-    setRequests(prev => prev.map(r => r.id === selectedRequest.id ? { ...r, status: newStatus } : r));
+  const confirmActionSubmit = async () => {
+    setSubmitting(true);
+    const newStatus = confirmAction === 'approve' ? 'approved' : 'rejected';
+    const { data, error } = await updateLeaveStatus(selectedRequest.id, newStatus, user?.id);
+    if (data) {
+      setRequests(prev => prev.map(r => r.id === selectedRequest.id ? { ...r, status: newStatus } : r));
+    } else {
+      alert('Error: ' + error?.message);
+    }
     setIsConfirmModalOpen(false);
     setIsDrawerOpen(false);
     setAdminComment('');
     setConfirmAction(null);
+    setSubmitting(false);
   };
 
   return (

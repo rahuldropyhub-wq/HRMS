@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -8,6 +8,7 @@ import {
 import '../../../styles/admin/employee/employee-directory.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
+import { getAllEmployees } from '../../../services/adminService';
 
 // Mock Data
 const MOCK_EMPLOYEES = [
@@ -46,33 +47,42 @@ const getInitials = (first, last) => `${first[0]}${last[0]}`;
 
 const EmployeeDirectory = () => {
   const navigate = useNavigate();
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getAllEmployees();
+      setEmployees(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.action-menu')) {
         setActiveDropdown(null);
       }
     };
     document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   // Filtering Logic
-  const filteredEmployees = MOCK_EMPLOYEES.filter(emp => {
-    const matchesSearch = `${emp.firstName} ${emp.lastName} ${emp.id} ${emp.email}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = deptFilter ? emp.department === deptFilter : true;
+  const filteredEmployees = employees.filter(emp => {
+    const name = `${emp.first_name || ''} ${emp.last_name || ''} ${emp.email || ''}`;
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept = deptFilter ? emp.departments?.name === deptFilter : true;
     const matchesStatus = statusFilter ? emp.status === statusFilter : true;
-    const matchesType = typeFilter ? emp.type === typeFilter : true;
-    return matchesSearch && matchesDept && matchesStatus && matchesType;
+    return matchesSearch && matchesDept && matchesStatus;
   });
 
   // Pagination Logic

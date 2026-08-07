@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   CalendarDays, 
@@ -18,10 +18,10 @@ import { Key } from 'lucide-react';
 function Login() {
   const navigate = useNavigate();
   const { loginWithOtp } = useAuth();
-  const [email, setEmail] = React.useState('');
-  const [error, setError] = React.useState('');
-  const [success, setSuccess] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Dynamic greeting based on time of day
   const getGreeting = () => {

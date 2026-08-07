@@ -7,13 +7,28 @@ import {
   Megaphone, Calendar as CalendarIcon, Download, Clock
 } from 'lucide-react';
 import '../../styles/admin/admin-dashboard.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getDashboardStats } from '../../services/adminService';
 
 const AdminDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [stats, setStats] = useState({ totalEmployees: 0, presentToday: 0, pendingLeaves: 0, openTickets: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const { profile } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      setLoadingStats(true);
+      const data = await getDashboardStats();
+      setStats(data);
+      setLoadingStats(false);
+    };
+    loadStats();
   }, []);
 
   const formatDate = (date) => {
@@ -30,7 +45,7 @@ const AdminDashboard = () => {
         {/* SECTION 1: Welcome Banner */}
         <section className="welcome-banner">
           <div className="welcome-text">
-            <h1>Welcome back, Super Admin</h1>
+            <h1>Welcome back, {profile?.first_name || 'Admin'} 👋</h1>
             <p>Here's what's happening at Dropyhub today.</p>
           </div>
           <div className="welcome-meta">
@@ -55,42 +70,28 @@ const AdminDashboard = () => {
             <div className="kpi-icon-wrapper blue"><Users size={20} /></div>
             <div>
               <div className="kpi-title">Total Employees</div>
-              <div className="kpi-value">124</div>
+              <div className="kpi-value">{loadingStats ? '...' : stats.totalEmployees}</div>
             </div>
           </div>
           <div className="kpi-card">
             <div className="kpi-icon-wrapper green"><UserCheck size={20} /></div>
             <div>
               <div className="kpi-title">Present Today</div>
-              <div className="kpi-value">118</div>
+              <div className="kpi-value">{loadingStats ? '...' : stats.presentToday}</div>
             </div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-icon-wrapper purple"><Building size={20} /></div>
+            <div className="kpi-icon-wrapper orange"><ClipboardList size={20} /></div>
             <div>
-              <div className="kpi-title">Work From Office</div>
-              <div className="kpi-value">82</div>
-            </div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-icon-wrapper orange"><Home size={20} /></div>
-            <div>
-              <div className="kpi-title">Work From Home</div>
-              <div className="kpi-value">36</div>
+              <div className="kpi-title">Pending Leaves</div>
+              <div className="kpi-value">{loadingStats ? '...' : stats.pendingLeaves}</div>
             </div>
           </div>
           <div className="kpi-card">
             <div className="kpi-icon-wrapper red"><Ticket size={20} /></div>
             <div>
               <div className="kpi-title">Open Tickets</div>
-              <div className="kpi-value">14</div>
-            </div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-icon-wrapper blue"><ClipboardList size={20} /></div>
-            <div>
-              <div className="kpi-title">Pending Approvals</div>
-              <div className="kpi-value">27</div>
+              <div className="kpi-value">{loadingStats ? '...' : stats.openTickets}</div>
             </div>
           </div>
         </section>

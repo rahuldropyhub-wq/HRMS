@@ -4,18 +4,37 @@ import { UploadCloud, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../../../styles/admin/tasks/create-task.css';
 import { useForm } from 'react-hook-form';
+import { createTask } from '../../../services/adminService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const CreateTask = () => {
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
 
-  const onSubmit = (data) => {
-    // In a real app, send data to backend here.
-    // For now, mock success and redirect
-    alert('Task Created & Assigned Successfully!');
-    navigate('/admin/tasks');
+  const onSubmit = async (data) => {
+    setSubmitting(true);
+    const { error } = await createTask({
+      title: data.title,
+      description: data.description,
+      project: data.project,
+      priority: data.priority?.toLowerCase() || 'medium',
+      status: 'todo',
+      due_date: data.dueDate,
+      assigned_to: data.assignedTo || null,
+      assigned_by: user?.id,
+      tags,
+    });
+    setSubmitting(false);
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      alert('Task Created & Assigned Successfully!');
+      navigate('/admin/tasks');
+    }
   };
 
   const handleAddTag = (e) => {
