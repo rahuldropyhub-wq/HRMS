@@ -30,17 +30,7 @@ import AttendanceControlCenter from '../../components/employee/AttendanceControl
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMyAttendance, getMyTasks, getMyLeaves } from '../../services/employeeService';
-
-const attendanceData = [
-  { name: 'Mon', hours: 8.3 },
-  { name: 'Tue', hours: 8.75 },
-  { name: 'Wed', hours: 8.16 },
-  { name: 'Thu', hours: 7.83 },
-  { name: 'Fri', hours: 2.75 },
-  { name: 'Sat', hours: 0 },
-  { name: 'Sun', hours: 0 },
-];
+import { getMyAttendance, getMyTasks, getMyLeaves, getAnnouncements } from '../../services/employeeService';
 
 function Dashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -50,6 +40,10 @@ function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [pendingTasks, setPendingTasks] = useState(0);
   const [pendingLeaves, setPendingLeaves] = useState(0);
+  const [tasksList, setTasksList] = useState([]);
+  const [announcementsList, setAnnouncementsList] = useState([]);
+  const [weeklyChartData, setWeeklyChartData] = useState([]);
+  const [timeline, setTimeline] = useState([]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -70,13 +64,54 @@ function Dashboard() {
         const todayDate = now.toISOString().split('T')[0];
         const todayRecord = att.find(a => a.date === todayDate);
         setTodayAttendance(todayRecord || null);
+
+        // Generate Weekly Chart Data
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const chartData = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          const dStr = d.toISOString().split('T')[0];
+          const record = att.find(a => a.date === dStr);
+          chartData.push({
+            name: days[d.getDay()],
+            hours: record?.total_hours ? parseFloat(record.total_hours) : 0
+          });
+        }
+        setWeeklyChartData(chartData);
+
+        // Build Timeline
+        if (todayRecord) {
+          const tl = [];
+          if (todayRecord.check_in) {
+             tl.push({ type: 'work-start', label: 'Checked In', sub: 'Login time', time: todayRecord.check_in });
+          }
+          if (todayRecord.breaks && Array.isArray(todayRecord.breaks)) {
+             todayRecord.breaks.forEach(b => {
+                tl.push({ type: 'break-start', label: 'Break Started', sub: b.reason || 'Break', time: b.start });
+                if (b.end) {
+                   tl.push({ type: 'break-end', label: 'Break Ended', sub: `Duration: ${Math.floor((b.duration||0)/60)}m`, time: b.end });
+                }
+             });
+          }
+          if (todayRecord.check_out) {
+             tl.push({ type: 'work-end', label: 'Work Completed', sub: 'Logout time', time: todayRecord.check_out });
+          }
+          setTimeline(tl);
+        }
       }
 
       const { data: tasks } = await getMyTasks(user.id);
-      if (tasks) setPendingTasks(tasks.filter(t => t.status !== 'completed').length);
+      if (tasks) {
+        setPendingTasks(tasks.filter(t => t.status !== 'completed').length);
+        setTasksList(tasks.slice(0, 4));
+      }
 
       const { data: leaves } = await getMyLeaves(user.id);
       if (leaves) setPendingLeaves(leaves.filter(l => l.status === 'pending').length);
+
+      const { data: ann } = await getAnnouncements();
+      if (ann) setAnnouncementsList(ann.slice(0, 3));
     };
     load();
   }, [user]);
@@ -165,46 +200,18 @@ function Dashboard() {
                 <h3>Today's Timeline</h3>
               </div>
               <div className="timeline-list">
-                <div className="timeline-item">
-                  <div className="timeline-icon success"><CheckCircle2 size={14} /></div>
-                  <div className="timeline-content">
-                    <span className="time">09:05 AM</span>
-                    <span className="timeline-title">Checked In</span>
-                    <span className="timeline-desc">Login time</span>
+                {timeline.length > 0 ? timeline.map((item, i) => (
+                  <div className="timeline-item" key={i}>
+                    <div className={`timeline-icon ${item.type.includes('start') ? 'success' : 'primary'}`}><CheckCircle2 size={14} /></div>
+                    <div className="timeline-content">
+                      <span className="time">{item.time}</span>
+                      <span className="timeline-title">{item.label}</span>
+                      <span className="timeline-desc">{item.sub}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon primary"><Briefcase size={14} /></div>
-                  <div className="timeline-content">
-                    <span className="time">11:30 AM</span>
-                    <span className="timeline-title">Working on Project</span>
-                    <span className="timeline-desc">HRMS Attendance Module</span>
-                  </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon warning"><Coffee size={14} /></div>
-                  <div className="timeline-content">
-                    <span className="time">01:15 PM</span>
-                    <span className="timeline-title">Break Time</span>
-                    <span className="timeline-desc">Lunch Break</span>
-                  </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon primary"><LayoutDashboard size={14} /></div>
-                  <div className="timeline-content">
-                    <span className="time">01:45 PM</span>
-                    <span className="timeline-title">Back to Work</span>
-                    <span className="timeline-desc">Working on Dashboard</span>
-                  </div>
-                </div>
-                <div className="timeline-item">
-                  <div className="timeline-icon empty"></div>
-                  <div className="timeline-content">
-                    <span className="time">06:30 PM</span>
-                    <span className="timeline-title">Expected Logout</span>
-                    <span className="timeline-desc">Have a great day!</span>
-                  </div>
-                </div>
+                )) : (
+                  <div style={{color: '#6b7280', fontSize: 13, padding: 12}}>No activity yet today.</div>
+                )}
               </div>
               <button className="full-report-btn" onClick={() => navigate('/attendance')}>View Full Attendance <ArrowRight size={14} /></button>
             </div>
@@ -216,38 +223,18 @@ function Dashboard() {
                 <button className="view-all-btn" onClick={() => navigate('/tasks')}>View All</button>
               </div>
               <div className="task-list">
-                <div className="task-item">
-                  <div className="task-icon blue"><LayoutDashboard size={18} /></div>
-                  <div className="task-content">
-                    <div className="task-title">Design Attendance UI</div>
-                    <div className="task-project">HRMS Project</div>
+                {tasksList.length > 0 ? tasksList.map((t, i) => (
+                  <div className="task-item" key={i}>
+                    <div className="task-icon blue"><LayoutDashboard size={18} /></div>
+                    <div className="task-content">
+                      <div className="task-title">{t.title}</div>
+                      <div className="task-project">Priority: {t.priority}</div>
+                    </div>
+                    <span className={`status-badge ${t.status === 'completed' ? 'completed' : t.status === 'in_progress' ? 'in-progress' : 'pending'}`}>{t.status.replace('_', ' ')}</span>
                   </div>
-                  <span className="status-badge completed">Completed</span>
-                </div>
-                <div className="task-item">
-                  <div className="task-icon blue"><LayoutDashboard size={18} /></div>
-                  <div className="task-content">
-                    <div className="task-title">API Integration</div>
-                    <div className="task-project">HRMS Project</div>
-                  </div>
-                  <span className="status-badge in-progress">In Progress</span>
-                </div>
-                <div className="task-item">
-                  <div className="task-icon orange"><LayoutDashboard size={18} /></div>
-                  <div className="task-content">
-                    <div className="task-title">Fix Dashboard Charts</div>
-                    <div className="task-project">HRMS Project</div>
-                  </div>
-                  <span className="status-badge pending">Pending</span>
-                </div>
-                <div className="task-item">
-                  <div className="task-icon purple"><LayoutDashboard size={18} /></div>
-                  <div className="task-content">
-                    <div className="task-title">Code Review</div>
-                    <div className="task-project">HRMS Project</div>
-                  </div>
-                  <span className="status-badge pending">Pending</span>
-                </div>
+                )) : (
+                  <div style={{color: '#6b7280', fontSize: 13, padding: 12}}>No pending tasks.</div>
+                )}
               </div>
             </div>
 
@@ -258,36 +245,20 @@ function Dashboard() {
                 <button className="view-all-btn" onClick={() => navigate('/dashboard')}>View All</button>
               </div>
               <div className="announcement-list">
-                <div className="announcement-item">
-                  <div className="announce-icon purple"><Megaphone size={20} /></div>
-                  <div className="announce-content">
-                    <div className="announce-header">
-                      <span className="announce-title">Office Meeting</span>
-                      <span className="announce-time">2h ago</span>
+                {announcementsList.length > 0 ? announcementsList.map((a, i) => (
+                  <div className="announcement-item" key={i}>
+                    <div className="announce-icon purple"><Megaphone size={20} /></div>
+                    <div className="announce-content">
+                      <div className="announce-header">
+                        <span className="announce-title">{a.title}</span>
+                        <span className="announce-time">{new Date(a.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="announce-desc">{a.content}</p>
                     </div>
-                    <p className="announce-desc">Monthly team meeting on 10th May at 11:00 AM in Meeting Room.</p>
                   </div>
-                </div>
-                <div className="announcement-item">
-                  <div className="announce-icon green"><CalendarDays size={20} /></div>
-                  <div className="announce-content">
-                    <div className="announce-header">
-                      <span className="announce-title">Public Holiday</span>
-                      <span className="announce-time">1d ago</span>
-                    </div>
-                    <p className="announce-desc">Office will be closed on 13th May (Tuesday) for Buddha Purnima.</p>
-                  </div>
-                </div>
-                <div className="announcement-item">
-                  <div className="announce-icon yellow"><FileText size={20} /></div>
-                  <div className="announce-content">
-                    <div className="announce-header">
-                      <span className="announce-title">Policy Update</span>
-                      <span className="announce-time">2d ago</span>
-                    </div>
-                    <p className="announce-desc">New leave policy has been updated. Please check the policy section.</p>
-                  </div>
-                </div>
+                )) : (
+                  <div style={{color: '#6b7280', fontSize: 13, padding: 12}}>No new announcements.</div>
+                )}
               </div>
             </div>
           </div>
@@ -302,16 +273,16 @@ function Dashboard() {
               </div>
               <div style={{ width: '100%', height: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={attendanceData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                  <BarChart data={weeklyChartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={(val) => val + 'h'} />
                     <Tooltip cursor={{ fill: '#f3f4f6' }} />
                     <Bar dataKey="hours" radius={[4, 4, 0, 0]} barSize={16}>
                       {
-                        attendanceData.map((entry, index) => (
+                        weeklyChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={
-                            index === 3 ? '#fcd34d' : index === 4 ? '#93c5fd' : '#34d399'
+                            entry.hours > 8 ? '#34d399' : entry.hours > 4 ? '#93c5fd' : '#fcd34d'
                           } />
                         ))
                       }
