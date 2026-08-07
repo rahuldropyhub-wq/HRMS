@@ -30,7 +30,7 @@ import AttendanceControlCenter from '../../components/employee/AttendanceControl
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMyAttendance, getMyTasks, getMyLeaves, getAnnouncements } from '../../services/employeeService';
+import { getMyAttendance, getMyTasks, getMyLeaves, getAnnouncements, getHolidays } from '../../services/employeeService';
 
 function Dashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -44,6 +44,13 @@ function Dashboard() {
   const [announcementsList, setAnnouncementsList] = useState([]);
   const [weeklyChartData, setWeeklyChartData] = useState([]);
   const [timeline, setTimeline] = useState([]);
+  
+  const [leaveBalance, setLeaveBalance] = useState({
+    casual: 12,
+    sick: 12,
+    privilege: 12
+  });
+  const [upcomingHolidays, setUpcomingHolidays] = useState([]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -108,10 +115,36 @@ function Dashboard() {
       }
 
       const { data: leaves } = await getMyLeaves(user.id);
-      if (leaves) setPendingLeaves(leaves.filter(l => l.status === 'pending').length);
+      if (leaves) {
+        setPendingLeaves(leaves.filter(l => l.status === 'pending').length);
+        
+        // Calculate approved leaves
+        const approvedLeaves = leaves.filter(l => l.status === 'approved');
+        let casualTaken = 0, sickTaken = 0, privilegeTaken = 0;
+        
+        approvedLeaves.forEach(l => {
+          const days = l.days || 1; // Assuming 'days' exists or defaults to 1
+          if (l.leave_type === 'casual') casualTaken += days;
+          else if (l.leave_type === 'sick') sickTaken += days;
+          else if (l.leave_type === 'privilege') privilegeTaken += days;
+        });
+        
+        setLeaveBalance({
+          casual: Math.max(12 - casualTaken, 0),
+          sick: Math.max(12 - sickTaken, 0),
+          privilege: Math.max(12 - privilegeTaken, 0)
+        });
+      }
 
       const { data: ann } = await getAnnouncements();
       if (ann) setAnnouncementsList(ann.slice(0, 3));
+
+      const { data: holidays } = await getHolidays();
+      if (holidays) {
+        const todayStr = now.toISOString().split('T')[0];
+        const futureHolidays = holidays.filter(h => h.date >= todayStr).slice(0, 3);
+        setUpcomingHolidays(futureHolidays);
+      }
     };
     load();
   }, [user]);
@@ -302,28 +335,28 @@ function Dashboard() {
                 <div className="leave-bar-item">
                   <div className="leave-bar-header">
                     <span>Casual Leave</span>
-                    <span>06 Days</span>
+                    <span>{String(leaveBalance.casual).padStart(2, '0')} Days</span>
                   </div>
                   <div className="progress-track">
-                    <div className="progress-fill green"></div>
+                    <div className="progress-fill green" style={{ width: `${(leaveBalance.casual / 12) * 100}%` }}></div>
                   </div>
                 </div>
                 <div className="leave-bar-item">
                   <div className="leave-bar-header">
                     <span>Sick Leave</span>
-                    <span>04 Days</span>
+                    <span>{String(leaveBalance.sick).padStart(2, '0')} Days</span>
                   </div>
                   <div className="progress-track">
-                    <div className="progress-fill blue"></div>
+                    <div className="progress-fill blue" style={{ width: `${(leaveBalance.sick / 12) * 100}%` }}></div>
                   </div>
                 </div>
                 <div className="leave-bar-item">
                   <div className="leave-bar-header">
                     <span>Privilege Leave</span>
-                    <span>02 Days</span>
+                    <span>{String(leaveBalance.privilege).padStart(2, '0')} Days</span>
                   </div>
                   <div className="progress-track">
-                    <div className="progress-fill orange"></div>
+                    <div className="progress-fill orange" style={{ width: `${(leaveBalance.privilege / 12) * 100}%` }}></div>
                   </div>
                 </div>
               </div>
@@ -336,36 +369,27 @@ function Dashboard() {
                 <button className="view-all-btn" onClick={() => navigate('/holidays')}>View Calendar</button>
               </div>
               <div className="holiday-list">
-                <div className="holiday-item">
-                  <div className="holiday-date">
-                    <div className="month green">May</div>
-                    <div className="day">13</div>
-                  </div>
-                  <div className="holiday-content">
-                    <h4>Buddha Purnima</h4>
-                    <p>Tuesday</p>
-                  </div>
-                </div>
-                <div className="holiday-item">
-                  <div className="holiday-date">
-                    <div className="month red">Aug</div>
-                    <div className="day">15</div>
-                  </div>
-                  <div className="holiday-content">
-                    <h4>Independence Day</h4>
-                    <p>Friday</p>
-                  </div>
-                </div>
-                <div className="holiday-item">
-                  <div className="holiday-date">
-                    <div className="month orange">Oct</div>
-                    <div className="day">02</div>
-                  </div>
-                  <div className="holiday-content">
-                    <h4>Gandhi Jayanthi</h4>
-                    <p>Thursday</p>
-                  </div>
-                </div>
+                {upcomingHolidays.length > 0 ? upcomingHolidays.map((h, i) => {
+                  const d = new Date(h.date);
+                  const month = d.toLocaleString('default', { month: 'short' });
+                  const day = String(d.getDate()).padStart(2, '0');
+                  const weekday = d.toLocaleString('default', { weekday: 'long' });
+                  const color = i === 0 ? 'green' : i === 1 ? 'red' : 'orange';
+                  return (
+                    <div className="holiday-item" key={i}>
+                      <div className="holiday-date">
+                        <div className={`month ${color}`}>{month}</div>
+                        <div className="day">{day}</div>
+                      </div>
+                      <div className="holiday-content">
+                        <h4>{h.name}</h4>
+                        <p>{weekday}</p>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div style={{color: '#6b7280', fontSize: 13, padding: 12}}>No upcoming holidays.</div>
+                )}
               </div>
             </div>
           </div>
