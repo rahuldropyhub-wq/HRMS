@@ -77,6 +77,42 @@ const BREAK_REASONS = [
   { label: 'Other', emoji: '⋯' },
 ];
 
+// ─── Circular Timer Helper ──────────────────────────────────────────────────
+function CircularTimer({ seconds, color }) {
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  // assuming 9 hours (32400 seconds) is 100%
+  const progress = Math.min(seconds / 32400, 1);
+  const offset = circumference - progress * circumference;
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const timeStr = `${pad(h)}:${pad(m)}:${pad(s)}`;
+
+  return (
+    <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, marginTop: -10 }}>
+      <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
+        <circle cx="70" cy="70" r="60" stroke="rgba(255,255,255,0.05)" strokeWidth="10" fill="none" />
+        <circle 
+          cx="70" cy="70" r="60" 
+          stroke={color} 
+          strokeWidth="10" 
+          fill="none" 
+          strokeDasharray={circumference} 
+          strokeDashoffset={offset} 
+          strokeLinecap="round" 
+          style={{ transition: 'stroke-dashoffset 1s linear', filter: `drop-shadow(0 0 8px ${color})` }}
+        />
+      </svg>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontVariantNumeric: 'tabular-nums', letterSpacing: 1 }}>{timeStr}</div>
+        <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Hrs Today</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function AttendanceControlCenter({ compact = false }) {
   const navigate = useNavigate();
@@ -396,11 +432,13 @@ export default function AttendanceControlCenter({ compact = false }) {
           <div className="acc-hero-section">
             {status === 'notStarted' ? (
               <img src="/assets/images/neon-briefcase-3d.png" alt="3D Neon Briefcase" style={{ width: '160px', height: '160px', objectFit: 'cover', mixBlendMode: 'screen', marginBottom: '10px' }} />
+            ) : status === 'working' ? (
+              <CircularTimer seconds={totalWorkSecs} color="#4ade80" />
+            ) : status === 'onBreak' ? (
+              <CircularTimer seconds={Math.floor((now - currentBreakStart) / 1000)} color="#c084fc" />
             ) : (
-              <div className="glowing-ring" style={status === 'working' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #4ade80, #10b981) border-box', boxShadow: '0 0 30px rgba(34,197,94,0.2), inset 0 0 20px rgba(34,197,94,0.1)'} : status === 'onBreak' ? {background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #c084fc, #a855f7) border-box', boxShadow: '0 0 30px rgba(168,85,247,0.2), inset 0 0 20px rgba(168,85,247,0.1)'} : {}}>
-                {status === 'working' && <Clock size={40} strokeWidth={1.5} color="#4ade80" />}
-                {status === 'onBreak' && <Coffee size={40} strokeWidth={1.5} color="#c084fc" />}
-                {status === 'completed' && <CheckCircle2 size={40} strokeWidth={1.5} color="#00f2fe" />}
+              <div className="glowing-ring" style={{background: 'linear-gradient(#0c1120, #0c1120) padding-box, linear-gradient(135deg, #00f2fe, #4facfe) border-box', boxShadow: '0 0 30px rgba(0,242,254,0.2), inset 0 0 20px rgba(0,242,254,0.1)'}}>
+                <CheckCircle2 size={40} strokeWidth={1.5} color="#00f2fe" />
               </div>
             )}
             
