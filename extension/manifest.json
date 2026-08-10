@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Dropyhub Enterprise Activity",
+  "version": "1.0.0",
+  "description": "Secure desktop activity monitoring for Dropyhub HRMS.",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "idle",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "http://localhost:5173/*"
+  ],
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://*.dropyhub.com/*"
+      ],
+      "js": [
+        "src/content.ts"
+      ]
+    }
+  ]
+}

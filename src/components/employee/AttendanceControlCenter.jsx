@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import '../../styles/employee/attendance-control.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getTodayAttendance, checkIn, startBreak, endBreak, checkOut } from '../../services/employeeService';
+import { getTodayAttendance, checkIn, startBreak, endBreak, checkOut, getIdleHistory } from '../../services/employeeService';
+import { supabase } from '../../lib/supabaseClient';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const OFFICE_START = { h: 9, m: 30 };   // 09:30
@@ -113,10 +114,10 @@ function CircularTimer({ seconds, color, backgroundRingColor }) {
           style={{ transition: 'stroke-dashoffset 1s linear' }}
         />
       </svg>
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
-        <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', fontVariantNumeric: 'tabular-nums', letterSpacing: 1 }}>{timeStr}</div>
-        <div style={{ fontSize: 13, color: '#475569', fontWeight: 600, marginTop: 4 }}>Hrs</div>
-        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Today</div>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2, transform: 'translateY(2px)' }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{timeStr}</div>
+        <div style={{ fontSize: 13, color: '#475569', fontWeight: 600, marginTop: 2 }}>Hrs</div>
+        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600, marginTop: -2 }}>Today</div>
       </div>
     </div>
   );
@@ -142,6 +143,7 @@ export default function AttendanceControlCenter({ compact = false }) {
   // Computed seconds
   const [totalWorkSecs, setTotalWorkSecs] = useState(0);
   const [totalBreakSecs, setTotalBreakSecs] = useState(0);
+  const [totalIdleSecs, setTotalIdleSecs] = useState(0);
 
   // Modals
   const [showWorkModeModal, setShowWorkModeModal] = useState(false);
@@ -154,6 +156,7 @@ export default function AttendanceControlCenter({ compact = false }) {
   const [wfhReason, setWfhReason] = useState('Client Meeting');
 
   const [attendanceId, setAttendanceId] = useState(null);
+  const [dbError, setDbError] = useState(null);
 
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [breakReason, setBreakReason] = useState('Tea Break');
@@ -177,7 +180,7 @@ export default function AttendanceControlCenter({ compact = false }) {
         setAttendanceId(data.id);
         
         if (data.check_in) {
-          const todayStr = new Date().toISOString().split('T')[0];
+          const todayStr = data.date;
           const st = new Date(`${todayStr}T${data.check_in}`);
           setWorkStartTime(st);
           
@@ -225,9 +228,30 @@ export default function AttendanceControlCenter({ compact = false }) {
     const elapsed = Math.floor((now - workStartTime) / 1000);
     const workSecs = elapsed - allBreakSecs;
 
-    setTotalWorkSecs(Math.max(0, workSecs));
+    setTotalWorkSecs(workSecs > 0 ? workSecs : 0);
     setTotalBreakSecs(allBreakSecs);
   }, [now, workStartTime, breaks, currentBreakStart]);
+
+  // Extension Module 7: Poll Idle History
+  useEffect(() => {
+    if (!attendanceId) return;
+
+    const fetchIdle = async () => {
+      const { data, error } = await getIdleHistory(attendanceId);
+      if (error) {
+        console.error('Error fetching idle history:', error);
+      } else if (data) {
+        const totalIdle = data.reduce((sum, record) => sum + (record.duration_seconds || 0), 0);
+        setTotalIdleSecs(totalIdle);
+      }
+    };
+
+    fetchIdle(); // Fetch immediately
+    
+    // Then poll every 30 seconds
+    const interval = setInterval(fetchIdle, 30000);
+    return () => clearInterval(interval);
+  }, [attendanceId]);
 
   // ── Actions ──
   const handleInitiateWork = () => {
@@ -254,12 +278,26 @@ export default function AttendanceControlCenter({ compact = false }) {
     if (!user?.id) return;
     
     // Call backend
+    setDbError(null);
     const { data, error } = await checkIn(user.id, mode, details.reason, { lat: details.lat, lng: details.lng, address: details.address });
     if (error) {
       console.error('Check-in failed:', error);
-      // Fallback to local state if offline or error
+      setDbError(error.message || JSON.stringify(error));
+      return; // Stop here if it fails
     } else if (data) {
       setAttendanceId(data.id);
+      
+      // 🔥 MODULE 4: Trigger Chrome Extension Sync
+      supabase.auth.getSession().then(({ data: sessionData }) => {
+        window.postMessage({
+          type: 'HRMS_SESSION_START',
+          payload: {
+            employeeId: user.id,
+            attendanceId: data.id,
+            token: sessionData?.session?.access_token
+          }
+        }, '*');
+      });
     }
 
     const t = new Date();
@@ -375,6 +413,10 @@ export default function AttendanceControlCenter({ compact = false }) {
   const overtimeMinutes = workEndTime ? getOvertimeInfo(workEndTime) : null;
   const netWorkSecs = Math.max(0, totalWorkSecs);
   const overtimeSecs = Math.max(0, totalWorkSecs - (9 * 3600));
+  
+  // Extension Mock Data (Will be connected to backend in Module 7)
+
+  const extensionStatus = 'Working'; // 'Working', 'Idle', or 'Offline'
 
   const expectedLogout = () => {
     if (!workStartTime) return `${pad(OFFICE_END.h > 12 ? OFFICE_END.h - 12 : OFFICE_END.h)}:${pad(OFFICE_END.m)} PM`;
@@ -419,6 +461,12 @@ export default function AttendanceControlCenter({ compact = false }) {
               <span className="acc-lo-stat-label">Break Time</span>
               <span className="acc-lo-stat-value">{totalBreakSecs > 0 ? formatDurationDigital(totalBreakSecs) : '00:00'}</span>
             </div>
+            <div className="acc-lo-stat-row">
+              <span className="acc-lo-stat-label">Idle Time</span>
+              <span className="acc-lo-stat-value" style={{ color: totalIdleSecs > 0 ? '#f59e0b' : 'inherit' }}>
+                {totalIdleSecs > 0 ? formatDurationDigital(totalIdleSecs) : '00:00'}
+              </span>
+            </div>
             <div className="acc-lo-divider" />
             <div className="acc-lo-stat-row">
               <span className="acc-lo-stat-label">Working Time</span>
@@ -436,8 +484,13 @@ export default function AttendanceControlCenter({ compact = false }) {
           <div className="acc-lo-location">
             <MapPin size={16} strokeWidth={2.5} /> Office
           </div>
-          <div className="acc-lo-status">
-            On Time <div className="acc-lo-dot" />
+          <div className="acc-lo-status" style={{ display: 'flex', gap: '15px' }}>
+            <span>
+              On Time <div className="acc-lo-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', marginLeft: '4px' }} />
+            </span>
+            <span>
+              Ext: {extensionStatus} <div className="acc-lo-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: extensionStatus === 'Working' ? '#10b981' : (extensionStatus === 'Idle' ? '#f59e0b' : '#ef4444'), marginLeft: '4px' }} />
+            </span>
           </div>
         </div>
 
@@ -463,93 +516,20 @@ export default function AttendanceControlCenter({ compact = false }) {
               <Play size={16} fill="currentColor" /> Resume Work
             </button>
           )}
-        </div>
-      </div>
+          {dbError && (
+            <div style={{ padding: 16, background: '#fee2e2', color: '#b91c1c', borderRadius: 8, marginBottom: 16, fontWeight: 600 }}>
+              Database Error: {dbError}
+            </div>
+          )}
 
-      {/* ── COLUMN 3: TIMELINE ── */}
-        <div className="acc-card">
-          <div className="acc-card-title"><Calendar size={13} /> Today's Timeline</div>
-          {timeline.length === 0 ? (
-            <div className="acc-timeline-empty">No activity yet. Start work to begin.</div>
-          ) : (
-            <div className="acc-timeline">
-              {timeline.map((item, i) => (
-                <div key={i} className="acc-timeline-item">
-                  <div className="acc-timeline-left">
-                    <div className={`acc-timeline-dot ${item.type}`}>
-                      {item.type === 'work-start' && <Play size={12} />}
-                      {item.type === 'break-start' && <Coffee size={12} />}
-                      {item.type === 'break-end' && <SkipForward size={12} />}
-                      {item.type === 'work-end' && <CheckCircle2 size={12} />}
-                    </div>
-                    {i < timeline.length - 1 && <div className="acc-timeline-line" />}
-                  </div>
-                  <div className="acc-timeline-content">
-                    <div className="acc-timeline-action">{item.label}</div>
-                    {item.sub && <div className="acc-timeline-sub">{item.sub}</div>}
-                    <div className="acc-timeline-time">{item.time}</div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Live "currently working" indicator */}
-              {status === 'working' && (
-                <div className="acc-timeline-item">
-                  <div className="acc-timeline-left">
-                    <div className="acc-timeline-dot work-start" style={{ background: '#f0fdf4', animation: 'pulse-dot 1.5s infinite' }}>
-                      <Clock size={12} />
-                    </div>
-                  </div>
-                  <div className="acc-timeline-content">
-                    <div className="acc-timeline-action" style={{ color: '#16a34a' }}>Currently Working...</div>
-                    <div className="acc-timeline-time">{formatDuration(totalWorkSecs)}</div>
-                  </div>
-                </div>
-              )}
-
-              {status === 'onBreak' && (
-                <div className="acc-timeline-item">
-                  <div className="acc-timeline-left">
-                    <div className="acc-timeline-dot break-start" style={{ animation: 'pulse-dot 1.5s infinite' }}>
-                      <Coffee size={12} />
-                    </div>
-                  </div>
-                  <div className="acc-timeline-content">
-                    <div className="acc-timeline-action" style={{ color: '#ea580c' }}>On Break...</div>
-                    <div className="acc-timeline-time">
-                      {currentBreakStart ? formatDuration(Math.floor((now - currentBreakStart) / 1000)) : ''}
-                    </div>
-                  </div>
-                </div>
-              )}
+          {status === 'idle' && (
+            <div className="ar-action-box">
+              {/* Other idle states */}
             </div>
           )}
         </div>
-        
+      </div>
 
-      {/* ── SUMMARY STRIP ── */}
-      {!compact && (
-        <div className="acc-summary-grid">
-          <div className="acc-summary-item">
-            <div className="acc-summary-label">Status</div>
-            <div className={`acc-summary-value ${status === 'notStarted' ? '' : status === 'completed' ? 'present' : 'present'}`}>
-              {status === 'notStarted' ? 'Absent' : status === 'completed' ? 'Present' : 'Present'}
-            </div>
-          </div>
-          <div className="acc-summary-item">
-            <div className="acc-summary-label">Working Hours</div>
-            <div className="acc-summary-value">{totalWorkSecs > 0 ? formatHM(totalWorkSecs) : '—'}</div>
-          </div>
-          <div className="acc-summary-item">
-            <div className="acc-summary-label">Break Hours</div>
-            <div className="acc-summary-value">{totalBreakSecs > 0 ? formatHM(totalBreakSecs) : '—'}</div>
-          </div>
-          <div className="acc-summary-item">
-            <div className="acc-summary-label">Net Working</div>
-            <div className="acc-summary-value net-color">{netWorkSecs > 0 ? formatHM(netWorkSecs) : '—'}</div>
-          </div>
-        </div>
-      )}
 
       {/* ── BREAK REASON MODAL ── */}
       {showBreakModal && (

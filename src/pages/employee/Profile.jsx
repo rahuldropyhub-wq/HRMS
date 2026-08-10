@@ -9,8 +9,11 @@ import {
   AlertTriangle, History, Link as LinkIcon
 } from 'lucide-react';
 import DashboardLayout from '../../components/employee/DashboardLayout';
+import { EnterpriseModal, FormHeader, FormBody, FormSection, FormField, TextInput, FormFooter, SelectInput, DateInput } from '../../components/employee/EnterpriseForm';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/profile.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getProfile, updateProfile } from '../../services/employeeService';
 
 const SECTIONS = [
   { id: 'personal', label: 'Personal Information', icon: <User size={16} /> },
@@ -36,8 +39,53 @@ const DOCUMENTS = [
 ];
 
 export default function Profile() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('personal');
+
+  // Edit Personal Info Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchProfile = async () => {
+      setLoading(true);
+      const { data } = await getProfile(user.id);
+      if (data) setProfile(data);
+      setLoading(false);
+    };
+    fetchProfile();
+  }, [user]);
+
+  const handleEditClick = () => {
+    setEditForm({
+      phone: profile?.phone || '',
+      personal_email: profile?.personal_email || '',
+      address: profile?.address || '',
+      gender: profile?.gender || '',
+      dob: profile?.dob || '',
+      blood_group: profile?.blood_group || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    const { data, error } = await updateProfile(user.id, editForm);
+    if (error) {
+      alert(error.message || 'Error updating profile');
+    } else {
+      setProfile(data);
+      setShowEditModal(false);
+    }
+    setIsSaving(false);
+  };
 
   // Handle smooth scroll to section
   const scrollToSection = (id) => {
@@ -80,10 +128,13 @@ export default function Profile() {
             {/* ── Left Sidebar ── */}
             <div className="profile-sidebar">
               <div className="profile-card">
-                <div className="profile-avatar-lg">BK</div>
-                <div className="profile-name">Balaji Kumar</div>
-                <div className="profile-role">Frontend Developer</div>
-                <div className="profile-badge">Active</div>
+                <div className="profile-avatar-lg">
+                  {profile?.first_name?.charAt(0) || 'U'}
+                  {profile?.last_name?.charAt(0) || ''}
+                </div>
+                <div className="profile-name">{profile?.first_name} {profile?.last_name}</div>
+                <div className="profile-role">{profile?.designations?.title || profile?.designation || 'Employee'}</div>
+                <div className="profile-badge">{profile?.status || 'Active'}</div>
               </div>
 
               <div className="profile-nav">
@@ -102,24 +153,28 @@ export default function Profile() {
             {/* ── Right Scrolling Content ── */}
             <div className="profile-content-area">
 
+              {loading ? (
+                <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading profile...</div>
+              ) : (
+                <>
               {/* 1. Personal Information */}
               <div id="personal" className="prof-section">
                 <div className="prof-section-header">
                   <div className="prof-section-title"><User size={18} /> Personal Information</div>
-                  <button className="prof-edit-btn"><Edit2 size={14} /> Edit</button>
+                  <button className="prof-edit-btn" onClick={handleEditClick}><Edit2 size={14} /> Edit</button>
                 </div>
                 <div className="prof-info-grid">
-                  <div className="prof-field"><span className="prof-label">Employee ID</span><span className="prof-value">DH-1042</span></div>
-                  <div className="prof-field"><span className="prof-label">Full Name</span><span className="prof-value">Balaji Kumar</span></div>
-                  <div className="prof-field"><span className="prof-label">Gender</span><span className="prof-value">Male</span></div>
-                  <div className="prof-field"><span className="prof-label">Date of Birth</span><span className="prof-value">14 Aug 1995</span></div>
-                  <div className="prof-field"><span className="prof-label">Blood Group</span><span className="prof-value">O+</span></div>
-                  <div className="prof-field"><span className="prof-label">Phone</span><span className="prof-value">+91 98765 43210</span></div>
-                  <div className="prof-field"><span className="prof-label">Official Email</span><span className="prof-value">balaji.k@dropyhub.com</span></div>
-                  <div className="prof-field"><span className="prof-label">Personal Email</span><span className="prof-value">balaji.dev95@gmail.com</span></div>
+                  <div className="prof-field"><span className="prof-label">Employee ID</span><span className="prof-value">{profile?.emp_id || profile?.id?.slice(0, 8)}</span></div>
+                  <div className="prof-field"><span className="prof-label">Full Name</span><span className="prof-value">{profile?.first_name} {profile?.last_name}</span></div>
+                  <div className="prof-field"><span className="prof-label">Gender</span><span className="prof-value">{profile?.gender || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Date of Birth</span><span className="prof-value">{profile?.dob || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Blood Group</span><span className="prof-value">{profile?.blood_group || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Phone</span><span className="prof-value">{profile?.phone || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Official Email</span><span className="prof-value">{profile?.email || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Personal Email</span><span className="prof-value">{profile?.personal_email || '-'}</span></div>
                   <div className="prof-field" style={{ gridColumn: '1 / -1' }}>
                     <span className="prof-label">Current Address</span>
-                    <span className="prof-value">123 Tech Park Road, Block B, Madhapur, Hyderabad, Telangana 500081</span>
+                    <span className="prof-value">{profile?.address || '-'}</span>
                   </div>
                 </div>
               </div>
@@ -130,14 +185,11 @@ export default function Profile() {
                   <div className="prof-section-title"><Briefcase size={18} /> Company Information</div>
                 </div>
                 <div className="prof-info-grid">
-                  <div className="prof-field"><span className="prof-label">Department</span><span className="prof-value">Engineering</span></div>
-                  <div className="prof-field"><span className="prof-label">Designation</span><span className="prof-value">Senior Frontend Developer</span></div>
-                  <div className="prof-field"><span className="prof-label">Reporting Manager</span><span className="prof-value">Rajesh Verma (VP Eng)</span></div>
-                  <div className="prof-field"><span className="prof-label">Joining Date</span><span className="prof-value">01 Feb 2023</span></div>
-                  <div className="prof-field"><span className="prof-label">Employment Type</span><span className="prof-value">Full Time</span></div>
-                  <div className="prof-field"><span className="prof-label">Office Location</span><span className="prof-value">Hyderabad HQ</span></div>
-                  <div className="prof-field"><span className="prof-label">Employee Status</span><span className="prof-value" style={{ color: '#16a34a' }}>Confirmed</span></div>
-                  <div className="prof-field"><span className="prof-label">Shift</span><span className="prof-value">General (9 AM - 6 PM)</span></div>
+                  <div className="prof-field"><span className="prof-label">Department</span><span className="prof-value">{profile?.departments?.name || profile?.department || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Designation</span><span className="prof-value">{profile?.designations?.title || profile?.designation || '-'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Employment Type</span><span className="prof-value">{profile?.employment_type || 'Full Time'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Office Location</span><span className="prof-value">{profile?.office_location || 'Headquarters'}</span></div>
+                  <div className="prof-field"><span className="prof-label">Employee Status</span><span className="prof-value" style={{ color: '#16a34a' }}>{profile?.status || 'Confirmed'}</span></div>
                 </div>
               </div>
 
@@ -379,9 +431,79 @@ export default function Profile() {
                 </div>
               </div>
 
+                </>
+              )}
+
             </div>
           </div>
         </div>
+
+        {showEditModal && (
+          <EnterpriseModal onClose={() => setShowEditModal(false)}>
+            <FormHeader title="Edit Personal Information" subtitle="Update your contact details and address." />
+            <FormBody>
+              <FormSection title="Contact Information">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <FormField label="Phone Number">
+                    <TextInput 
+                      icon={<Phone size={16} />} 
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                    />
+                  </FormField>
+                  <FormField label="Personal Email">
+                    <TextInput 
+                      icon={<Mail size={16} />} 
+                      value={editForm.personal_email}
+                      onChange={(e) => setEditForm({...editForm, personal_email: e.target.value})}
+                    />
+                  </FormField>
+                  <FormField label="Gender">
+                    <SelectInput 
+                      value={editForm.gender}
+                      onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
+                      options={[
+                        {value: '', label: 'Select'},
+                        {value: 'Male', label: 'Male'},
+                        {value: 'Female', label: 'Female'},
+                        {value: 'Other', label: 'Other'}
+                      ]}
+                    />
+                  </FormField>
+                  <FormField label="Blood Group">
+                    <TextInput 
+                      value={editForm.blood_group}
+                      onChange={(e) => setEditForm({...editForm, blood_group: e.target.value})}
+                    />
+                  </FormField>
+                  <FormField label="Date of Birth">
+                    <DateInput 
+                      value={editForm.dob}
+                      onChange={(e) => setEditForm({...editForm, dob: e.target.value})}
+                    />
+                  </FormField>
+                </div>
+              </FormSection>
+              
+              <FormSection title="Address">
+                <FormField label="Current Address">
+                  <TextInput 
+                    icon={<MapPin size={16} />} 
+                    value={editForm.address}
+                    onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                  />
+                </FormField>
+              </FormSection>
+            </FormBody>
+            <FormFooter 
+              onCancel={() => setShowEditModal(false)}
+              onSave={handleSave}
+              isSaving={isSaving}
+              saveLabel="Save Changes"
+            />
+          </EnterpriseModal>
+        )}
+
     </DashboardLayout>
   );
 }

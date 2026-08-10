@@ -21,17 +21,16 @@ import {
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/assets.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMyAssets } from '../../services/employeeService';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────
 const ASSET_CATEGORIES = ['Laptop', 'Desktop', 'Monitor', 'Mobile', 'Headset', 'Accessory', 'Furniture'];
 
-const MOCK_ASSETS = [];
-
 const TAB_FILTERS = {
+  my: t => t.status === 'assigned',
   all: () => true,
-  my: t => t.assignedTo === 'Balaji Kumar',
-  available: t => t.status === 'available',
-  repair: t => t.status === 'repair',
+  repair: t => t.status === 'repair'
 };
 
 const CATEGORY_ICON_MAP = {
@@ -52,7 +51,10 @@ function statusLabel(s) {
 }
 
 export default function Assets() {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { user } = useAuth();
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState('my');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -63,15 +65,42 @@ export default function Assets() {
   // Form state
   const [issueForm, setIssueForm] = useState({ type: 'Damaged', description: '' });
 
-  const filtered = MOCK_ASSETS.filter(t => {
-    const tabOk = TAB_FILTERS[activeTab](t);
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchAssets = async () => {
+      setLoading(true);
+      const { data } = await getMyAssets(user.id);
+      if (data) {
+        const formatted = data.map(a => ({
+          id: a.assets?.asset_tag || a.assets?.id || a.id,
+          name: a.assets?.name || 'Unknown Asset',
+          category: a.assets?.category || 'Accessory',
+          brand: a.assets?.brand || '-',
+          model: a.assets?.model || '-',
+          serialNumber: a.assets?.serial_number || '-',
+          purchaseDate: a.assets?.purchase_date || '-',
+          warrantyExpiry: a.assets?.warranty_expiry || '-',
+          status: a.status === 'active' ? 'assigned' : a.status,
+          assignedTo: 'Me',
+          assignmentDate: a.assigned_date,
+          conditionOnAssign: a.condition_on_assign
+        }));
+        setAssets(formatted);
+      }
+      setLoading(false);
+    };
+    fetchAssets();
+  }, [user]);
+
+  const filtered = assets.filter(t => {
+    const tabOk = TAB_FILTERS[activeTab] ? TAB_FILTERS[activeTab](t) : true;
     const searchOk = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase());
     const catOk = categoryFilter === 'all' || t.category === categoryFilter;
     const statOk = statusFilter === 'all' || t.status === statusFilter;
     return tabOk && searchOk && catOk && statOk;
   });
 
-  const selected = MOCK_ASSETS.find(t => t.id === selectedId);
+  const selected = assets.find(t => t.id === selectedId);
 
   const handleReportIssue = (e) => {
     e?.preventDefault();
@@ -81,13 +110,12 @@ export default function Assets() {
     setIssueForm({ type: 'Damaged', description: '' });
   };
 
-  const tabCount = (key) => MOCK_ASSETS.filter(TAB_FILTERS[key]).length;
+  const tabCount = (key) => assets.filter(TAB_FILTERS[key]).length;
 
   const TABS = [
     { key: 'my', label: 'My Assets' },
-    { key: 'available', label: 'Available' },
     { key: 'repair', label: 'In Repair' },
-    { key: 'all', label: 'All Assets' },
+    { key: 'all', label: 'All Assignments' },
   ];
 
   return (
@@ -100,8 +128,8 @@ export default function Assets() {
             <div className="assets-left-header">
               <div className="assets-title-row">
                 <div>
-                  <div className="assets-title">Asset Management</div>
-                  <div className="assets-subtitle">{MOCK_ASSETS.length} total assets</div>
+                  <div className="assets-title">My Assets</div>
+                  <div className="assets-subtitle">{assets.length} total assets</div>
                 </div>
               </div>
 
@@ -152,10 +180,12 @@ export default function Assets() {
 
             {/* List */}
             <div className="assets-list-scroll">
-              {filtered.length === 0 && (
+              {loading ? (
+                <div className="ast-empty"><p>Loading assets...</p></div>
+              ) : filtered.length === 0 ? (
                 <div className="ast-empty"><PackageOpen size={36} /><p>No assets found.</p></div>
-              )}
-              {filtered.map(t => (
+              ) : (
+                filtered.map(t => (
                 <div
                   key={t.id}
                   className={`asset-card ${selectedId === t.id ? 'active' : ''}`}
@@ -178,7 +208,7 @@ export default function Assets() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
 
             {/* Pagination */}

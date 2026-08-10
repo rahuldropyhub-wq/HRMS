@@ -23,31 +23,39 @@ export const updateProfile = async (userId, updates) => {
 // ─── ATTENDANCE ───────────────────────────────────────────────────────────────
 export const getMyAttendance = async (userId, month, year) => {
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+  const endDate = new Date(year, month, 0);
+  const endYear = endDate.getFullYear();
+  const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+  const endDay = String(endDate.getDate()).padStart(2, '0');
+  const endDateStr = `${endYear}-${endMonth}-${endDay}`;
 
   const { data, error } = await supabase
     .from('attendance')
     .select('*')
     .eq('employee_id', userId)
     .gte('date', startDate)
-    .lte('date', endDate)
+    .lte('date', endDateStr)
     .order('date', { ascending: true });
   return { data, error };
 };
 
 export const getTodayAttendance = async (userId) => {
-  const today = new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const { data, error } = await supabase
     .from('attendance')
     .select('*')
     .eq('employee_id', userId)
     .eq('date', today)
-    .single();
+    .order('check_in', { ascending: false })
+    .limit(1)
+    .maybeSingle();
   return { data, error };
 };
 
 export const checkIn = async (userId, workMode, wfhReason, gpsLocation) => {
-  const today = new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const now = new Date().toTimeString().slice(0, 5); // HH:MM
 
   const { data: existing } = await supabase
@@ -55,7 +63,8 @@ export const checkIn = async (userId, workMode, wfhReason, gpsLocation) => {
     .select('id')
     .eq('employee_id', userId)
     .eq('date', today)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (existing) return { error: { message: 'Already checked in today.' } };
 
@@ -92,7 +101,8 @@ export const startBreak = async (attendanceId, breaksArray, reason) => {
 };
 
 export const endBreak = async (attendanceId, breaksArray, breakIndex) => {
-  const today = new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const now = new Date().toTimeString().slice(0, 5);
   
   const updatedBreaks = [...breaksArray];
@@ -122,7 +132,8 @@ export const endBreak = async (attendanceId, breaksArray, breakIndex) => {
 };
 
 export const checkOut = async (userId) => {
-  const today = new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const now = new Date().toTimeString().slice(0, 5);
 
   const { data: record } = await supabase
@@ -130,7 +141,7 @@ export const checkOut = async (userId) => {
     .select('id, check_in, total_break_hours')
     .eq('employee_id', userId)
     .eq('date', today)
-    .single();
+    .maybeSingle();
 
   if (!record) return { error: { message: 'No check-in found for today.' } };
 
@@ -254,3 +265,44 @@ export const getMyAssets = async (userId) => {
     .eq('status', 'active');
   return { data, error };
 };
+
+// --- NOTIFICATIONS ------------------------------------------------------------
+export const getUnreadNotifications = async (userId) => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('employee_id', userId)
+    .eq('is_read', false)
+    .order('created_at', { ascending: false });
+  return { data, error };
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', notificationId)
+    .select()
+    .single();
+  return { data, error };
+};
+
+export const markAllNotificationsAsRead = async (userId) => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('employee_id', userId)
+    .eq('is_read', false)
+    .select();
+  return { data, error };
+};
+
+// --- EXTENSION IDLE HISTORY ---
+export const getIdleHistory = async (attendanceId) => {
+  const { data, error } = await supabase
+    .from('employee_idle_history')
+    .select('*')
+    .eq('attendance_id', attendanceId);
+  return { data, error };
+};
+

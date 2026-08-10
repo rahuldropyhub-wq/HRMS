@@ -1,19 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, Calendar, FileText,
   ListTodo, Ticket, PackageOpen, CalendarDays, Settings,
-  LogOut, Search, Bell, MessageSquare, ChevronDown, User,
-  Menu, X, Mail
+  LogOut, Search, Bell, ChevronDown, User,
+  Menu, X, Mail, Check, CheckCheck
 } from 'lucide-react';
+import { getUnreadNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../services/employeeService';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/employee/dashboard.css';
 
 const DashboardLayout = ({ children }) => {
-  const { logout } = useAuth();
+  const { logout, profile, user } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    if (user?.id) {
+      getUnreadNotifications(user.id).then(({ data }) => {
+        if (data) setNotifications(data);
+      });
+    }
+  }, [user]);
+
+  const handleMarkAsRead = async (id) => {
+    await markNotificationAsRead(id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!user?.id) return;
+    await markAllNotificationsAsRead(user.id);
+    setNotifications([]);
+  };
 
   const isActive = (path) => location.pathname === path ? 'active' : '';
 
@@ -29,12 +51,12 @@ const DashboardLayout = ({ children }) => {
           <img src="/Logo.png" alt="Dropyhub Logo" className="sidebar-logo-img" />
         </div>
         <div className="mobile-header-actions">
-          <button className="icon-btn notification">
+          <button className="icon-btn notification" onClick={() => setIsNotifOpen(!isNotifOpen)}>
             <Bell size={20} />
-            <span className="dot">3</span>
+            {notifications.length > 0 && <span className="dot">{notifications.length}</span>}
           </button>
           <div className="user-avatar-small" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-             <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" />
+             <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.first_name || 'User')}&background=random`} alt="Profile" />
           </div>
         </div>
       </div>
@@ -111,20 +133,54 @@ const DashboardLayout = ({ children }) => {
           </div>
           
           <div className="header-actions">
-            <button className="icon-btn notification">
-              <Bell size={20} />
-              <span className="dot">3</span>
-            </button>
-            <button className="icon-btn message">
-              <MessageSquare size={20} />
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button className="icon-btn notification" onClick={() => setIsNotifOpen(!isNotifOpen)}>
+                <Bell size={20} />
+                {notifications.length > 0 && <span className="dot">{notifications.length}</span>}
+              </button>
+              
+              {isNotifOpen && (
+                <>
+                  <div className="dropdown-backdrop" onClick={() => setIsNotifOpen(false)} />
+                  <div className="profile-dropdown" style={{ width: 320, padding: 0, overflow: 'hidden' }}>
+                    <div style={{ padding: '16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ margin: 0, fontSize: '14px', color: '#111827' }}>Notifications</h4>
+                      {notifications.length > 0 && (
+                        <button onClick={handleMarkAllAsRead} style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCheck size={14} /> Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
+                          No new notifications
+                        </div>
+                      ) : (
+                        notifications.map(notif => (
+                          <div key={notif.id} style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }} className="notif-item">
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{notif.title}</div>
+                              <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.4 }}>{notif.message}</div>
+                            </div>
+                            <button onClick={() => handleMarkAsRead(notif.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Mark as read">
+                              <Check size={16} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
               <div className="avatar">
-                <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.first_name || 'User')}&background=random`} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
               </div>
               <div className="user-info">
-                <h4>Balaji Kumar</h4>
-                <p>Frontend Developer</p>
+                <h4>{profile ? `${profile.first_name} ${profile.last_name}` : (user?.email?.split('@')[0] || 'Employee')}</h4>
+                <p>{profile?.designations?.title || 'Employee'}</p>
               </div>
               <ChevronDown size={16} color="#6b7280" />
 

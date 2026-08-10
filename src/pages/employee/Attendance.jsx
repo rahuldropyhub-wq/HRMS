@@ -15,7 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getMyAttendance } from '../../services/employeeService';
 
 // ─── Mock Attendance Data ──────────────────────────────────────────────────
-const MOCK_DATA = [];
+
 
 const STATUS_META = {
   present: { label: 'Present',  cls: 'badge-present',  icon: <CheckCircle2 size={12} /> },
@@ -141,7 +141,7 @@ export default function Attendance() {
                 <div className="ar-sum-lbl">Holidays</div>
               </div>
               <div className="ar-sum-card ar-sum-overtime">
-                <div className="ar-sum-val">{MOCK_DATA.filter(d => d.overtime).length}</div>
+                <div className="ar-sum-val">{attendanceData.filter(d => d.overtime).length}</div>
                 <div className="ar-sum-lbl">Overtime Days</div>
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function Attendance() {
 
             {/* Footer note */}
             <div className="ar-table-footer">
-              <span>Showing {filtered.length} of {MOCK_DATA.length} records for {MONTHS[selectedMonth]} {selectedYear}</span>
+              <span>Showing {filtered.length} of {attendanceData.length} records for {MONTHS[selectedMonth]} {selectedYear}</span>
               <span style={{ color: '#9ca3af' }}>Working hours = 09:00 AM – 06:00 PM (9 hrs)</span>
             </div>
           </div>
