@@ -9,6 +9,7 @@ import {
 import '../../styles/admin/admin-dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDashboardStats, getAllAttendanceToday } from '../../services/adminService';
+import CelebrationsWidget from '../../components/shared/CelebrationsWidget';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -272,6 +273,11 @@ const AdminDashboard = () => {
                   No calendar events today
                 </div>
               </div>
+            </section>
+
+            {/* SECTION: Celebrations & Appreciations */}
+            <section className="admin-card" style={{ padding: 0 }}>
+              <CelebrationsWidget isAdmin={true} />
             </section>
 
           </div>

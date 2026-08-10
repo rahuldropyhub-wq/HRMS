@@ -261,10 +261,6 @@ const DashboardLayout = ({ children }) => {
 
       {/* Mobile Bottom Navigation */}
       <nav className="mobile-bottom-nav">
-        <Link to="/dashboard" className={`bottom-nav-item ${isActive('/dashboard')}`}>
-          <LayoutDashboard size={22} />
-          <span>Dashboard</span>
-        </Link>
         <Link to="/attendance" className={`bottom-nav-item ${isActive('/attendance')}`}>
           <CheckSquare size={22} />
           <span>Attendance</span>
@@ -273,13 +269,17 @@ const DashboardLayout = ({ children }) => {
           <Calendar size={22} />
           <span>Leave</span>
         </Link>
+        <Link to="/dashboard" className={`bottom-nav-item bottom-nav-fab ${isActive('/dashboard')}`}>
+          <LayoutDashboard size={24} />
+          <span>Home</span>
+        </Link>
         <Link to="/worksheet" className={`bottom-nav-item ${isActive('/worksheet')}`}>
           <FileText size={22} />
           <span>Worksheet</span>
         </Link>
         <Link to="/tickets" className={`bottom-nav-item ${isActive('/tickets')}`}>
-          <Mail size={22} />
-          <span>Mail</span>
+          <Ticket size={22} />
+          <span>Tickets</span>
         </Link>
       </nav>
     </div>

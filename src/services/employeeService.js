@@ -306,3 +306,79 @@ export const getIdleHistory = async (attendanceId) => {
   return { data, error };
 };
 
+// --- CELEBRATIONS & APPRECIATIONS ---
+
+export const getUpcomingCelebrations = async () => {
+  // Fetch all profiles to find birthdays and anniversaries
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_url, raw_data');
+    
+  if (error) return { data: [], error };
+
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  const celebrations = [];
+
+  data.forEach(profile => {
+    const raw = profile.raw_data || {};
+    
+    // Check Birthday
+    if (raw.dob) {
+      const dobDate = new Date(raw.dob);
+      if (dobDate.getMonth() === currentMonth) {
+        celebrations.push({
+          id: `${profile.id}-bday`,
+          type: 'birthday',
+          employee: { id: profile.id, name: `${profile.first_name} ${profile.last_name}`, avatar: profile.avatar_url },
+          date: new Date(currentYear, currentMonth, dobDate.getDate())
+        });
+      }
+    }
+
+    // Check Work Anniversary
+    if (raw.joinDate) {
+      const joinDate = new Date(raw.joinDate);
+      if (joinDate.getMonth() === currentMonth) {
+        const years = currentYear - joinDate.getFullYear();
+        if (years > 0) {
+          celebrations.push({
+            id: `${profile.id}-anniv`,
+            type: 'anniversary',
+            employee: { id: profile.id, name: `${profile.first_name} ${profile.last_name}`, avatar: profile.avatar_url },
+            date: new Date(currentYear, currentMonth, joinDate.getDate()),
+            years
+          });
+        }
+      }
+    }
+  });
+
+  // Sort by upcoming date
+  celebrations.sort((a, b) => a.date - b.date);
+
+  return { data: celebrations, error: null };
+};
+
+export const getAppreciations = async () => {
+  const { data, error } = await supabase
+    .from('appreciations')
+    .select(`
+      id, message, type, created_at,
+      sender_name, receiver_name
+    `)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  return { data, error };
+};
+
+export const createAppreciation = async (appreciationData) => {
+  const { data, error } = await supabase
+    .from('appreciations')
+    .insert([appreciationData])
+    .select()
+    .single();
+  return { data, error };
+};

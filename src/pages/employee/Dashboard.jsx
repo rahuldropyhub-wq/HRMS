@@ -28,6 +28,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import AttendanceControlCenter from '../../components/employee/AttendanceControlCenter';
 import DashboardLayout from '../../components/employee/DashboardLayout';
+import CelebrationsWidget from '../../components/shared/CelebrationsWidget';
 import '../../styles/employee/dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyAttendance, getMyTasks, getMyLeaves, getAnnouncements, getHolidays } from '../../services/employeeService';
@@ -294,6 +295,9 @@ function Dashboard() {
                 )}
               </div>
             </div>
+            
+            {/* Celebrations & Appreciations */}
+            <CelebrationsWidget />
           </div>
 
           {/* Bottom Row */}
