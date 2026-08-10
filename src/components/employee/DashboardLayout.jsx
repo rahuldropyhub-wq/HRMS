@@ -51,12 +51,66 @@ const DashboardLayout = ({ children }) => {
           <img src="/Logo.png" alt="Dropyhub Logo" className="sidebar-logo-img" />
         </div>
         <div className="mobile-header-actions">
-          <button className="icon-btn notification" onClick={() => setIsNotifOpen(!isNotifOpen)}>
-            <Bell size={20} />
-            {notifications.length > 0 && <span className="dot">{notifications.length}</span>}
-          </button>
-          <div className="user-avatar-small" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-             <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.first_name || 'User')}&background=random`} alt="Profile" />
+          <div style={{ position: 'relative' }}>
+            <button className="icon-btn notification" onClick={() => setIsNotifOpen(!isNotifOpen)}>
+              <Bell size={20} />
+              {notifications.length > 0 && <span className="dot">{notifications.length}</span>}
+            </button>
+            
+            {isNotifOpen && (
+              <>
+                <div className="dropdown-backdrop" onClick={() => setIsNotifOpen(false)} />
+                <div className="profile-dropdown" style={{ width: 280, padding: 0, overflow: 'hidden', right: -45 }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4 style={{ margin: 0, fontSize: '14px', color: '#111827' }}>Notifications</h4>
+                    {notifications.length > 0 && (
+                      <button onClick={handleMarkAllAsRead} style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCheck size={14} /> Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
+                        No new notifications
+                      </div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div key={notif.id} style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }} className="notif-item">
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{notif.title}</div>
+                            <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.4 }}>{notif.message}</div>
+                          </div>
+                          <button onClick={() => handleMarkAsRead(notif.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Mark as read">
+                            <Check size={16} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <div className="user-avatar-small" onClick={() => setIsProfileOpen(!isProfileOpen)}>
+               <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.first_name || 'User')}&background=random`} alt="Profile" />
+            </div>
+
+            {isProfileOpen && (
+              <>
+                <div className="dropdown-backdrop" onClick={() => setIsProfileOpen(false)} />
+                <div className="profile-dropdown">
+                  <Link to="/profile" className="profile-dropdown-item">
+                    <User size={16} /> My Profile
+                  </Link>
+                  <Link to="/settings" className="profile-dropdown-item">
+                    <Settings size={16} /> Settings
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

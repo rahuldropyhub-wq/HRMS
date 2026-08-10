@@ -170,6 +170,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  min-width: 800px;
 }
 
 .ar-table thead tr {
@@ -315,8 +316,16 @@
 
 @media (max-width: 768px) {
   .ar-page-body { padding: 16px; gap: 20px; }
-  .ar-section-header { flex-direction: column; align-items: flex-start; }
+  .ar-section-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  
+  .ar-controls { flex-wrap: wrap; width: 100%; gap: 10px; }
+  .ar-month-nav { flex: 1 1 100%; justify-content: space-between; }
+  .ar-filter-select { flex: 1; }
+  .ar-export-btn { flex: 1; justify-content: center; }
+
   .ar-summary-strip { grid-template-columns: repeat(2, 1fr); }
-  .ar-sum-card { border-right: none; border-bottom: 1px solid #f3f4f6; }
+  .ar-sum-card { border-right: none; border-bottom: 1px solid #f3f4f6; padding: 16px 10px; }
+  .ar-sum-card:nth-child(odd) { border-right: 1px solid #f3f4f6; }
+  
   .ar-table-footer { flex-direction: column; gap: 4px; text-align: center; }
 }

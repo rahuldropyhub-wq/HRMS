@@ -415,7 +415,7 @@
 /* dashboard.css - continued */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
   margin-bottom: 24px;
 }
@@ -933,14 +933,31 @@
     position: fixed;
     top: 0;
     left: -280px;
+    width: 280px;
     height: 100vh;
     z-index: 1000;
     transition: left 0.3s ease;
+    overflow-x: hidden;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   }
 
   .dashboard-sidebar.mobile-open {
     left: 0;
+  }
+
+  .sidebar-brand {
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .sidebar-brand .sidebar-fevicon-img {
+    height: 28px;
+    transform: translateY(-6px);
+  }
+
+  .sidebar-brand .sidebar-logo-img {
+    height: 28px;
+    max-width: 130px;
   }
 
   .mobile-close-btn {
@@ -951,6 +968,7 @@
     border: none;
     color: var(--text-gray);
     cursor: pointer;
+    margin-left: auto;
   }
 
   /* Mobile Top Header */
@@ -979,7 +997,21 @@
   .mobile-brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .mobile-brand .sidebar-fevicon-img {
+    height: 28px;
+    transform: translateY(-6px);
+    display: block;
+  }
+
+  .mobile-brand .sidebar-logo-img {
+    height: 28px;
+    max-width: 140px;
+    object-fit: contain;
   }
 
   .mobile-brand h2 {
@@ -991,7 +1023,13 @@
   .mobile-header-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .mobile-header-actions .icon-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .user-avatar-small {
@@ -1058,12 +1096,31 @@
 
   /* Adjust Main Content padding */
   .dashboard-main {
+    padding: 0;
+  }
+
+  .dashboard-content {
     padding: 16px;
   }
 
   .middle-row,
   .bottom-row,
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .welcome-banner {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .dashboard-card {
+    padding: 16px;
+    overflow-x: auto;
   }
 }

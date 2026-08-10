@@ -1548,3 +1548,25 @@ justify-content: center;
 .acc-lo-btn.end:hover {
   background: #dc2626;
 }
+
+/* Fix mobile dark theme overflow */
+@media (max-width: 768px) {
+  .acc-dark-theme {
+    grid-template-columns: 1fr;
+  }
+  
+  .acc-lo-body {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .acc-lo-footer {
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .acc-lo-timer-wrapper {
+    margin-bottom: 8px;
+  }
+}
