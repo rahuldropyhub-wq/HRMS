@@ -62,6 +62,7 @@ function LeaveManagement() {
   const [activeTab, setActiveTab] = useState('Leave History');
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [leaveStats, setLeaveStats] = useState({ monthlyUsed: 0, monthlyAvailable: 2, yearlyUsed: 0, yearlyAvailable: 24 });
   const [newLeave, setNewLeave] = useState({
     leave_type: 'Casual Leave',
     start_date: '',
@@ -70,12 +71,53 @@ function LeaveManagement() {
   });
   const { user } = useAuth();
 
+  const calculateDays = (start, end) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    return Math.max(1, Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1);
+  };
+
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       setLoading(true);
       const { data } = await getMyLeaves(user.id);
-      setLeaves(data || []);
+      if (data) {
+        setLeaves(data);
+        
+        // Calculate stats for current month and year
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        let monthlyUsed = 0;
+        let yearlyUsed = 0;
+        
+        data.forEach(l => {
+          if (l.status !== 'rejected') {
+            const d = new Date(l.start_date);
+            const days = calculateDays(l.start_date, l.end_date);
+            if (d.getFullYear() === currentYear) {
+              yearlyUsed += days;
+              if (d.getMonth() === currentMonth) {
+                monthlyUsed += days;
+              }
+            }
+          }
+        });
+        
+        // Rollover Logic: Employee earns 2 leaves every month.
+        // Example: In August (month 8), they have earned 16 leaves so far this year.
+        const earnedSoFar = (currentMonth + 1) * 2;
+        
+        // Currently available is whatever they've earned so far MINUS whatever they've used all year
+        const currentlyAvailable = Math.max(0, earnedSoFar - yearlyUsed);
+
+        setLeaveStats({
+          monthlyUsed,
+          monthlyAvailable: currentlyAvailable,
+          yearlyUsed,
+          yearlyAvailable: Math.max(0, 24 - yearlyUsed)
+        });
+      }
       setLoading(false);
     };
     load();
@@ -122,24 +164,15 @@ function LeaveManagement() {
           {/* Stats Grid */}
           <div className="leave-stats-grid">
             <div className="leave-stat-card">
-              <div className="leave-icon-wrapper total">
-                <Calendar size={20} />
-              </div>
-              <div className="leave-stat-info">
-                <p className="leave-stat-label">Total Leave Balance</p>
-                <h3 className="leave-stat-value">22 Days</h3>
-                <p className="leave-stat-meta">Available</p>
-              </div>
-            </div>
-
-            <div className="leave-stat-card">
               <div className="leave-icon-wrapper casual">
                 <Plane size={20} />
               </div>
               <div className="leave-stat-info">
-                <p className="leave-stat-label">Casual Leave</p>
-                <h3 className="leave-stat-value">12 Days</h3>
-                <p className="leave-stat-meta">Available</p>
+                <p className="leave-stat-label">Currently Available</p>
+                <h3 className="leave-stat-value" style={{ color: leaveStats.monthlyAvailable === 0 ? '#ef4444' : 'inherit' }}>
+                  {leaveStats.monthlyAvailable} Days
+                </h3>
+                <p className="leave-stat-meta">Rollover Balance</p>
               </div>
             </div>
 
@@ -148,20 +181,31 @@ function LeaveManagement() {
                 <Heart size={20} />
               </div>
               <div className="leave-stat-info">
-                <p className="leave-stat-label">Sick Leave</p>
-                <h3 className="leave-stat-value">6 Days</h3>
-                <p className="leave-stat-meta">Available</p>
+                <p className="leave-stat-label">Used This Month</p>
+                <h3 className="leave-stat-value">{leaveStats.monthlyUsed} Days</h3>
+                <p className="leave-stat-meta">Current Month</p>
+              </div>
+            </div>
+
+            <div className="leave-stat-card">
+              <div className="leave-icon-wrapper total">
+                <Calendar size={20} />
+              </div>
+              <div className="leave-stat-info">
+                <p className="leave-stat-label">Yearly Balance</p>
+                <h3 className="leave-stat-value">{leaveStats.yearlyAvailable} Days</h3>
+                <p className="leave-stat-meta">Out of 24</p>
               </div>
             </div>
 
             <div className="leave-stat-card">
               <div className="leave-icon-wrapper wfh">
-                <Home size={20} />
+                <FileText size={20} />
               </div>
               <div className="leave-stat-info">
-                <p className="leave-stat-label">Work From Home</p>
-                <h3 className="leave-stat-value">4 Days</h3>
-                <p className="leave-stat-meta">Available</p>
+                <p className="leave-stat-label">Total Used</p>
+                <h3 className="leave-stat-value">{leaveStats.yearlyUsed} Days</h3>
+                <p className="leave-stat-meta">This Year</p>
               </div>
             </div>
           </div>
@@ -210,27 +254,27 @@ function LeaveManagement() {
               </thead>
               <tbody>
                 {leaves.filter(row => {
-                  if (activeTab === 'Upcoming Leaves') return row.status === 'Pending' || new Date(row.from) > new Date();
-                  if (activeTab === 'Leave Balance') return row.status === 'Approved';
+                  if (activeTab === 'Upcoming Leaves') return row.status === 'pending' || new Date(row.start_date) > new Date();
+                  if (activeTab === 'Leave Balance') return row.status === 'approved';
                   return true;
                 }).map((row) => (
                   <tr key={row.id}>
-                    <td className="fw-medium">{row.id}</td>
+                    <td className="fw-medium">{row.id.substring(0, 8)}</td>
                     <td>
-                      <span className={`type-badge ${row.type.toLowerCase().replace(/ /g, '-')}`}>
-                        {row.type}
+                      <span className={`type-badge ${row.leave_type.toLowerCase().replace(/ /g, '-')}`}>
+                        {row.leave_type}
                       </span>
                     </td>
-                    <td>{row.from}</td>
-                    <td>{row.to}</td>
-                    <td>{row.days}</td>
+                    <td>{new Date(row.start_date).toLocaleDateString()}</td>
+                    <td>{new Date(row.end_date).toLocaleDateString()}</td>
+                    <td>{calculateDays(row.start_date, row.end_date)}</td>
                     <td className="text-gray">{row.reason}</td>
                     <td>
                       <span className={`status-badge ${row.status.toLowerCase()}`}>
                         {row.status}
                       </span>
                     </td>
-                    <td>{row.appliedOn}</td>
+                    <td>{new Date(row.created_at).toLocaleDateString()}</td>
                     <td>
                       <button className="action-btn">
                         <Eye size={16} />
@@ -268,24 +312,24 @@ function LeaveManagement() {
               <FormField label="Leave Type" required fullWidth>
                 <SelectInput 
                   options={['Casual Leave', 'Sick Leave', 'Work From Home', 'Earned Leave', 'Unpaid Leave']}
-                  value={newLeave.type}
-                  onChange={(e) => setNewLeave({...newLeave, type: e.target.value})}
+                  value={newLeave.leave_type}
+                  onChange={(e) => setNewLeave({...newLeave, leave_type: e.target.value})}
                   required
                 />
               </FormField>
 
               <FormField label="Start Date" required>
                 <DateInput 
-                  value={newLeave.from}
-                  onChange={(e) => setNewLeave({...newLeave, from: e.target.value})}
+                  value={newLeave.start_date}
+                  onChange={(e) => setNewLeave({...newLeave, start_date: e.target.value})}
                   required
                 />
               </FormField>
 
               <FormField label="End Date" required>
                 <DateInput 
-                  value={newLeave.to}
-                  onChange={(e) => setNewLeave({...newLeave, to: e.target.value})}
+                  value={newLeave.end_date}
+                  onChange={(e) => setNewLeave({...newLeave, end_date: e.target.value})}
                   required
                 />
               </FormField>

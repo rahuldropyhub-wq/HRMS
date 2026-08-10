@@ -31,10 +31,32 @@ const LeaveRequests = () => {
     loadRequests();
   }, []);
 
+  const calculateDays = (start, end) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    return Math.max(1, Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1);
+  };
+
   const loadRequests = async () => {
     setLoading(true);
     const { data } = await getAllLeaveRequests();
-    setRequests(data || []);
+    if (data) {
+      const mapped = data.map(req => ({
+        ...req,
+        empName: req.profiles ? `${req.profiles.first_name} ${req.profiles.last_name}` : 'Unknown',
+        avatar: req.profiles ? (req.profiles.first_name.charAt(0) + req.profiles.last_name.charAt(0)).toUpperCase() : 'U',
+        empId: req.employee_id.substring(0, 8),
+        dept: req.profiles?.departments?.name || 'Unassigned',
+        type: req.leave_type,
+        from: new Date(req.start_date).toLocaleDateString(),
+        to: new Date(req.end_date).toLocaleDateString(),
+        days: calculateDays(req.start_date, req.end_date),
+        appliedOn: new Date(req.created_at).toLocaleDateString(),
+      }));
+      setRequests(mapped);
+    } else {
+      setRequests([]);
+    }
     setLoading(false);
   };
 

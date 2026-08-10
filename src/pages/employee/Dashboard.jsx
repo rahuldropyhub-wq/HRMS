@@ -168,6 +168,11 @@ function Dashboard() {
             </div>
           </div>
 
+          {/* Celebrations & Appreciations */}
+          <div style={{ marginBottom: 32 }}>
+            <CelebrationsWidget />
+          </div>
+
           {/* Attendance Control Center */}
           <div style={{ marginBottom: 32 }}>
             <AttendanceControlCenter compact={true} />
@@ -295,9 +300,6 @@ function Dashboard() {
                 )}
               </div>
             </div>
-            
-            {/* Celebrations & Appreciations */}
-            <CelebrationsWidget />
           </div>
 
           {/* Bottom Row */}

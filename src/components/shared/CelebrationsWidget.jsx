@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Award, Star, Plus, Send, X, Calendar, PartyPopper } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { getUpcomingCelebrations, getAppreciations, createAppreciation } from '../../services/employeeService';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/shared/celebrations.css';
@@ -26,7 +27,28 @@ const CelebrationsWidget = ({ isAdmin = false }) => {
       getUpcomingCelebrations(),
       getAppreciations()
     ]);
-    if (celRes.data) setCelebrations(celRes.data);
+    if (celRes.data) {
+      const today = new Date();
+      const todaysCels = celRes.data.filter(c => 
+        c.date.getDate() === today.getDate() && c.date.getMonth() === today.getMonth()
+      );
+      setCelebrations(todaysCels);
+
+      if (todaysCels.length > 0 && !sessionStorage.getItem('celebrationPlayed')) {
+        // Play Confetti
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        
+        // Play Tada Sound
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
+        audio.play().catch(e => console.log('Audio autoplay prevented:', e));
+        
+        sessionStorage.setItem('celebrationPlayed', 'true');
+      }
+    }
     if (appRes.data) setAppreciations(appRes.data);
     setLoading(false);
   };
@@ -75,6 +97,10 @@ const CelebrationsWidget = ({ isAdmin = false }) => {
     loadData();
   };
 
+  if (!loading && celebrations.length === 0 && appreciations.length === 0) {
+    return null;
+  }
+
   return (
     <div className="celebrations-widget">
       <div className="widget-header">
@@ -108,7 +134,7 @@ const CelebrationsWidget = ({ isAdmin = false }) => {
         ) : activeTab === 'celebrations' ? (
           <div className="celebrations-list">
             {celebrations.length === 0 ? (
-              <div className="empty-state">No upcoming celebrations this month.</div>
+              <div className="empty-state">No celebrations today.</div>
             ) : (
               celebrations.map((c) => (
                 <motion.div 
