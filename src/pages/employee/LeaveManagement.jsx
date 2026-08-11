@@ -63,6 +63,7 @@ function LeaveManagement() {
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [leaveStats, setLeaveStats] = useState({ monthlyUsed: 0, monthlyAvailable: 2, yearlyUsed: 0, yearlyAvailable: 24 });
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
   const [newLeave, setNewLeave] = useState({
     leave_type: 'Casual Leave',
     start_date: '',
@@ -70,6 +71,11 @@ function LeaveManagement() {
     reason: ''
   });
   const { user } = useAuth();
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const calculateDays = (start, end) => {
     const s = new Date(start);
@@ -125,6 +131,12 @@ function LeaveManagement() {
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
+    
+    if (!newLeave.start_date || !newLeave.end_date || !newLeave.reason) {
+      showToast('error', 'Please fill in all required fields: Start Date, End Date, and Reason.');
+      return;
+    }
+
     setSubmitting(true);
 
     const { data, error } = await applyLeave({
@@ -140,8 +152,9 @@ function LeaveManagement() {
       setLeaves([data, ...leaves]);
       setShowModal(false);
       setNewLeave({ leave_type: 'Casual Leave', start_date: '', end_date: '', reason: '' });
+      showToast('success', '🎉 Your leave application has been submitted successfully! It is now pending approval.');
     } else {
-      alert('Error: ' + error?.message);
+      showToast('error', 'Failed to submit leave: ' + (error?.message || 'Unknown error. Please try again.'));
     }
     setSubmitting(false);
   };
@@ -151,6 +164,47 @@ function LeaveManagement() {
 
         {/* Page Content */}
         <div className="leave-content">
+          {/* Toast Notification */}
+          {toast && (
+            <div style={{
+              position: 'fixed',
+              top: '24px',
+              right: '24px',
+              zIndex: 99999,
+              minWidth: '320px',
+              maxWidth: '460px',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              background: toast.type === 'success' ? '#ecfdf5' : '#fef2f2',
+              border: `1.5px solid ${toast.type === 'success' ? '#6ee7b7' : '#fca5a5'}`,
+              animation: 'slideInToast 0.35s cubic-bezier(.22,.61,.36,1)',
+            }}>
+              <span style={{ fontSize: '22px', lineHeight: 1 }}>
+                {toast.type === 'success' ? '✅' : '❌'}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '14px', color: toast.type === 'success' ? '#065f46' : '#991b1b', marginBottom: '4px' }}>
+                  {toast.type === 'success' ? 'Leave Submitted!' : 'Submission Failed'}
+                </div>
+                <div style={{ fontSize: '13px', color: toast.type === 'success' ? '#047857' : '#b91c1c', lineHeight: '1.5' }}>
+                  {toast.message}
+                </div>
+              </div>
+              <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#9ca3af', lineHeight: 1, padding: 0, marginLeft: '4px' }}>×</button>
+            </div>
+          )}
+
+          <style>{`
+            @keyframes slideInToast {
+              from { opacity: 0; transform: translateX(60px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+          `}</style>
+
           <div className="page-header-row">
             <div className="page-title-box">
               <h1>Leave Management</h1>
@@ -349,11 +403,11 @@ function LeaveManagement() {
                 />
               </FormField>
               
-              <FormField label="Emergency Contact" fullWidth>
+              <FormField label="Emergency Contact" fullWidth optional>
                 <TextInput placeholder="Phone number or name..." />
               </FormField>
               
-              <FormField label="Supporting Documents" fullWidth>
+              <FormField label="Supporting Documents" fullWidth optional>
                 <FileUpload hint="Upload medical certificates or relevant docs (Max 5MB)" />
               </FormField>
             </FormSection>

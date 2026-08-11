@@ -4,8 +4,9 @@ import { motion } from 'framer-motion';
 import { Search, Clock, Briefcase, MapPin, Monitor } from 'lucide-react';
 import '../../../styles/admin/attendance/live-attendance.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
+import { getAllAttendanceToday } from '../../../services/adminService';
 
-// Mock Data
+// Fallback empty list
 const MOCK_LIVE = [];
 
 const getStatusBadgeClass = (status) => {
@@ -37,14 +38,47 @@ const LiveAttendance = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [modeFilter, setModeFilter] = useState('');
 
+  const [liveEmployees, setLiveEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchAttendance = async () => {
+      const { data } = await getAllAttendanceToday();
+      if (data) {
+        const formatted = data.map(record => ({
+          id: record.employee_id,
+          firstName: record.profiles?.first_name || 'Unknown',
+          lastName: record.profiles?.last_name || '',
+          dept: record.profiles?.departments?.name || '-',
+          status: record.status || 'Working',
+          mode: record.work_mode || 'Office',
+          timeIn: new Date(record.check_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        }));
+        setLiveEmployees(formatted);
+      }
+      setLoading(false);
+    };
+    fetchAttendance();
+  }, []);
+
   // Filtering
-  const filteredEmployees = MOCK_LIVE.filter(emp => {
+  const filteredEmployees = liveEmployees.filter(emp => {
     const matchesSearch = `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDept = deptFilter ? emp.dept === deptFilter : true;
     const matchesStatus = statusFilter ? emp.status === statusFilter : true;
     const matchesMode = modeFilter ? emp.mode === modeFilter : true;
     return matchesSearch && matchesDept && matchesStatus && matchesMode;
   });
+
+  // Calculate stats
+  const stats = {
+    working: liveEmployees.filter(e => e.status === 'Working').length,
+    onBreak: liveEmployees.filter(e => e.status === 'On Break').length,
+    inMeeting: liveEmployees.filter(e => e.status === 'In Meeting').length,
+    notIn: liveEmployees.filter(e => e.status === 'Not In' || e.status === 'Left for Day').length,
+    office: liveEmployees.filter(e => e.mode === 'Office').length,
+    wfh: liveEmployees.filter(e => e.mode === 'WFH').length,
+  };
 
   return (
     <motion.div 
@@ -67,12 +101,12 @@ const LiveAttendance = () => {
 
       {/* Quick Stats */}
       <div className="quick-stats-row">
-        <div className="stat-pill green">🟢 Working: 14</div>
-        <div className="stat-pill yellow">🟡 On Break: 3</div>
-        <div className="stat-pill blue">🔵 In Meeting: 3</div>
-        <div className="stat-pill gray">⚪ Not In: 2</div>
-        <div className="stat-pill">🏢 Office: 13</div>
-        <div className="stat-pill">🏠 WFH: 7</div>
+        <div className="stat-pill green">🟢 Working: {stats.working}</div>
+        <div className="stat-pill yellow">🟡 On Break: {stats.onBreak}</div>
+        <div className="stat-pill blue">🔵 In Meeting: {stats.inMeeting}</div>
+        <div className="stat-pill gray">⚪ Not In: {stats.notIn}</div>
+        <div className="stat-pill">🏢 Office: {stats.office}</div>
+        <div className="stat-pill">🏠 WFH: {stats.wfh}</div>
       </div>
 
       {/* Filter Bar */}
@@ -129,46 +163,52 @@ const LiveAttendance = () => {
       </div>
 
       {/* Grid */}
-      <div className="employee-grid">
-        {filteredEmployees.map(emp => (
-          <div 
-            key={emp.id} 
-            className="emp-status-card"
-            onClick={() => navigate(`/admin/employees/${emp.id}`)}
-          >
-            <div className="card-header">
-              <div className="avatar">
-                {emp.firstName[0]}{emp.lastName[0]}
+      {loading ? (
+        <div style={{ textAlign: 'center', marginTop: '40px', color: '#64748b' }}>Loading live attendance...</div>
+      ) : filteredEmployees.length === 0 ? (
+        <div style={{ textAlign: 'center', marginTop: '40px', color: '#64748b' }}>No employees found.</div>
+      ) : (
+        <div className="employee-grid">
+          {filteredEmployees.map(emp => (
+            <div 
+              key={emp.id} 
+              className="emp-status-card"
+              onClick={() => navigate(`/admin/employees/${emp.id}`)}
+            >
+              <div className="card-header">
+                <div className="avatar">
+                  {emp.firstName[0]}{emp.lastName[0]}
+                </div>
+                <div className="emp-info">
+                  <h3>{emp.firstName} {emp.lastName}</h3>
+                  <p>{emp.dept}</p>
+                </div>
               </div>
-              <div className="emp-info">
-                <h3>{emp.firstName} {emp.lastName}</h3>
-                <p>{emp.dept}</p>
-              </div>
-            </div>
 
-            <div className="card-badges">
-              <div className={getStatusBadgeClass(emp.status)}>
-                {getStatusIcon(emp.status)} {emp.status}
+              <div className="card-badges">
+                <div className={getStatusBadgeClass(emp.status)}>
+                  {getStatusIcon(emp.status)} {emp.status}
+                </div>
+                <div className="mode-badge">
+                  {emp.mode === 'Office' ? '🏢' : '🏠'} {emp.mode}
+                </div>
               </div>
-              <div className="mode-badge">
-                {emp.mode === 'Office' ? '🏢' : '🏠'} {emp.mode}
-              </div>
-            </div>
 
-            <div className="card-stats">
-              <div className="card-stat-item">
-                <Clock size={14} /> In: {emp.timeIn}
-              </div>
-              <div className="card-stat-item">
-                <Monitor size={14} /> Hrs: {emp.hours}
-              </div>
-              <div className="card-stat-item">
-                <Briefcase size={14} /> Task: {emp.task}
+              <div className="card-stats">
+                <div className="card-stat-item">
+                  <Clock size={14} /> In: {emp.timeIn}
+                </div>
+                <div className="card-stat-item">
+                  <Monitor size={14} /> Hrs: {emp.hours}
+                </div>
+                <div className="card-stat-item">
+                  <Briefcase size={14} /> Task: {emp.task}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };

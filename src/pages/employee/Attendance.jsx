@@ -45,7 +45,53 @@ export default function Attendance() {
     const load = async () => {
       setLoading(true);
       const { data } = await getMyAttendance(user.id, selectedMonth + 1, selectedYear);
-      setAttendanceData(data || []);
+      if (data) {
+        const mapped = data.map(record => {
+          const d = new Date(record.date);
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+          
+          let workHrs = '—';
+          let breakHrs = '—';
+          let netHrs = '—';
+          let overtime = null;
+          let late = null;
+
+          if (record.check_in) {
+             if (record.check_in > '09:15') late = record.check_in;
+          }
+
+          if (record.total_hours) {
+             const net = parseFloat(record.total_hours);
+             const brk = parseFloat(record.total_break_hours || 0);
+             const gross = net + brk;
+             
+             workHrs = gross.toFixed(2) + 'h';
+             breakHrs = brk > 0 ? brk.toFixed(2) + 'h' : '—';
+             netHrs = net.toFixed(2) + 'h';
+             
+             if (net > 9) {
+               overtime = (net - 9).toFixed(2) + 'h';
+             }
+          }
+
+          return {
+            ...record,
+            date: record.date,
+            day: dayName,
+            checkIn: record.check_in,
+            checkOut: record.check_out,
+            workHrs,
+            breakHrs,
+            netHrs,
+            overtime,
+            late,
+            status: record.status || 'present'
+          };
+        });
+        setAttendanceData(mapped);
+      } else {
+        setAttendanceData([]);
+      }
       setLoading(false);
     };
     load();

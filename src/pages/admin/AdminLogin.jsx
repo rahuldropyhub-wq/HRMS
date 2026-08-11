@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Building2, 
-  Users, 
-  ShieldCheck, 
-  Settings, 
-  Lock, 
-  Mail, 
+import {
+  Building2,
+  Users,
+  ShieldCheck,
+  Settings,
+  Lock,
+  Mail,
   ArrowRight,
   Shield
 } from 'lucide-react';
@@ -16,7 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 function AdminLogin() {
   const navigate = useNavigate();
   const { login, mockLogin } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('admin@dropyhub.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -100,7 +100,7 @@ function AdminLogin() {
           <div className="admin-auth-lock-icon">
             <Shield size={32} />
           </div>
-          
+
           <h3>Admin Authentication</h3>
           <p>Enter your administrator credentials to access the system.</p>
 
@@ -128,9 +128,9 @@ function AdminLogin() {
               {!loading && <ArrowRight size={18} />}
             </button>
 
-            <button 
-              type="button" 
-              className="admin-auth-submit-btn" 
+            <button
+              type="button"
+              className="admin-auth-submit-btn"
               style={{ backgroundColor: '#10b981', marginTop: '10px' }}
               onClick={() => {
                 mockLogin('admin');

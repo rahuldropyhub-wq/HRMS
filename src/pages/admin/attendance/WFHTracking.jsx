@@ -101,16 +101,17 @@ const WFHTracking = () => {
       </div>
 
       {/* Bottom: Detail Panel */}
-      <motion.div 
-        className="detail-panel"
-        key={selectedEmp.id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        <div className="detail-header">
-          {selectedEmp.name} — WFH Details
-        </div>
+      {selectedEmp && (
+        <motion.div 
+          className="detail-panel"
+          key={selectedEmp.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="detail-header">
+            {selectedEmp.name} — WFH Details
+          </div>
         
         <div className="detail-grid">
           <div className="detail-item">
@@ -162,6 +163,7 @@ const WFHTracking = () => {
           </div>
         </div>
       </motion.div>
+      )}
       
     </motion.div>
   );
