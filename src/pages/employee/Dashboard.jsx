@@ -150,7 +150,8 @@ function Dashboard() {
     load();
   }, [user]);
 
-  const firstName = profile?.first_name || user?.email?.split('@')[0] || 'there';
+  const rawName = profile?.first_name || user?.email?.split('@')[0] || 'there';
+  const firstName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
 
   return (
     <DashboardLayout>
@@ -164,7 +165,7 @@ function Dashboard() {
             </div>
             <div className="date-picker">
               {todayStr}
-              <CalendarDays size={18} color="#6b7280" />
+              <CalendarDays size={18} color="#ffffff" />
             </div>
           </div>
 

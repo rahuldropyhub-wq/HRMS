@@ -16,14 +16,16 @@ export const EnterpriseModal = ({ isOpen, onClose, children }) => {
   );
 };
 
-export const FormHeader = ({ icon: Icon, title, description }) => (
+export const FormHeader = ({ icon: Icon, title, description, subtitle }) => (
   <div className="ent-form-header">
-    <div className="ent-form-icon">
-      <Icon size={24} strokeWidth={2} />
-    </div>
+    {Icon && (
+      <div className="ent-form-icon">
+        <Icon size={24} strokeWidth={2} />
+      </div>
+    )}
     <div className="ent-form-header-content">
       <h2>{title}</h2>
-      <p>{description}</p>
+      <p>{description || subtitle}</p>
     </div>
   </div>
 );
@@ -104,20 +106,30 @@ export const Checkbox = ({ label, ...props }) => (
   </label>
 );
 
-export const FormFooter = ({ onCancel, onSubmit, submitText = 'Submit', saveDraft = false }) => (
-  <div className="ent-form-footer">
-    {onCancel && (
-      <button type="button" className="ent-btn ent-btn-cancel" onClick={onCancel}>
-        Cancel
+export const FormFooter = ({ onCancel, onSubmit, onSave, submitText = 'Submit', saveLabel, isSaving, saveDraft = false }) => {
+  const handleAction = onSave || onSubmit;
+  const label = isSaving ? 'Saving...' : (saveLabel || submitText);
+
+  return (
+    <div className="ent-form-footer">
+      {onCancel && (
+        <button type="button" className="ent-btn ent-btn-cancel" onClick={onCancel} disabled={isSaving}>
+          Cancel
+        </button>
+      )}
+      {saveDraft && (
+        <button type="button" className="ent-btn ent-btn-draft" style={{ marginRight: 'auto' }}>
+          Save Draft
+        </button>
+      )}
+      <button 
+        type="button" 
+        className="ent-btn ent-btn-primary" 
+        onClick={handleAction}
+        disabled={isSaving}
+      >
+        {label}
       </button>
-    )}
-    {saveDraft && (
-      <button type="button" className="ent-btn ent-btn-draft" style={{ marginRight: 'auto' }}>
-        Save Draft
-      </button>
-    )}
-    <button type="submit" className="ent-btn ent-btn-primary" onClick={onSubmit}>
-      {submitText}
-    </button>
-  </div>
-);
+    </div>
+  );
+};

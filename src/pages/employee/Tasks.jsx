@@ -39,7 +39,7 @@ const STATUS_LABELS = {
 };
 const PRIORITY_LABELS = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' };
 const TABS = ['My Tasks', 'Today', 'In Progress', 'Completed', 'Overdue', 'Archived'];
-const today = '2025-05-08';
+const today = new Date().toISOString().split('T')[0];
 
 function priorityDot(p) {
   const map = { low: '#22c55e', medium: '#f59e0b', high: '#ea580c', critical: '#7c3aed' };

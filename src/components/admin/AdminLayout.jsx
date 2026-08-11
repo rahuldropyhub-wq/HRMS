@@ -12,6 +12,7 @@ import {
   Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon, Sun
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
 import '../../styles/admin/admin-layout.css';
 
 const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, children }) => {
@@ -67,9 +68,10 @@ const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, childr
 };
 
 const AdminLayout = () => {
-  const { logout } = useAuth();
+  const { logout, user, profile } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const location = useLocation();
 
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -80,6 +82,43 @@ const AdminLayout = () => {
       document.body.classList.add('dark-mode');
       setIsDarkMode(true);
     }
+
+    // Fetch initial notification count
+    const fetchNotifications = async () => {
+      try {
+        const { count: pendingLeaves } = await supabase
+          .from('leaves')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'Pending');
+          
+        const { count: openTickets } = await supabase
+          .from('tickets')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'Open');
+          
+        setNotificationCount((pendingLeaves || 0) + (openTickets || 0));
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    };
+    
+    fetchNotifications();
+
+    // Set up real-time subscription for leaves and tickets
+    const leaveSub = supabase.channel('leaves-changes-admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leaves' }, () => {
+        fetchNotifications();
+      }).subscribe();
+
+    const ticketSub = supabase.channel('tickets-changes-admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
+        fetchNotifications();
+      }).subscribe();
+
+    return () => {
+      supabase.removeChannel(leaveSub);
+      supabase.removeChannel(ticketSub);
+    };
   }, []);
 
   const toggleDarkMode = () => {
@@ -174,8 +213,8 @@ const AdminLayout = () => {
             {renderNavItem(LayoutDashboard, 'Dashboard', '/admin/dashboard')}
           </NavSection>
 
-          <NavSection title="Employee Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
-            {renderNavItem(Users, 'Employee Directory', '/admin/employees')}
+          <NavSection isSidebarCollapsed={isSidebarCollapsed}>
+            {renderNavItem(Users, 'Employee Management', '/admin/employees')}
           </NavSection>
 
           <NavSection title="Attendance Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
@@ -261,14 +300,24 @@ const AdminLayout = () => {
             </div>
           </div>
 
-          <div className="admin-header-right">
-            <button className="admin-header-icon-btn">
+          <div className="admin-header-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <button className="admin-header-icon-btn" style={{ position: 'relative' }}>
               <Bell size={18} />
-              <span className="admin-header-badge">3</span>
+              {notificationCount > 0 && <span className="admin-header-badge">{notificationCount}</span>}
             </button>
-            <button className="admin-profile-trigger">
-              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Admin Profile" className="admin-profile-avatar" />
-            </button>
+            <div className="admin-profile-trigger" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-color, #1e293b)' }}>
+                  {profile ? `${profile.first_name} ${profile.last_name}` : (user?.email?.split('@')[0] || 'Admin')}
+                </span>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>Administrator</span>
+              </div>
+              <img 
+                src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile ? `${profile.first_name} ${profile.last_name}` : (user?.email || 'Admin'))}&background=6366f1&color=fff`} 
+                alt="Admin Profile" 
+                className="admin-profile-avatar" 
+              />
+            </div>
           </div>
         </header>
 

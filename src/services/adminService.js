@@ -6,10 +6,11 @@ export const getAllEmployees = async () => {
     supabase
       .from('profiles')
       .select('*, departments(name), designations(title)')
+      .neq('role', 'admin')          // ← Exclude admin users from employee directory
       .order('created_at', { ascending: false }),
     supabase
       .from('employee_invitations')
-      .select('id, email, first_name, last_name, phone, department, designation, created_at, raw_data->empId, raw_data->status, raw_data->employmentType')
+      .select('*')
       .order('created_at', { ascending: false })
   ]);
 
@@ -23,101 +24,116 @@ export const getAllEmployees = async () => {
     designation: p.designations?.title || p.designation || '-',
     employmentType: p.employment_type || '-',
     status: p.status || 'Active',
-    created_at: p.created_at
+    avatar_url: p.avatar_url || p.raw_data?.avatar_url || p.raw_data?.avatarUrl,
+    cover_url: p.cover_url || p.raw_data?.cover_url || p.raw_data?.coverUrl,
+    created_at: p.created_at,
+    source: 'profile'
   }));
 
-  const invitations = (invitationsRes.data || []).map(inv => ({
-    id: inv.empId || inv.id,
-    firstName: inv.first_name,
-    lastName: inv.last_name,
-    email: inv.email,
-    phone: inv.phone,
-    department: inv.department || '-',
-    designation: inv.designation || '-',
-    employmentType: inv.employmentType || '-',
-    status: inv.status || 'Active',
-    created_at: inv.created_at
-  }));
+  // Build a set of emails already in profiles to avoid duplicates
+  const profileEmails = new Set(profiles.map(p => p.email?.toLowerCase()));
+
+  const invitations = (invitationsRes.data || [])
+    .filter(inv => !profileEmails.has(inv.email?.toLowerCase())) // ← Skip if already has a profile
+    .map(inv => ({
+      id: inv.raw_data?.empId || inv.id,
+      firstName: inv.first_name || inv.raw_data?.firstName,
+      lastName: inv.last_name || inv.raw_data?.lastName,
+      email: inv.email,
+      phone: inv.phone || inv.raw_data?.phone,
+      department: inv.department || inv.raw_data?.department || '-',
+      designation: inv.designation || inv.raw_data?.designation || '-',
+      employmentType: inv.raw_data?.employmentType || '-',
+      status: inv.raw_data?.status || 'Active',
+      avatar_url: inv.raw_data?.avatar_url || inv.raw_data?.avatarUrl,
+      cover_url: inv.raw_data?.cover_url || inv.raw_data?.coverUrl,
+      created_at: inv.created_at,
+      source: 'invitation'
+    }));
 
   const combined = [...profiles, ...invitations].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   return { data: combined, error: profilesRes.error || invitationsRes.error };
 };
 
+const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 export const getEmployeeById = async (id) => {
-  // Try profiles first
-  let { data, error } = await supabase
-    .from('profiles')
-    .select('*, departments(name), designations(title)')
-    .or(`id.eq.${id},emp_id.eq.${id}`)
-    .maybeSingle();
-
-  if (data) {
-    return { 
-      data: {
-        ...data,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        department: data.departments?.name || data.department,
-        designation: data.designations?.title || data.designation,
-        officialEmail: data.email,
-        empId: data.emp_id || data.id,
-        leaveBalance: data.leave_balance || 0,
-        activeTasks: 0,
-        attendanceScore: 'N/A',
-        assetsAllocated: 0,
-        documents: [],
-        activity: [],
-      }, 
-      error: null 
-    };
-  }
-
-  // Try finding in invitations
-  let invData = null;
-  let invError = null;
-  if (id.includes('-')) {
-    const { data, error } = await supabase.from('employee_invitations').select('*').eq('id', id).maybeSingle();
-    invData = data;
-    invError = error;
+  // 1. Try finding in profiles table first
+  let profileQuery = supabase.from('profiles').select('*, departments(name), designations(title)');
+  if (isUuid(id)) {
+    profileQuery = profileQuery.or(`id.eq.${id},emp_id.eq.${id}`);
   } else {
-    const { data, error } = await supabase.from('employee_invitations').select('*').eq('raw_data->>empId', id).maybeSingle();
-    invData = data;
-    invError = error;
-  }
-  
-  if (invData) {
-      const mapped = {
-        ...invData.raw_data, // Pull in all the raw_data fields so the form fully pre-fills!
-        id: invData.id,
-        empId: invData.raw_data?.empId || invData.id,
-        firstName: invData.first_name || invData.raw_data?.firstName,
-        lastName: invData.last_name || invData.raw_data?.lastName,
-        email: invData.email,
-        officialEmail: invData.email, // mapped for the form
-        phone: invData.phone || invData.raw_data?.phone,
-        department: invData.department || invData.raw_data?.department || '-',
-        designation: invData.designation || invData.raw_data?.designation || '-',
-        status: invData.raw_data?.status || 'Active',
-        leaveBalance: invData.raw_data?.leaveBalance || 0,
-        activeTasks: 0,
-        attendanceScore: 'N/A',
-        assetsAllocated: 0,
-        skills: invData.raw_data?.skills || [],
-        emergency: invData.raw_data?.emergency || [],
-        documents: invData.raw_data?.documents || [],
-        activity: []
-      };
-      return { data: mapped, error: null };
+    profileQuery = profileQuery.eq('emp_id', id);
   }
 
-  return { data: null, error: invError || new Error("Employee not found") };
+  let { data: profData } = await profileQuery.maybeSingle();
+
+  // 2. Fetch invitation raw_data by email or empId or id
+  const searchEmail = profData?.email;
+  let invQuery = supabase.from('employee_invitations').select('*');
+  if (searchEmail) {
+    invQuery = invQuery.or(`email.ilike.${searchEmail},raw_data->>officialEmail.ilike.${searchEmail},raw_data->>personalEmail.ilike.${searchEmail}`);
+  } else if (isUuid(id)) {
+    invQuery = invQuery.or(`id.eq.${id},raw_data->>empId.eq.${id}`);
+  } else {
+    invQuery = invQuery.eq('raw_data->>empId', id);
+  }
+
+  let { data: invData } = await invQuery.maybeSingle();
+
+  if (!profData && !invData) {
+    return { data: null, error: new Error("Employee not found") };
+  }
+
+  const raw = invData?.raw_data || {};
+
+  const merged = {
+    ...raw,
+    id: profData?.id || invData?.id,
+    empId: profData?.emp_id || raw.empId || profData?.id || invData?.id,
+    firstName: profData?.first_name || raw.firstName || invData?.first_name || '-',
+    lastName: profData?.last_name || raw.lastName || invData?.last_name || '',
+    email: profData?.email || invData?.email || raw.officialEmail || '-',
+    officialEmail: profData?.email || invData?.email || raw.officialEmail || '-',
+    personalEmail: profData?.personal_email || raw.personalEmail || raw.email || '-',
+    phone: profData?.phone || raw.phone || invData?.phone || '-',
+    dob: profData?.dob || raw.dob || '-',
+    gender: profData?.gender || raw.gender || '-',
+    bloodGroup: profData?.blood_group || profData?.bloodGroup || raw.bloodGroup || '-',
+    maritalStatus: profData?.marital_status || raw.maritalStatus || '-',
+    address: profData?.address || raw.address || raw.currentAddress || '-',
+    city: raw.city || '',
+    state: raw.state || '',
+    pincode: raw.pincode || '',
+    department: profData?.departments?.name || profData?.department || invData?.department || raw.department || '-',
+    designation: profData?.designations?.title || profData?.designation || invData?.designation || raw.designation || '-',
+    manager: profData?.reporting_manager || profData?.manager || raw.manager || raw.reporting_manager || invData?.manager || '-',
+    employmentType: profData?.employment_type || raw.employmentType || '-',
+    workLocation: profData?.work_location || raw.workLocation || '-',
+    shift: profData?.shift || raw.shift || '-',
+    bankName: profData?.bank_name || raw.bankName || raw.bank_name || '-',
+    accountNumber: profData?.account_number || raw.accountNumber || raw.account_number || '-',
+    ifscCode: profData?.ifsc_code || raw.ifscCode || raw.ifsc_code || '-',
+    panNumber: profData?.pan_number || raw.panNumber || raw.pan_number || '-',
+    aadharNumber: profData?.aadhar_number || raw.aadharNumber || raw.aadhar_number || '-',
+    avatar_url: profData?.avatar_url || raw.avatar_url || raw.avatarUrl,
+    cover_url: profData?.cover_url || raw.cover_url || raw.coverUrl,
+    status: profData?.status || raw.status || 'Active',
+    leaveBalance: profData?.leave_balance || raw.leaveBalance || 0,
+    activeTasks: 0,
+    attendanceScore: 'N/A',
+    assetsAllocated: 0,
+    skills: (profData?.skills && profData.skills.length > 0) ? profData.skills : (raw.skills || []),
+    emergency: (profData?.emergency && profData.emergency.length > 0) ? profData.emergency : (raw.emergency || []),
+    documents: (profData?.documents && profData.documents.length > 0) ? profData.documents : (raw.documents || []),
+    activity: raw.activity || []
+  };
+
+  return { data: merged, error: null };
 };
 
 export const createEmployee = async (employeeData) => {
-  // Instead of creating the auth user directly (which is blocked in browsers),
-  // we add them to the invitations table. The database trigger will automatically
-  // create their real profile when they log in for the first time via OTP.
   const { data, error } = await supabase
     .from('employee_invitations')
     .insert({
@@ -143,39 +159,43 @@ export const updateEmployee = async (id, updates) => {
   if (updates.designation !== undefined) dbUpdates.designation = updates.designation;
   if (updates.status !== undefined) dbUpdates.status = updates.status;
   if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+  if (updates.manager !== undefined) dbUpdates.reporting_manager = updates.manager;
 
-  const { data: prof } = await supabase
-    .from('profiles')
-    .update(dbUpdates)
-    .or(`id.eq.${id},emp_id.eq.${id}`)
-    .select()
-    .maybeSingle();
-
-  if (prof) return { data: prof, error: null };
-
-  let inv = null;
-  if (id.includes('-')) {
-    const { data } = await supabase.from('employee_invitations').select('id, raw_data').eq('id', id).maybeSingle();
-    inv = data;
+  let profileUpdate = supabase.from('profiles').update(dbUpdates);
+  if (isUuid(id)) {
+    profileUpdate = profileUpdate.or(`id.eq.${id},emp_id.eq.${id}`);
   } else {
-    const { data } = await supabase.from('employee_invitations').select('id, raw_data').eq('raw_data->>empId', id).maybeSingle();
-    inv = data;
+    profileUpdate = profileUpdate.eq('emp_id', id);
   }
+  const { data: prof } = await profileUpdate.select().maybeSingle();
+
+  // Always update employee_invitations too so raw_data remains in sync for employee portal
+  let invQuery = supabase.from('employee_invitations').select('id, raw_data');
+  if (isUuid(id)) {
+    invQuery = invQuery.or(`id.eq.${id},raw_data->>empId.eq.${id}`);
+  } else if (prof?.email) {
+    invQuery = invQuery.or(`raw_data->>empId.eq.${id},email.eq.${prof.email}`);
+  } else {
+    invQuery = invQuery.eq('raw_data->>empId', id);
+  }
+  const { data: inv } = await invQuery.maybeSingle();
 
   if (inv) {
+    const { reporting_manager, ...invDbUpdates } = dbUpdates;
+    const mergedRaw = { ...inv.raw_data, ...(updates.raw_data || updates) };
     const { data: invUpdated, error: invUpdateErr } = await supabase
       .from('employee_invitations')
       .update({
-        ...dbUpdates,
-        raw_data: { ...inv.raw_data, ...(updates.raw_data || updates) }
+        ...invDbUpdates,
+        raw_data: mergedRaw
       })
       .eq('id', inv.id)
       .select()
       .single();
-    return { data: invUpdated, error: invUpdateErr };
+    return { data: prof || invUpdated, error: invUpdateErr };
   }
 
-  return { data: null, error: new Error('Employee not found') };
+  return { data: prof, error: prof ? null : new Error('Employee not found') };
 };
 
 // ─── DEPARTMENTS ──────────────────────────────────────────────────────────────

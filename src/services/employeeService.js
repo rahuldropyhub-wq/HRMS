@@ -2,22 +2,145 @@ import { supabase } from '../lib/supabaseClient';
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 export const getProfile = async (userId) => {
-  const { data, error } = await supabase
+  const { data: authUser } = await supabase.auth.getUser();
+  const currentEmail = authUser?.user?.email;
+
+  // 1. Fetch profile record
+  let { data } = await supabase
     .from('profiles')
     .select('*, departments(name), designations(title)')
     .eq('id', userId)
-    .single();
-  return { data, error };
+    .maybeSingle();
+
+  const userEmails = Array.from(new Set([data?.email, currentEmail].filter(Boolean)));
+
+  // 2. Query employee_invitations table by official email, personal email, or empId
+  let inv = null;
+  for (const em of userEmails) {
+    const { data: invData } = await supabase
+      .from('employee_invitations')
+      .select('*')
+      .or(`email.ilike.${em},raw_data->>personalEmail.ilike.${em},raw_data->>officialEmail.ilike.${em}`)
+      .maybeSingle();
+
+    if (invData) {
+      inv = invData;
+      break;
+    }
+  }
+
+  if (!inv && data?.emp_id) {
+    const { data: invData } = await supabase
+      .from('employee_invitations')
+      .select('*')
+      .eq('raw_data->>empId', data.emp_id)
+      .maybeSingle();
+    inv = invData;
+  }
+
+  const raw = inv?.raw_data || {};
+
+  const merged = {
+    ...raw,
+    ...data,
+    id: data?.id || userId,
+    emp_id: data?.emp_id || raw.empId || inv?.id,
+    first_name: data?.first_name || inv?.first_name || raw.firstName,
+    last_name: data?.last_name || inv?.last_name || raw.lastName,
+    phone: data?.phone || inv?.phone || raw.phone,
+    personal_email: data?.personal_email || raw.personalEmail,
+    email: data?.email || inv?.email || currentEmail,
+    official_email: data?.email || inv?.email || currentEmail,
+    dob: data?.dob || raw.dob,
+    gender: data?.gender || raw.gender,
+    blood_group: data?.blood_group || raw.bloodGroup,
+    marital_status: data?.marital_status || raw.maritalStatus,
+    address: data?.address || [raw.address, raw.city, raw.state, raw.pincode].filter(Boolean).join(', ') || raw.currentAddress,
+    department: data?.departments?.name || data?.department || inv?.department || raw.department,
+    designation: data?.designations?.title || data?.designation || inv?.designation || raw.designation,
+    employment_type: data?.employment_type || raw.employmentType,
+    work_location: data?.work_location || raw.workLocation,
+    shift: data?.shift || raw.shift,
+    leave_balance: data?.leave_balance || raw.leaveBalance || 0,
+    bank_name: data?.bank_name || raw.bankName,
+    account_number: data?.account_number || raw.accountNumber,
+    ifsc_code: data?.ifsc_code || raw.ifscCode,
+    account_holder: data?.account_holder || raw.accountHolder,
+    pan_number: data?.pan_number || raw.panNumber,
+    aadhar_number: data?.aadhar_number || raw.aadharNumber,
+    manager: data?.reporting_manager || raw.manager,
+    documents: data?.documents || raw.documents || [],
+    emergency: data?.emergency || raw.emergency || [],
+  };
+
+  return { data: merged, error: null };
 };
 
 export const updateProfile = async (userId, updates) => {
-  const { data, error } = await supabase
+  // 1. Map fields for profiles table
+  const profileDbUpdates = {};
+  if (updates.first_name || updates.firstName) profileDbUpdates.first_name = updates.first_name || updates.firstName;
+  if (updates.last_name || updates.lastName) profileDbUpdates.last_name = updates.last_name || updates.lastName;
+  if (updates.phone) profileDbUpdates.phone = updates.phone;
+  if (updates.avatar_url || updates.avatarUrl) profileDbUpdates.avatar_url = updates.avatar_url || updates.avatarUrl;
+  if (updates.cover_url || updates.coverUrl) profileDbUpdates.cover_url = updates.cover_url || updates.coverUrl;
+
+  let { data: prof, error: profErr } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(profileDbUpdates)
     .eq('id', userId)
     .select()
-    .single();
-  return { data, error };
+    .maybeSingle();
+
+  // 2. Also update employee_invitations table raw_data so Admin panel sees all updated fields
+  const userEmail = prof?.email || (await supabase.auth.getUser())?.data?.user?.email;
+
+  if (userEmail) {
+    const { data: inv } = await supabase
+      .from('employee_invitations')
+      .select('id, phone, raw_data')
+      .or(`email.ilike.${userEmail},raw_data->>personalEmail.ilike.${userEmail},raw_data->>officialEmail.ilike.${userEmail}`)
+      .maybeSingle();
+
+    if (inv) {
+      const updatedRaw = {
+        ...inv.raw_data,
+        avatar_url: updates.avatar_url ?? updates.avatarUrl ?? inv.raw_data?.avatar_url ?? inv.raw_data?.avatarUrl,
+        cover_url: updates.cover_url ?? updates.coverUrl ?? inv.raw_data?.cover_url ?? inv.raw_data?.coverUrl,
+        phone: updates.phone ?? inv.raw_data?.phone,
+        personalEmail: updates.personal_email ?? updates.personalEmail ?? inv.raw_data?.personalEmail,
+        address: updates.address ?? updates.currentAddress ?? inv.raw_data?.address,
+        gender: updates.gender ?? inv.raw_data?.gender,
+        dob: updates.dob ?? inv.raw_data?.dob,
+        bloodGroup: updates.blood_group ?? updates.bloodGroup ?? inv.raw_data?.bloodGroup,
+        bankName: updates.bank_name ?? updates.bankName ?? inv.raw_data?.bankName,
+        accountNumber: updates.account_number ?? updates.accountNumber ?? inv.raw_data?.accountNumber,
+        ifscCode: updates.ifsc_code ?? updates.ifscCode ?? inv.raw_data?.ifscCode,
+        accountHolder: updates.account_holder ?? updates.accountHolder ?? inv.raw_data?.accountHolder,
+        panNumber: updates.pan_number ?? updates.panNumber ?? inv.raw_data?.panNumber,
+        aadharNumber: updates.aadhar_number ?? updates.aadharNumber ?? inv.raw_data?.aadharNumber,
+        skills: updates.skills ?? inv.raw_data?.skills,
+        experience: updates.experience ?? inv.raw_data?.experience,
+        certifications: updates.certifications ?? inv.raw_data?.certifications,
+        languages: updates.languages ?? inv.raw_data?.languages,
+        emergency: updates.emergency ?? inv.raw_data?.emergency
+      };
+
+      const { data: invUpdated, error: invErr } = await supabase
+        .from('employee_invitations')
+        .update({
+          phone: updates.phone || inv.phone,
+          raw_data: updatedRaw
+        })
+        .eq('id', inv.id)
+        .select()
+        .single();
+
+      return { data: { ...prof, ...updatedRaw }, error: invErr };
+    }
+  }
+
+  return { data: prof, error: profErr };
 };
 
 // ─── ATTENDANCE ───────────────────────────────────────────────────────────────

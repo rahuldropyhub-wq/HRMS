@@ -15,24 +15,71 @@ import { useAuth } from '../../contexts/AuthContext';
 
 function AdminLogin() {
   const navigate = useNavigate();
-  const { login, mockLogin } = useAuth();
-  const [email, setEmail] = useState('admin@dropyhub.com');
-  const [password, setPassword] = useState('');
+  const { loginAdminWithOtp, verifyOtp } = useAuth();
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
-    const { error } = await login(email, password);
+    const { error } = await loginAdminWithOtp(email);
 
     if (error) {
       setError(error.message);
-      setLoading(false);
     } else {
+      setSuccess('OTP sent! Please check your email.');
+      setOtpSent(true);
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    const token = otp.join('');
+    if (token.length !== 6) {
+      setError('Please enter the full 6-digit OTP.');
+      return;
+    }
+    setLoading(true);
+
+    const { error } = await verifyOtp(email, token);
+
+    if (error) {
+      setError(error.message || 'Invalid OTP. Please try again.');
+    } else {
+      setSuccess('Verified successfully!');
       navigate('/admin/dashboard');
+    }
+    setLoading(false);
+  };
+
+  const handleOtpChange = (element, index) => {
+    if (isNaN(element.value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = element.value;
+    setOtp(newOtp);
+    if (element.nextSibling && element.value !== '') {
+      element.nextSibling.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === 'Backspace') {
+      if (otp[index] === '' && e.target.previousSibling) {
+        e.target.previousSibling.focus();
+      } else {
+        const newOtp = [...otp];
+        newOtp[index] = '';
+        setOtp(newOtp);
+      }
     }
   };
 
@@ -104,42 +151,70 @@ function AdminLogin() {
           <h3>Admin Authentication</h3>
           <p>Enter your administrator credentials to access the system.</p>
 
-          {error && <div style={{ color: 'red', marginBottom: '16px', fontSize: '14px', padding: '10px', backgroundColor: '#fee2e2', borderRadius: '4px' }}>{error}</div>}
+          {error && <div style={{ color: '#b91c1c', marginBottom: '16px', fontSize: '14px', padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '6px' }}>{error}</div>}
+          {success && <div style={{ color: '#047857', marginBottom: '16px', fontSize: '14px', padding: '12px', backgroundColor: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: '6px' }}>{success}</div>}
 
-          <form className="admin-auth-form" onSubmit={handleLogin}>
-            <div className="admin-auth-form-group">
-              <label className="admin-auth-form-label">Admin Email</label>
-              <div className="admin-auth-input-wrap">
-                <Mail size={18} className="admin-auth-input-icon" />
-                <input type="email" placeholder="admin@dropyhub.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          {!otpSent ? (
+            <form className="admin-auth-form" onSubmit={handleSendOtp}>
+              <div className="admin-auth-form-group">
+                <label className="admin-auth-form-label">Admin Email</label>
+                <div className="admin-auth-input-wrap">
+                  <Mail size={18} className="admin-auth-input-icon" />
+                  <input type="email" placeholder="Enter your admin email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
               </div>
-            </div>
 
-            <div className="admin-auth-form-group">
-              <label className="admin-auth-form-label">Password</label>
-              <div className="admin-auth-input-wrap">
-                <Lock size={18} className="admin-auth-input-icon" />
-                <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <button type="submit" className="admin-auth-submit-btn" disabled={loading}>
+                {loading ? 'Sending OTP...' : 'Send OTP Code'}
+                {!loading && <ArrowRight size={18} />}
+              </button>
+            </form>
+          ) : (
+            <form className="admin-auth-form" onSubmit={handleVerifyOtp}>
+              <div className="admin-auth-form-group">
+                <label className="admin-auth-form-label">Enter 6-digit OTP</label>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', marginBottom: '20px' }}>
+                  {otp.map((data, index) => (
+                    <input
+                      key={index}
+                      type="text"
+                      maxLength="1"
+                      value={data}
+                      onChange={(e) => handleOtpChange(e.target, index)}
+                      onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                      style={{
+                        width: '45px',
+                        height: '55px',
+                        fontSize: '24px',
+                        textAlign: 'center',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        backgroundColor: '#f9fafb',
+                        color: '#111827',
+                        fontWeight: '600'
+                      }}
+                      onFocus={(e) => e.target.select()}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <button type="submit" className="admin-auth-submit-btn" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Login to Dashboard'}
-              {!loading && <ArrowRight size={18} />}
-            </button>
+              <button type="submit" className="admin-auth-submit-btn" disabled={loading}>
+                {loading ? 'Verifying...' : 'Verify & Login'}
+                {!loading && <ArrowRight size={18} />}
+              </button>
 
-            <button
-              type="button"
-              className="admin-auth-submit-btn"
-              style={{ backgroundColor: '#10b981', marginTop: '10px' }}
-              onClick={() => {
-                mockLogin('admin');
-                navigate('/admin/dashboard');
-              }}
-            >
-              Bypass Login (Test UI)
-            </button>
-          </form>
+              <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setOtpSent(false)}
+                  style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '14px', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  &larr; Back to Email
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="admin-auth-divider">RESTRICTED ACCESS</div>
 

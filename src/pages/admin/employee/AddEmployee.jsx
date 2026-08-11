@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { UploadCloud, ArrowLeft, ArrowRight, Save, CheckCircle } from 'lucide-react';
+import { UploadCloud, ArrowLeft, ArrowRight, Save, CheckCircle, User, Building2, CreditCard, FileText } from 'lucide-react';
 import '../../../styles/admin/employee/add-employee.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-import { createEmployee, getEmployeeById, updateEmployee } from '../../../services/adminService';
+import { createEmployee, getEmployeeById, updateEmployee, getAllEmployees } from '../../../services/adminService';
 
 const STEPS = [
   'Personal Info',
@@ -21,7 +21,7 @@ const AddEmployee = () => {
   const isEditMode = !!id;
   const [currentStep, setCurrentStep] = useState(1);
   const { register, handleSubmit, formState: { errors }, trigger, getValues, setValue, reset } = useForm({
-    defaultValues: JSON.parse(localStorage.getItem('employeeDraft') || '{}')
+    defaultValues: isEditMode ? {} : JSON.parse(localStorage.getItem('employeeDraft') || '{}')
   });
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const uploadedDocsRef = React.useRef(uploadedDocs);
@@ -31,7 +31,18 @@ const AddEmployee = () => {
   const [ifscLoading, setIfscLoading] = useState(false);
   const [ifscError, setIfscError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [managersList, setManagersList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+      const { data } = await getAllEmployees();
+      if (data) setManagersList(data);
+    };
+    fetchManagers();
+  }, []);
 
   useEffect(() => {
     if (isEditMode) {
@@ -39,14 +50,43 @@ const AddEmployee = () => {
         setIsLoading(true);
         const { data } = await getEmployeeById(id);
         if (data) {
-          // If raw_data exists, populate those exact fields
-          if (data.raw_data) {
-            reset(data.raw_data);
-            if (data.raw_data.documents) setUploadedDocs(data.raw_data.documents);
-          } else {
-            // Fallback for profiles without raw_data
-            reset(data);
-            if (data.documents) setUploadedDocs(data.documents);
+          const prefillData = {
+            ...(data.raw_data || {}),
+            ...data,
+            firstName: data.firstName || data.first_name || data.raw_data?.firstName || '',
+            lastName: data.lastName || data.last_name || data.raw_data?.lastName || '',
+            personalEmail: data.personalEmail || data.raw_data?.personalEmail || '',
+            officialEmail: data.officialEmail || data.email || data.raw_data?.officialEmail || '',
+            phone: data.phone || data.raw_data?.phone || '',
+            dob: data.dob || data.raw_data?.dob || '',
+            gender: data.gender || data.raw_data?.gender || '',
+            bloodGroup: data.bloodGroup || data.raw_data?.bloodGroup || '',
+            maritalStatus: data.maritalStatus || data.raw_data?.maritalStatus || '',
+            address: data.address || data.raw_data?.address || '',
+            city: data.city || data.raw_data?.city || '',
+            state: data.state || data.raw_data?.state || '',
+            pincode: data.pincode || data.raw_data?.pincode || '',
+            empId: data.empId || data.emp_id || data.raw_data?.empId || data.id || '',
+            department: data.department || data.raw_data?.department || '',
+            designation: data.designation || data.raw_data?.designation || '',
+            joinDate: data.joinDate || data.raw_data?.joinDate || '',
+            employmentType: data.employmentType || data.raw_data?.employmentType || '',
+            workLocation: data.workLocation || data.raw_data?.workLocation || '',
+            shift: data.shift || data.raw_data?.shift || '',
+            leaveBalance: data.leaveBalance || data.raw_data?.leaveBalance || 0,
+            bankName: data.bankName || data.raw_data?.bankName || '',
+            accountNumber: data.accountNumber || data.raw_data?.accountNumber || '',
+            ifscCode: data.ifscCode || data.raw_data?.ifscCode || '',
+            accountHolder: data.accountHolder || data.raw_data?.accountHolder || '',
+            panNumber: data.panNumber || data.raw_data?.panNumber || '',
+            aadharNumber: data.aadharNumber || data.raw_data?.aadharNumber || '',
+            manager: data.manager || data.raw_data?.manager || '',
+          };
+          reset(prefillData);
+
+          const docs = data.documents || data.raw_data?.documents || [];
+          if (docs.length > 0) {
+            setUploadedDocs(docs);
           }
         }
         setIsLoading(false);
@@ -59,14 +99,15 @@ const AddEmployee = () => {
     const data = getValues();
     const completeRawData = { ...data, documents: uploadedDocs };
     localStorage.setItem('employeeDraft', JSON.stringify(completeRawData));
-    alert('Draft saved successfully! You can resume later.');
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 3000);
   };
 
   const handleFileUpload = (e, docType) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('File size exceeds 5MB limit');
+      if (file.size > 5 * 1024 * 1024) {
+        setSubmitError('File size exceeds 5MB limit. Please choose a smaller file.');
         return;
       }
       const reader = new FileReader();
@@ -120,11 +161,13 @@ const AddEmployee = () => {
     const isStepValid = await trigger(fieldsToValidate);
     if (isStepValid) {
       setCurrentStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleBack = () => {
     setCurrentStep(prev => prev - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,6 +184,7 @@ const AddEmployee = () => {
         phone: data.phone,
         department: data.department,
         designation: data.designation,
+        manager: data.manager,
         // Include the entire raw form data so the database trigger can map all 40+ fields
         raw_data: completeRawData
       };
@@ -155,10 +199,11 @@ const AddEmployee = () => {
       }
 
       if (error) {
-        console.error("Error creating employee:", error);
-        alert("Failed to create employee: " + error.message);
+        console.error('Error saving employee:', error);
+        setSubmitError('Failed to save employee: ' + (error.message || 'Unknown error. Please try again.'));
       } else {
         localStorage.removeItem('employeeDraft');
+        setSubmitError('');
         setShowSuccess(true);
         setTimeout(() => {
           navigate('/admin/employees');
@@ -166,11 +211,19 @@ const AddEmployee = () => {
       }
     } catch (err) {
       console.error(err);
-      alert("An unexpected error occurred.");
+      setSubmitError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+        <p style={{ fontSize: '16px', fontWeight: '500' }}>Loading employee details...</p>
+      </div>
+    );
+  }
 
   const formData = getValues();
 
@@ -199,8 +252,25 @@ const AddEmployee = () => {
         </div>
       </div>
 
+      {/* Draft Saved Banner */}
+      {draftSaved && (
+        <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#065f46', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <CheckCircle size={16} /> Draft saved successfully! You can resume later.
+        </div>
+      )}
+
+      {/* Submit Error Banner */}
+      {submitError && (
+        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          ⚠️ {submitError}
+        </div>
+      )}
+
       {/* Step Indicator */}
-      <div className="step-indicator">
+      <div
+        className="step-indicator"
+        style={{ '--step-progress': `${((currentStep - 1) / (STEPS.length - 1)) * 100}%` }}
+      >
         {STEPS.map((step, index) => {
           const stepNumber = index + 1;
           const isActive = stepNumber === currentStep;
@@ -209,7 +279,7 @@ const AddEmployee = () => {
           return (
             <div key={step} className={`step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}>
               <div className="step-circle">
-                {isCompleted ? <CheckCircle size={16} /> : stepNumber}
+                {isCompleted ? <CheckCircle size={18} /> : stepNumber}
               </div>
               <span className="step-label">{step}</span>
             </div>
@@ -239,6 +309,7 @@ const AddEmployee = () => {
                   <label htmlFor="email">Personal Email *</label>
                   <input id="email" type="email" className={`form-control ${errors.email ? 'error' : ''}`} placeholder="johndoe@gmail.com" {...register('personalEmail', { required: 'Email is required', pattern: /^\S+@\S+$/i })} />
                   {errors.personalEmail && <span className="form-error">{errors.personalEmail.message}</span>}
+                  <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>📌 Personal email (Gmail/Outlook) — not used for login</span>
                 </div>
                 <div className="form-group">
                   <label htmlFor="phone">Phone Number *</label>
@@ -314,8 +385,20 @@ const AddEmployee = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Official Email<span>*</span></label>
-                  <input type="email" className="form-input" placeholder="name@dropyhub.com" {...register('officialEmail', { required: 'Official email is required' })} />
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="name@dropyhub.com"
+                    {...register('officialEmail', {
+                      required: 'Official email is required',
+                      pattern: {
+                        value: /^[^@]+@dropyhub\.com$/i,
+                        message: 'Must be a @dropyhub.com email address'
+                      }
+                    })}
+                  />
                   {errors.officialEmail && <span className="form-error">{errors.officialEmail.message}</span>}
+                  <span style={{ fontSize: '12px', color: '#059669', marginTop: '2px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>🔑 This is the login email — must be @dropyhub.com</span>
                 </div>
                 <div className="form-group">
                   <label htmlFor="department">Department<span>*</span></label>
@@ -346,6 +429,22 @@ const AddEmployee = () => {
                     <option value="HR Executive">HR Executive</option>
                   </select>
                   {errors.designation && <span className="form-error">{errors.designation.message}</span>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="manager" className="form-label">Reporting Manager</label>
+                  <select 
+                    id="manager"
+                    className="form-control"
+                    {...register('manager')}
+                  >
+                    <option value="">Select Reporting Manager</option>
+                    <option value="Jayanth Choda">Jayanth Choda (Admin)</option>
+                    {managersList.map(m => (
+                      <option key={m.id} value={`${m.firstName || ''} ${m.lastName || ''}`.trim()}>
+                        {m.firstName} {m.lastName} ({m.designation || m.department || 'Employee'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Date of Joining<span>*</span></label>
@@ -441,7 +540,19 @@ const AddEmployee = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Aadhar Number</label>
-                  <input className="form-input" {...register('aadharNumber')} />
+                  <input
+                    className="form-input"
+                    placeholder="1234-5678-9012"
+                    maxLength={14}
+                    {...register('aadharNumber')}
+                    onChange={(e) => {
+                      // Strip non-digits, limit to 12 digits, insert dash after every 4
+                      const raw = e.target.value.replace(/\D/g, '').slice(0, 12);
+                      const formatted = raw.replace(/(\d{4})(?=\d)/g, '$1-');
+                      e.target.value = formatted;
+                    }}
+                  />
+                  <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Format: XXXX-XXXX-XXXX</span>
                 </div>
               </div>
             </motion.div>
@@ -488,22 +599,26 @@ const AddEmployee = () => {
 
           {/* STEP 5: Review */}
           {currentStep === 5 && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
               
+              {/* Personal Information Card */}
               <div className="summary-section">
-                <h3 className="summary-title">Personal Information</h3>
+                <h3 className="summary-title">
+                  <User size={18} style={{ color: '#2563eb' }} />
+                  Personal Information
+                </h3>
                 <div className="summary-grid">
                   <div className="summary-item">
-                    <span className="summary-label">Name</span>
+                    <span className="summary-label">Full Name</span>
                     <span className="summary-value">{formData.firstName} {formData.lastName}</span>
                   </div>
                   <div className="summary-item">
-                    <span className="summary-label">Email</span>
-                    <span className="summary-value">{formData.personalEmail}</span>
+                    <span className="summary-label">Personal Email</span>
+                    <span className="summary-value">{formData.personalEmail || '-'}</span>
                   </div>
                   <div className="summary-item">
-                    <span className="summary-label">Phone</span>
-                    <span className="summary-value">{formData.phone}</span>
+                    <span className="summary-label">Phone Number</span>
+                    <span className="summary-value">{formData.phone || '-'}</span>
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">Date of Birth</span>
@@ -521,21 +636,25 @@ const AddEmployee = () => {
                     <span className="summary-label">Marital Status</span>
                     <span className="summary-value">{formData.maritalStatus || '-'}</span>
                   </div>
-                  <div className="summary-item" style={{ gridColumn: 'span 2' }}>
-                    <span className="summary-label">Address</span>
+                  <div className="summary-item summary-full-row">
+                    <span className="summary-label">Residential Address</span>
                     <span className="summary-value">
-                      {[formData.address, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ') || '-'}
+                      {[formData.address, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ') || 'Not provided'}
                     </span>
                   </div>
                 </div>
               </div>
 
+              {/* Company Information Card */}
               <div className="summary-section">
-                <h3 className="summary-title">Company Information</h3>
+                <h3 className="summary-title">
+                  <Building2 size={18} style={{ color: '#2563eb' }} />
+                  Company Information
+                </h3>
                 <div className="summary-grid">
                   <div className="summary-item">
                     <span className="summary-label">Employee ID</span>
-                    <span className="summary-value">{formData.empId}</span>
+                    <span className="summary-value" style={{ color: '#2563eb' }}>{formData.empId}</span>
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">Official Email</span>
@@ -548,6 +667,10 @@ const AddEmployee = () => {
                   <div className="summary-item">
                     <span className="summary-label">Designation</span>
                     <span className="summary-value">{formData.designation}</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Reporting Manager</span>
+                    <span className="summary-value">{getValues('manager') || formData.manager || 'Not Assigned'}</span>
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">Date of Joining</span>
@@ -566,14 +689,18 @@ const AddEmployee = () => {
                     <span className="summary-value">{getValues('shift') || '-'}</span>
                   </div>
                   <div className="summary-item">
-                    <span className="summary-label">Leave Balance</span>
-                    <span className="summary-value">{getValues('leaveBalance') || '0'}</span>
+                    <span className="summary-label">Initial Leave Balance</span>
+                    <span className="summary-value">{getValues('leaveBalance') || '0'} days</span>
                   </div>
                 </div>
               </div>
 
+              {/* Bank Details Card */}
               <div className="summary-section">
-                <h3 className="summary-title">Bank Details</h3>
+                <h3 className="summary-title">
+                  <CreditCard size={18} style={{ color: '#2563eb' }} />
+                  Bank & Statutory Details
+                </h3>
                 <div className="summary-grid">
                   <div className="summary-item">
                     <span className="summary-label">Bank Name</span>
@@ -593,13 +720,36 @@ const AddEmployee = () => {
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">PAN Number</span>
-                    <span className="summary-value">{formData.panNumber || '-'}</span>
+                    <span className="summary-value" style={{ letterSpacing: '0.03em' }}>{formData.panNumber || '-'}</span>
                   </div>
                   <div className="summary-item">
                     <span className="summary-label">Aadhar Number</span>
-                    <span className="summary-value">{formData.aadharNumber || '-'}</span>
+                    <span className="summary-value" style={{ letterSpacing: '0.03em' }}>{formData.aadharNumber || '-'}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Uploaded Documents Card */}
+              <div className="summary-section">
+                <h3 className="summary-title">
+                  <FileText size={18} style={{ color: '#2563eb' }} />
+                  Uploaded Documents ({uploadedDocs.length})
+                </h3>
+                {uploadedDocs.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                    {uploadedDocs.map((doc, idx) => (
+                      <div key={idx} style={{ padding: '10px 14px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FileText size={18} color="#2563eb" />
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.type}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>No documents uploaded.</p>
+                )}
               </div>
 
             </motion.div>

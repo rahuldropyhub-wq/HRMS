@@ -64,9 +64,14 @@ export const AuthProvider = ({ children }) => {
           // Create the profile now
           const { data: newProfile, error: insertError } = await supabase.from('profiles').insert({
             id: userId,
+            emp_id: invitation.raw_data?.empId,
             email: email,
-            first_name: invitation.first_name,
-            last_name: invitation.last_name,
+            first_name: invitation.first_name || invitation.raw_data?.firstName,
+            last_name: invitation.last_name || invitation.raw_data?.lastName,
+            department: invitation.department || invitation.raw_data?.department,
+            designation: invitation.designation || invitation.raw_data?.designation,
+            phone: invitation.phone || invitation.raw_data?.phone,
+            reporting_manager: invitation.raw_data?.manager,
             role: 'employee',
             status: 'active'
           }).select().single();
@@ -82,6 +87,35 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (data) {
+      const email = data.email || (await supabase.auth.getUser())?.data?.user?.email;
+      if (email) {
+        const { data: inv } = await supabase
+          .from('employee_invitations')
+          .select('*')
+          .or(`email.ilike.${email},raw_data->>personalEmail.ilike.${email},raw_data->>officialEmail.ilike.${email}`)
+          .maybeSingle();
+
+        if (inv) {
+          const fn = data.first_name || inv.first_name || inv.raw_data?.firstName;
+          const ln = data.last_name || inv.last_name || inv.raw_data?.lastName;
+          const dept = data.department || inv.department || inv.raw_data?.department;
+          const desg = data.designation || inv.designation || inv.raw_data?.designation;
+          const ph = data.phone || inv.phone || inv.raw_data?.phone;
+          const mgr = data.reporting_manager || inv.raw_data?.manager;
+
+          const updates = {};
+          if (fn && fn !== data.first_name) { data.first_name = fn; updates.first_name = fn; }
+          if (ln && ln !== data.last_name) { data.last_name = ln; updates.last_name = ln; }
+          if (dept && dept !== data.department) { data.department = dept; updates.department = dept; }
+          if (desg && desg !== data.designation) { data.designation = desg; updates.designation = desg; }
+          if (ph && ph !== data.phone) { data.phone = ph; updates.phone = ph; }
+          if (mgr && mgr !== data.reporting_manager) { data.reporting_manager = mgr; updates.reporting_manager = mgr; }
+
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('profiles').update(updates).eq('id', userId);
+          }
+        }
+      }
       setProfile(data);
     } else {
       console.error('Error fetching profile:', error);
@@ -119,6 +153,12 @@ export const AuthProvider = ({ children }) => {
         // emailRedirectTo: 'http://localhost:5173/dashboard'
       }
     });
+    return { data, error };
+  };
+
+  const loginAdminWithOtp = async (email) => {
+    // Send OTP directly — role check happens after login via ProtectedRoute (profile.role === 'admin')
+    const { data, error } = await supabase.auth.signInWithOtp({ email });
     return { data, error };
   };
 
@@ -161,6 +201,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     login,
     loginWithOtp,
+    loginAdminWithOtp,
     verifyOtp,
     logout,
     mockLogin,

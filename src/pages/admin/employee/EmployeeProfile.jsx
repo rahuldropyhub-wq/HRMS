@@ -6,61 +6,10 @@ import {
   UserCircle, Edit, UserX, Download, Eye, FileText
 } from 'lucide-react';
 import '../../../styles/admin/employee/employee-profile.css';
-
-// Using mock data for single employee
-const EMPLOYEE_DATA = {
-  id: 'EMP-001',
-  firstName: 'Rahul',
-  lastName: 'Sharma',
-  email: 'rahul.sharma@dropyhub.com',
-  personalEmail: 'rahul.s89@gmail.com',
-  phone: '+91 98765 43210',
-  department: 'Engineering',
-  designation: 'Sr. Frontend Developer',
-  joinDate: '15 Mar 2023',
-  dob: '24 Aug 1990',
-  gender: 'Male',
-  bloodGroup: 'O+',
-  maritalStatus: 'Single',
-  address: 'Flat 402, Sunshine Apartments, Indiranagar',
-  city: 'Bangalore',
-  state: 'Karnataka',
-  pincode: '560038',
-  manager: 'Priya Desai',
-  employmentType: 'Full-time',
-  workLocation: 'Bangalore HQ',
-  shift: 'Morning (9 AM - 6 PM)',
-  bankName: 'HDFC Bank',
-  accountNumber: 'XXXXX1234',
-  ifscCode: 'HDFC0001234',
-  panNumber: 'ABCDE1234F',
-  aadharNumber: 'XXXX-XXXX-8901',
-  leaveBalance: 12,
-  activeTasks: 3,
-  attendanceScore: '98.5%',
-  assetsAllocated: 2,
-  skills: ['React', 'JavaScript', 'Tailwind CSS', 'Redux', 'Framer Motion'],
-  emergency: [
-    { name: 'Anil Sharma', relation: 'Father', phone: '+91 98765 11111' },
-    { name: 'Sneha Sharma', relation: 'Sister', phone: '+91 98765 22222' }
-  ],
-  documents: [
-    { name: 'Aadhar Card', type: 'PDF', date: '15 Mar 2023' },
-    { name: 'PAN Card', type: 'JPG', date: '15 Mar 2023' },
-    { name: 'Resume', type: 'PDF', date: '12 Mar 2023' },
-    { name: 'Offer Letter', type: 'PDF', date: '14 Mar 2023' }
-  ],
-  activity: [
-    { title: 'Task "Update Dashboard UI" completed', time: 'Today, 10:30 AM' },
-    { title: 'Leave request approved by Priya Desai', time: 'Yesterday, 2:15 PM' },
-    { title: 'Profile details updated', time: '12 Aug 2026, 4:00 PM' },
-    { title: 'Allocated new MacBook Pro', time: '01 Jun 2026, 11:00 AM' }
-  ]
-};
-
 import { getEmployeeById, updateEmployee } from '../../../services/adminService';
 
 const TABS = ['Personal', 'Company', 'Bank', 'Emergency', 'Documents', 'Activity Log'];
+
 
 const EmployeeProfile = () => {
   const { id } = useParams();
@@ -156,14 +105,18 @@ const EmployeeProfile = () => {
       {/* Profile Header */}
       <div className="profile-header-card">
         <div className="profile-info-main">
-          <div className="profile-avatar-large">
-            {initials}
+          <div className="profile-avatar-large" style={{ overflow: 'hidden' }}>
+            {emp.avatar_url || emp.avatarUrl ? (
+              <img src={emp.avatar_url || emp.avatarUrl} alt={emp.firstName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              initials
+            )}
           </div>
           <div className="profile-details">
             <h1>{emp.firstName} {emp.lastName}</h1>
             <p className="profile-designation">{emp.designation}</p>
             <div className="profile-meta">
-              <div className="meta-item"><Briefcase size={16} /> {emp.department} | {emp.id}</div>
+              <div className="meta-item"><Briefcase size={16} /> {emp.department} | {emp.empId || emp.id}</div>
               <div className="meta-item"><Mail size={16} /> {emp.email}</div>
               <div className="meta-item"><Phone size={16} /> {emp.phone}</div>
               <div className="meta-item"><Calendar size={16} /> Joined: {emp.joinDate}</div>
@@ -256,7 +209,7 @@ const EmployeeProfile = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="content-grid">
             <div className="info-group">
               <span className="info-label">Employee ID</span>
-              <span className="info-value">{emp.id}</span>
+              <span className="info-value">{emp.empId || emp.id}</span>
             </div>
             <div className="info-group">
               <span className="info-label">Department</span>
@@ -312,19 +265,27 @@ const EmployeeProfile = () => {
 
         {activeTab === 'Emergency' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="content-grid">
-            {emp.emergency.map((contact, idx) => (
-              <div key={idx} style={{ background: 'var(--bg-primary)', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', color: 'var(--text-primary)' }}>{contact.name}</h4>
-                <div className="info-group" style={{ marginBottom: '8px' }}>
-                  <span className="info-label">Relationship</span>
-                  <span className="info-value">{contact.relation}</span>
+            {emp.emergency && emp.emergency.length > 0 ? (
+              emp.emergency.map((contact, idx) => (
+                <div key={idx} style={{ background: 'var(--bg-primary)', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', color: 'var(--text-primary)' }}>{contact.name}</h4>
+                  <div className="info-group" style={{ marginBottom: '8px' }}>
+                    <span className="info-label">Relationship</span>
+                    <span className="info-value">{contact.relation}</span>
+                  </div>
+                  <div className="info-group">
+                    <span className="info-label">Phone</span>
+                    <span className="info-value">{contact.phone}</span>
+                  </div>
                 </div>
-                <div className="info-group">
-                  <span className="info-label">Phone</span>
-                  <span className="info-value">{contact.phone}</span>
-                </div>
+              ))
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280', background: '#f9fafb', borderRadius: '12px', border: '1px dashed #d1d5db', gridColumn: '1 / -1' }}>
+                <Phone size={48} color="#9ca3af" style={{ marginBottom: '16px' }} />
+                <h3 style={{ color: '#374151', margin: '0 0 8px 0' }}>No Emergency Contacts</h3>
+                <p style={{ margin: 0 }}>No emergency contacts have been added yet.</p>
               </div>
-            ))}
+            )}
           </motion.div>
         )}
 
@@ -358,15 +319,21 @@ const EmployeeProfile = () => {
 
         {activeTab === 'Activity Log' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="timeline">
-            {emp.activity.map((log, idx) => (
-              <div key={idx} className="timeline-item">
-                <div className="timeline-dot"></div>
-                <div className="timeline-content">
-                  <span className="timeline-title">{log.title}</span>
-                  <span className="timeline-time">{log.time}</span>
+            {emp.activity && emp.activity.length > 0 ? (
+              emp.activity.map((log, idx) => (
+                <div key={idx} className="timeline-item">
+                  <div className="timeline-dot"></div>
+                  <div className="timeline-content">
+                    <span className="timeline-title">{log.title}</span>
+                    <span className="timeline-time">{log.time}</span>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                <p>No activity recorded yet.</p>
               </div>
-            ))}
+            )}
           </motion.div>
         )}
       </div>

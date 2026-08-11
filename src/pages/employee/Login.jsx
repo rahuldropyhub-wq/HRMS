@@ -17,7 +17,7 @@ import { Key } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
-  const { loginWithOtp, verifyOtp, mockLogin } = useAuth();
+  const { loginWithOtp, verifyOtp } = useAuth();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
@@ -77,15 +77,6 @@ function Login() {
     }
     setLoading(true);
     
-    // Bypass for UI Testing
-    if (email === 'testotp@dropyhub.com' && token === '123456') {
-      setTimeout(() => {
-        setSuccess('Verified successfully!');
-        mockLogin('employee');
-        navigate('/dashboard');
-      }, 1000);
-      return;
-    }
 
     const { error } = await verifyOtp(email, token);
     
@@ -190,18 +181,6 @@ function Login() {
               <button type="submit" className="auth-submit-btn" disabled={loading}>
                 {loading ? 'Sending...' : 'Send OTP Code'}
                 {!loading && <ArrowRight size={18} />}
-              </button>
-              
-              <button 
-                type="button" 
-                className="auth-submit-btn" 
-                style={{ backgroundColor: '#10b981', marginTop: '10px' }}
-                onClick={() => {
-                  mockLogin('employee');
-                  navigate('/dashboard');
-                }}
-              >
-                Bypass Login (Test UI)
               </button>
             </form>
           ) : (

@@ -230,10 +230,16 @@ const DashboardLayout = ({ children }) => {
             </div>
             <div className="user-profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
               <div className="avatar">
-                <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.first_name || 'User')}&background=random`} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent((profile?.first_name || user?.email?.split('@')[0] || 'User'))}&background=random`} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
               </div>
               <div className="user-info">
-                <h4>{profile ? `${profile.first_name} ${profile.last_name}` : (user?.email?.split('@')[0] || 'Employee')}</h4>
+                <h4>
+                  {profile?.first_name || profile?.last_name
+                    ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+                    : (user?.email?.split('@')[0]
+                        ? user.email.split('@')[0].split(/[._-]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
+                        : 'Employee')}
+                </h4>
                 <p>{profile?.designations?.title || 'Employee'}</p>
               </div>
               <ChevronDown size={16} color="#6b7280" />

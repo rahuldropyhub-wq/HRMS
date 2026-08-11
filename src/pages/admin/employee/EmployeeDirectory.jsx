@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Search, Plus, MoreVertical, Eye, Edit, 
+import {
+  Search, Plus, MoreVertical, Eye, Edit,
   UserX, UserCheck, ChevronLeft, ChevronRight, Download, SearchX
 } from 'lucide-react';
 import '../../../styles/admin/employee/employee-directory.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-import { getAllEmployees, updateEmployee } from '../../../services/adminService';
-
-// Mock Data
-const MOCK_EMPLOYEES = [];
+import { getAllEmployees, updateEmployee, getDepartments } from '../../../services/adminService';
 
 const getStatusBadgeClass = (status) => {
   switch (status) {
@@ -29,6 +26,7 @@ const getInitials = (first, last) => {
 const EmployeeDirectory = () => {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
@@ -40,8 +38,12 @@ const EmployeeDirectory = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await getAllEmployees();
-    setEmployees(data || []);
+    const [{ data: empData }, { data: deptData }] = await Promise.all([
+      getAllEmployees(),
+      getDepartments()
+    ]);
+    setEmployees(empData || []);
+    setDepartments(deptData || []);
     setLoading(false);
   };
 
@@ -103,6 +105,30 @@ const EmployeeDirectory = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Name', 'Email', 'Employee ID', 'Department', 'Designation', 'Employment Type', 'Status', 'Joined'];
+    const rows = filteredEmployees.map(emp => [
+      `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+      emp.email || '',
+      emp.id || '',
+      emp.department || '',
+      emp.designation || '',
+      emp.employmentType || '',
+      emp.status || '',
+      emp.created_at ? new Date(emp.created_at).toLocaleDateString('en-IN') : ''
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter(emp => emp.status === 'Active').length;
   const onLeaveEmployees = employees.filter(emp => emp.status === 'On Leave').length;
@@ -114,7 +140,7 @@ const EmployeeDirectory = () => {
   }).length;
 
   return (
-    <motion.div 
+    <motion.div
       className="employee-directory-container"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -136,9 +162,9 @@ const EmployeeDirectory = () => {
       <div className="filter-bar">
         <div className="search-box">
           <Search size={18} className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Search by name, ID, email..." 
+          <input
+            type="text"
+            placeholder="Search by name, ID, email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -149,14 +175,7 @@ const EmployeeDirectory = () => {
             onChange={(val) => { setDeptFilter(val); setCurrentPage(1); }}
             options={[
               { value: '', label: 'All Departments' },
-              { value: 'Engineering', label: 'Engineering' },
-              { value: 'Marketing', label: 'Marketing' },
-              { value: 'Design', label: 'Design' },
-              { value: 'HR', label: 'HR' },
-              { value: 'Finance', label: 'Finance' },
-              { value: 'Sales', label: 'Sales' },
-              { value: 'Operations', label: 'Operations' },
-              { value: 'QA', label: 'QA' }
+              ...departments.map(d => ({ value: d.name, label: d.name }))
             ]}
           />
         </div>
@@ -185,7 +204,7 @@ const EmployeeDirectory = () => {
             ]}
           />
         </div>
-        <button className="btn-secondary" style={{ padding: '8px', border: '1px solid #e5e7eb', background: 'var(--card-bg)', borderRadius: '8px', cursor: 'pointer' }}>
+        <button className="btn-secondary" title="Export CSV" onClick={handleExportCSV} style={{ padding: '8px', border: '1px solid #e5e7eb', background: 'var(--card-bg)', borderRadius: '8px', cursor: 'pointer' }}>
           <Download size={18} color="#4b5563" />
         </button>
       </div>
@@ -212,7 +231,7 @@ const EmployeeDirectory = () => {
       {/* Data Table */}
       <div className="table-container desktop-table">
         {filteredEmployees.length === 0 ? (
-          <EmptyState 
+          <EmptyState
             icon={<SearchX size={32} />}
             title="No employees found"
             message="Try adjusting your search or filter criteria"
@@ -234,7 +253,13 @@ const EmployeeDirectory = () => {
                 <tr key={emp.id}>
                   <td>
                     <div className="employee-cell">
-                      <div className="avatar">{getInitials(emp.firstName, emp.lastName)}</div>
+                      <div className="avatar" style={{ overflow: 'hidden' }}>
+                        {emp.avatar_url || emp.avatarUrl ? (
+                          <img src={emp.avatar_url || emp.avatarUrl} alt={emp.firstName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                          getInitials(emp.firstName, emp.lastName)
+                        )}
+                      </div>
                       <div>
                         <div className="emp-name truncate" style={{ maxWidth: '150px' }}>{emp.firstName} {emp.lastName}</div>
                         <div className="emp-email hide-tablet truncate" style={{ maxWidth: '180px' }}>{emp.email}</div>
@@ -278,11 +303,11 @@ const EmployeeDirectory = () => {
             </tbody>
           </table>
         )}
-        
+
         {/* Pagination */}
         <div className="pagination">
           <div className="page-info">
-            Showing {(currentPage - 1) * rowsPerPage + (currentEmployees.length > 0 ? 1 : 0)} to {Math.min(currentPage * rowsPerPage, filteredEmployees.length)} of {filteredEmployees.length} 
+            Showing {(currentPage - 1) * rowsPerPage + (currentEmployees.length > 0 ? 1 : 0)} to {Math.min(currentPage * rowsPerPage, filteredEmployees.length)} of {filteredEmployees.length}
             <div style={{ marginLeft: '12px', display: 'inline-block', width: '100px', verticalAlign: 'middle' }}>
               <CustomDropdown
                 value={rowsPerPage}
@@ -300,10 +325,10 @@ const EmployeeDirectory = () => {
             <button className="page-btn" disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>
               <ChevronLeft size={16} />
             </button>
-            
+
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button 
-                key={page} 
+              <button
+                key={page}
                 className={`page-btn ${currentPage === page ? 'active' : ''}`}
                 onClick={() => handlePageChange(page)}
               >
@@ -339,7 +364,7 @@ const EmployeeDirectory = () => {
               <strong>Role:</strong> {emp.designation}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
+              <button
                 style={{ flex: 1, padding: '8px', background: 'var(--bg-tertiary)', border: 'none', borderRadius: '6px', fontWeight: '500' }}
                 onClick={() => navigate(`/admin/employees/${emp.id}`)}
               >
