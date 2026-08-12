@@ -275,6 +275,14 @@ export const getAllAttendanceToday = async () => {
   return { data, error };
 };
 
+export const getAllAttendanceRecords = async () => {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*, profiles(first_name, last_name, emp_id, department, departments(name))')
+    .order('date', { ascending: false });
+  return { data, error };
+};
+
 export const getAttendanceByDateRange = async (startDate, endDate) => {
   const { data, error } = await supabase
     .from('attendance')
@@ -462,16 +470,16 @@ export const createAnnouncement = async (announcement) => {
 // ─── ADMIN DASHBOARD STATS ────────────────────────────────────────────────────
 export const getDashboardStats = async () => {
   const today = new Date().toISOString().split('T')[0];
-  const [employees, invitations, attendanceToday, pendingLeaves, openTickets, leavesToday] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }),
-    supabase.from('employee_invitations').select('id', { count: 'exact' }),
+  const [empRes, attendanceToday, pendingLeaves, openTickets, leavesToday] = await Promise.all([
+    getAllEmployees(),
     supabase.from('attendance').select('id, status', { count: 'exact' }).eq('date', today),
     supabase.from('leave_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
     supabase.from('tickets').select('id', { count: 'exact' }).eq('status', 'open'),
     supabase.from('leave_requests').select('id', { count: 'exact' }).eq('status', 'approved').lte('start_date', today).gte('end_date', today),
   ]);
 
-  const totalEmps = (employees.count || 0) + (invitations.count || 0);
+  const allEmps = empRes.data || [];
+  const totalEmps = allEmps.length;
   const present = attendanceToday.count || 0;
   const onLeave = leavesToday.count || 0;
   const absent = Math.max(0, totalEmps - present - onLeave);

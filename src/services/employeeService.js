@@ -56,8 +56,8 @@ export const getProfile = async (userId) => {
     blood_group: data?.blood_group || raw.bloodGroup,
     marital_status: data?.marital_status || raw.maritalStatus,
     address: data?.address || [raw.address, raw.city, raw.state, raw.pincode].filter(Boolean).join(', ') || raw.currentAddress,
-    department: data?.departments?.name || data?.department || inv?.department || raw.department,
-    designation: data?.designations?.title || data?.designation || inv?.designation || raw.designation,
+    department: (Array.isArray(data?.departments) ? data?.departments[0]?.name : data?.departments?.name) || (typeof data?.department === 'object' ? data.department?.name : data?.department) || inv?.department || raw.department,
+    designation: (Array.isArray(data?.designations) ? data?.designations[0]?.title : data?.designations?.title) || (typeof data?.designation === 'object' ? data.designation?.title : data?.designation) || inv?.designation || raw.designation,
     employment_type: data?.employment_type || raw.employmentType,
     work_location: data?.work_location || raw.workLocation,
     shift: data?.shift || raw.shift,
@@ -68,7 +68,7 @@ export const getProfile = async (userId) => {
     account_holder: data?.account_holder || raw.accountHolder,
     pan_number: data?.pan_number || raw.panNumber,
     aadhar_number: data?.aadhar_number || raw.aadharNumber,
-    manager: data?.reporting_manager || raw.manager,
+    manager: typeof data?.reporting_manager === 'object' ? (data.reporting_manager?.full_name || `${data.reporting_manager?.first_name || ''} ${data.reporting_manager?.last_name || ''}`.trim()) : (data?.reporting_manager || raw.manager),
     documents: data?.documents || raw.documents || [],
     emergency: data?.emergency || raw.emergency || [],
   };
@@ -422,86 +422,105 @@ export const markAllNotificationsAsRead = async (userId) => {
 
 // --- EXTENSION IDLE HISTORY ---
 export const getIdleHistory = async (attendanceId) => {
-  const { data, error } = await supabase
-    .from('employee_idle_history')
-    .select('*')
-    .eq('attendance_id', attendanceId);
-  return { data, error };
+  try {
+    if (!attendanceId) return { data: [], error: null };
+    const { data, error } = await supabase
+      .from('employee_idle_history')
+      .select('*')
+      .eq('attendance_id', attendanceId);
+    if (error) return { data: [], error: null };
+    return { data: data || [], error: null };
+  } catch (e) {
+    return { data: [], error: null };
+  }
 };
 
 // --- CELEBRATIONS & APPRECIATIONS ---
 
 export const getUpcomingCelebrations = async () => {
-  // Fetch all profiles to find birthdays and anniversaries
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, avatar_url, raw_data');
-    
-  if (error) return { data: [], error };
+  try {
+    // Fetch all profiles to find birthdays and anniversaries
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url, raw_data');
+      
+    if (error || !data) return { data: [], error: null };
 
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
 
-  const celebrations = [];
+    const celebrations = [];
 
-  data.forEach(profile => {
-    const raw = profile.raw_data || {};
-    
-    // Check Birthday
-    if (raw.dob) {
-      const dobDate = new Date(raw.dob);
-      if (dobDate.getMonth() === currentMonth) {
-        celebrations.push({
-          id: `${profile.id}-bday`,
-          type: 'birthday',
-          employee: { id: profile.id, name: `${profile.first_name} ${profile.last_name}`, avatar: profile.avatar_url },
-          date: new Date(currentYear, currentMonth, dobDate.getDate())
-        });
-      }
-    }
-
-    // Check Work Anniversary
-    if (raw.joinDate) {
-      const joinDate = new Date(raw.joinDate);
-      if (joinDate.getMonth() === currentMonth) {
-        const years = currentYear - joinDate.getFullYear();
-        if (years > 0) {
+    data.forEach(profile => {
+      const raw = profile.raw_data || {};
+      
+      // Check Birthday
+      if (raw.dob) {
+        const dobDate = new Date(raw.dob);
+        if (dobDate.getMonth() === currentMonth) {
           celebrations.push({
-            id: `${profile.id}-anniv`,
-            type: 'anniversary',
+            id: `${profile.id}-bday`,
+            type: 'birthday',
             employee: { id: profile.id, name: `${profile.first_name} ${profile.last_name}`, avatar: profile.avatar_url },
-            date: new Date(currentYear, currentMonth, joinDate.getDate()),
-            years
+            date: new Date(currentYear, currentMonth, dobDate.getDate())
           });
         }
       }
-    }
-  });
 
-  // Sort by upcoming date
-  celebrations.sort((a, b) => a.date - b.date);
+      // Check Work Anniversary
+      if (raw.joinDate) {
+        const joinDate = new Date(raw.joinDate);
+        if (joinDate.getMonth() === currentMonth) {
+          const years = currentYear - joinDate.getFullYear();
+          if (years > 0) {
+            celebrations.push({
+              id: `${profile.id}-anniv`,
+              type: 'anniversary',
+              employee: { id: profile.id, name: `${profile.first_name} ${profile.last_name}`, avatar: profile.avatar_url },
+              date: new Date(currentYear, currentMonth, joinDate.getDate()),
+              years
+            });
+          }
+        }
+      }
+    });
 
-  return { data: celebrations, error: null };
+    // Sort by upcoming date
+    celebrations.sort((a, b) => a.date - b.date);
+
+    return { data: celebrations, error: null };
+  } catch (e) {
+    return { data: [], error: null };
+  }
 };
 
 export const getAppreciations = async () => {
-  const { data, error } = await supabase
-    .from('appreciations')
-    .select(`
-      id, message, type, created_at,
-      sender_name, receiver_name
-    `)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  try {
+    const { data, error } = await supabase
+      .from('appreciations')
+      .select(`
+        id, message, type, created_at,
+        sender_name, receiver_name
+      `)
+      .order('created_at', { ascending: false })
+      .limit(20);
 
-  return { data, error };
+    if (error) return { data: [], error: null };
+    return { data: data || [], error: null };
+  } catch (e) {
+    return { data: [], error: null };
+  }
 };
 
 export const createAppreciation = async (appreciationData) => {
-  const { data, error } = await supabase
-    .from('appreciations')
-    .insert([appreciationData])
-    .select()
-    .single();
-  return { data, error };
+  try {
+    const { data, error } = await supabase
+      .from('appreciations')
+      .insert([appreciationData])
+      .select()
+      .single();
+    return { data, error };
+  } catch (e) {
+    return { data: null, error: e };
+  }
 };

@@ -210,70 +210,86 @@ export default function Attendance() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((row, i) => (
-                    <tr
-                      key={i}
-                      className={`
-                        ${row.status === 'weekend' ? 'ar-row-weekend' : ''}
-                        ${row.status === 'holiday' ? 'ar-row-holiday' : ''}
-                        ${row.status === 'absent'  ? 'ar-row-absent'  : ''}
-                      `}
-                    >
-                      <td className="ar-td-date">{row.date}</td>
-                      <td className="ar-td-day">{row.day}</td>
-                      <td>
-                        {row.checkIn
-                          ? <span className="ar-time-val">{row.checkIn}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {row.checkOut
-                          ? <span className="ar-time-val">{row.checkOut}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {row.workHrs !== '—'
-                          ? <span className="ar-hours-work"><Clock size={12} /> {row.workHrs}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {row.breakHrs !== '—'
-                          ? <span className="ar-hours-break">{row.breakHrs}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {row.netHrs !== '—'
-                          ? <span className="ar-hours-net"><TrendingUp size={12} /> {row.netHrs}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {row.overtime
-                          ? <span className="ar-overtime-badge">{row.overtime}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {row.late
-                          ? <span className="ar-late-badge">+{row.late}</span>
-                          : <span className="ar-dash">—</span>}
-                      </td>
-                      <td>
-                        {STATUS_META[row.status] && (
-                          <span className={`ar-status-badge ${STATUS_META[row.status].cls}`}>
-                            {STATUS_META[row.status].icon}
-                            {STATUS_META[row.status].label}
-                          </span>
-                        )}
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan="10" style={{ textAlign: 'center', padding: '48px 20px' }}>
+                        <div className="ar-empty-state">
+                          <div className="ar-empty-icon"><Calendar size={28} /></div>
+                          <p className="ar-empty-title">No attendance records found</p>
+                          <p className="ar-empty-sub">There are no logged sessions for {MONTHS[selectedMonth]} {selectedYear}.</p>
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filtered.map((row, i) => (
+                      <tr
+                        key={i}
+                        className={`
+                          ${row.status === 'weekend' ? 'ar-row-weekend' : ''}
+                          ${row.status === 'holiday' ? 'ar-row-holiday' : ''}
+                          ${row.status === 'absent'  ? 'ar-row-absent'  : ''}
+                        `}
+                      >
+                        <td className="ar-td-date">{row.date}</td>
+                        <td className="ar-td-day">{row.day}</td>
+                        <td>
+                          {row.checkIn
+                            ? <span className="ar-time-val">{row.checkIn}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {row.checkOut
+                            ? <span className="ar-time-val">{row.checkOut}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {row.workHrs !== '—'
+                            ? <span className="ar-hours-work"><Clock size={12} /> {row.workHrs}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {row.breakHrs !== '—'
+                            ? <span className="ar-hours-break">{row.breakHrs}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {row.netHrs !== '—'
+                            ? <span className="ar-hours-net"><TrendingUp size={12} /> {row.netHrs}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {row.overtime
+                            ? <span className="ar-overtime-badge">{row.overtime}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {row.late
+                            ? <span className="ar-late-badge">+{row.late}</span>
+                            : <span className="ar-dash">—</span>}
+                        </td>
+                        <td>
+                          {STATUS_META[row.status] && (
+                            <span className={`ar-status-badge ${STATUS_META[row.status].cls}`}>
+                              {STATUS_META[row.status].icon}
+                              {STATUS_META[row.status].label}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
             {/* Footer note */}
             <div className="ar-table-footer">
-              <span>Showing {filtered.length} of {attendanceData.length} records for {MONTHS[selectedMonth]} {selectedYear}</span>
-              <span style={{ color: '#9ca3af' }}>Working hours = 09:00 AM – 06:00 PM (9 hrs)</span>
+              <div className="ar-tf-count">
+                Showing <strong>{filtered.length}</strong> of <strong>{attendanceData.length}</strong> records for {MONTHS[selectedMonth]} {selectedYear}
+              </div>
+              <div className="ar-tf-shift">
+                <Clock size={13} /> Shift: <strong>09:00 AM – 06:00 PM (9 hrs)</strong>
+              </div>
             </div>
           </div>
         </div>

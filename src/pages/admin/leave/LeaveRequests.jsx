@@ -132,7 +132,7 @@ const LeaveRequests = () => {
         {['Pending', 'Approved', 'Rejected', 'All'].map(tab => {
           const count = tab === 'All' 
             ? requests.length 
-            : requests.filter(r => r.status === tab).length;
+            : requests.filter(r => r.status?.toLowerCase() === tab.toLowerCase()).length;
           
           return (
             <button 

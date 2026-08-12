@@ -100,7 +100,7 @@ function CircularTimer({ seconds, color, backgroundRingColor }) {
   const timeStr = `${pad(h)}:${pad(m)}:${pad(s)}`;
 
   return (
-    <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
       <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
         <circle cx="80" cy="80" r="70" stroke={backgroundRingColor} strokeWidth="14" fill="none" />
         <circle 
@@ -430,15 +430,22 @@ export default function AttendanceControlCenter({ compact = false }) {
         {/* Header */}
         <div className="acc-lo-header">
           <div className="acc-lo-title">
-            <Briefcase size={18} fill="currentColor" strokeWidth={0} color="#0f172a" />
-            Attendance Overview
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Briefcase size={18} />
+            </div>
+            <span>Attendance Overview</span>
           </div>
-          <a className="acc-lo-link">View All</a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className={`acc-status-badge ${status === 'working' ? 'working' : status === 'onBreak' ? 'on-break' : status === 'completed' ? 'completed' : 'not-started'}`}>
+              <span className="acc-status-dot"></span>
+              {status === 'working' ? 'Active Session' : status === 'onBreak' ? 'On Break' : status === 'completed' ? 'Shift Completed' : 'Shift Not Started'}
+            </span>
+          </div>
         </div>
 
         {/* Body */}
         <div className="acc-lo-body">
-          {/* Timer */}
+          {/* Timer Ring */}
           <div className="acc-lo-timer-wrapper">
             <CircularTimer 
               seconds={status === 'onBreak' ? Math.floor((now - currentBreakStart) / 1000) : totalWorkSecs} 
@@ -447,49 +454,75 @@ export default function AttendanceControlCenter({ compact = false }) {
             />
           </div>
 
-          {/* Stats */}
-          <div className="acc-lo-stats">
-            <div className="acc-lo-stat-row">
-              <span className="acc-lo-stat-label">Check In</span>
-              <span className="acc-lo-stat-value green">{workStartTime ? formatTime(workStartTime) : '--:--'}</span>
+          {/* Structured Modern Metric Grid */}
+          <div className="acc-lo-stats-grid">
+            
+            <div className="acc-metric-card" style={{ borderLeft: '4px solid #10b981' }}>
+              <div className="acc-metric-icon" style={{ background: '#dcfce7', color: '#059669' }}><LogIn size={16} /></div>
+              <div className="acc-metric-info">
+                <span className="acc-metric-label">Check In</span>
+                <span className="acc-metric-val" style={{ color: '#059669' }}>{workStartTime ? formatTime(workStartTime) : '--:--'}</span>
+              </div>
             </div>
-            <div className="acc-lo-stat-row">
-              <span className="acc-lo-stat-label">Check Out</span>
-              <span className="acc-lo-stat-value">{workEndTime ? formatTime(workEndTime) : '--:-- --'}</span>
+
+            <div className="acc-metric-card" style={{ borderLeft: '4px solid #6366f1' }}>
+              <div className="acc-metric-icon" style={{ background: '#e0e7ff', color: '#4338ca' }}><LogOut size={16} /></div>
+              <div className="acc-metric-info">
+                <span className="acc-metric-label">Check Out</span>
+                <span className="acc-metric-val" style={{ color: '#4338ca' }}>{workEndTime ? formatTime(workEndTime) : '--:-- --'}</span>
+              </div>
             </div>
-            <div className="acc-lo-stat-row">
-              <span className="acc-lo-stat-label">Break Time</span>
-              <span className="acc-lo-stat-value">{totalBreakSecs > 0 ? formatDurationDigital(totalBreakSecs) : '00:00'}</span>
+
+            <div className="acc-metric-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+              <div className="acc-metric-icon" style={{ background: '#fef3c7', color: '#d97706' }}><Coffee size={16} /></div>
+              <div className="acc-metric-info">
+                <span className="acc-metric-label">Break Time</span>
+                <span className="acc-metric-val">{totalBreakSecs > 0 ? formatDurationDigital(totalBreakSecs) : '00:00'}</span>
+              </div>
             </div>
-            <div className="acc-lo-stat-row">
-              <span className="acc-lo-stat-label">Idle Time</span>
-              <span className="acc-lo-stat-value" style={{ color: totalIdleSecs > 0 ? '#f59e0b' : 'inherit' }}>
-                {totalIdleSecs > 0 ? formatDurationDigital(totalIdleSecs) : '00:00'}
-              </span>
+
+            <div className="acc-metric-card" style={{ borderLeft: '4px solid #f97316' }}>
+              <div className="acc-metric-icon" style={{ background: '#ffedd5', color: '#ea580c' }}><Clock size={16} /></div>
+              <div className="acc-metric-info">
+                <span className="acc-metric-label">Idle Time</span>
+                <span className="acc-metric-val" style={{ color: totalIdleSecs > 0 ? '#ea580c' : 'inherit' }}>
+                  {totalIdleSecs > 0 ? formatDurationDigital(totalIdleSecs) : '00:00'}
+                </span>
+              </div>
             </div>
-            <div className="acc-lo-divider" />
-            <div className="acc-lo-stat-row">
-              <span className="acc-lo-stat-label">Working Time</span>
-              <span className="acc-lo-stat-value">{totalWorkSecs > 0 ? formatDurationDigital(totalWorkSecs) : '00:00'}</span>
+
+            <div className="acc-metric-card" style={{ borderLeft: '4px solid #3b82f6' }}>
+              <div className="acc-metric-icon" style={{ background: '#dbeafe', color: '#2563eb' }}><Briefcase size={16} /></div>
+              <div className="acc-metric-info">
+                <span className="acc-metric-label">Working Time</span>
+                <span className="acc-metric-val" style={{ color: '#1e40af' }}>{totalWorkSecs > 0 ? formatDurationDigital(totalWorkSecs) : '00:00'}</span>
+              </div>
             </div>
-            <div className="acc-lo-stat-row">
-              <span className="acc-lo-stat-label">Overtime</span>
-              <span className="acc-lo-stat-value green">{overtimeSecs > 0 ? formatDurationDigital(overtimeSecs) : '00:00'}</span>
+
+            <div className="acc-metric-card" style={{ borderLeft: '4px solid #8b5cf6' }}>
+              <div className="acc-metric-icon" style={{ background: '#f3e8ff', color: '#7c3aed' }}><TrendingUp size={16} /></div>
+              <div className="acc-metric-info">
+                <span className="acc-metric-label">Overtime</span>
+                <span className="acc-metric-val" style={{ color: '#7c3aed' }}>{overtimeSecs > 0 ? formatDurationDigital(overtimeSecs) : '00:00'}</span>
+              </div>
             </div>
+
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer Ribbon */}
         <div className="acc-lo-footer">
           <div className="acc-lo-location">
-            <MapPin size={16} strokeWidth={2.5} /> Office
+            <MapPin size={16} strokeWidth={2.5} /> Mode: <strong style={{ marginLeft: 4 }}>Office</strong>
           </div>
-          <div className="acc-lo-status" style={{ display: 'flex', gap: '15px' }}>
-            <span>
-              On Time <div className="acc-lo-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', marginLeft: '4px' }} />
+          <div className="acc-lo-status">
+            <span className="acc-status-item">
+              Punctuality: <strong style={{ color: '#16a34a', whiteSpace: 'nowrap' }}>On Time</strong>
+              <div className="acc-lo-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', flexShrink: 0 }} />
             </span>
-            <span>
-              Ext: {extensionStatus} <div className="acc-lo-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: extensionStatus === 'Working' ? '#10b981' : (extensionStatus === 'Idle' ? '#f59e0b' : '#ef4444'), marginLeft: '4px' }} />
+            <span className="acc-status-item">
+              Extension: <strong style={{ color: extensionStatus === 'Working' ? '#16a34a' : '#f59e0b', whiteSpace: 'nowrap' }}>{extensionStatus}</strong>
+              <div className="acc-lo-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: extensionStatus === 'Working' ? '#10b981' : (extensionStatus === 'Idle' ? '#f59e0b' : '#ef4444'), flexShrink: 0 }} />
             </span>
           </div>
         </div>
@@ -497,23 +530,23 @@ export default function AttendanceControlCenter({ compact = false }) {
         {/* Action Buttons */}
         <div className="acc-lo-btn-container">
           {status === 'notStarted' && (
-            <button className="acc-lo-btn primary" onClick={handleInitiateWork}>
-              <Play size={16} fill="currentColor" /> Start Work
+            <button className="acc-lo-btn primary hero-action-pulse" onClick={handleInitiateWork}>
+              <Play size={18} fill="currentColor" /> Start Shift Work
             </button>
           )}
           {status === 'working' && (
             <>
               <button className="acc-lo-btn break" onClick={handleOpenBreakModal}>
-                <Coffee size={16} /> Break
+                <Coffee size={18} /> Take Break
               </button>
               <button className="acc-lo-btn end" onClick={handleClickEndWork}>
-                <Square size={16} fill="currentColor" /> End Work
+                <Square size={18} fill="currentColor" /> End Work Shift
               </button>
             </>
           )}
           {status === 'onBreak' && (
-            <button className="acc-lo-btn primary" onClick={handleResumeWork}>
-              <Play size={16} fill="currentColor" /> Resume Work
+            <button className="acc-lo-btn primary hero-action-pulse" onClick={handleResumeWork}>
+              <Play size={18} fill="currentColor" /> Resume Work Shift
             </button>
           )}
           {dbError && (
