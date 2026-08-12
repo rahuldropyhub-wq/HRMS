@@ -56,13 +56,13 @@ const leaveData = [
 ];
 
 function LeaveManagement() {
+  const { user } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Leave History');
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [leaveStats, setLeaveStats] = useState({ monthlyUsed: 0, monthlyAvailable: 2, yearlyUsed: 0, yearlyAvailable: 24 });
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
   const [newLeave, setNewLeave] = useState({
     leave_type: 'Casual Leave',
@@ -70,7 +70,15 @@ function LeaveManagement() {
     end_date: '',
     reason: ''
   });
-  const { user } = useAuth();
+  const [leaveStats, setLeaveStats] = useState({
+    monthlyUsed: 0,
+    currentlyAvailable: 2,
+    yearlyUsed: 0,
+    yearlyAvailable: 24,
+    wfhDaysThisMonth: 0,
+    wfhDaysThisYear: 0,
+    pendingRequestsCount: 0
+  });
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -90,38 +98,59 @@ function LeaveManagement() {
       const { data } = await getMyLeaves(user.id);
       if (data) {
         setLeaves(data);
-        
+
         // Calculate stats for current month and year
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         let monthlyUsed = 0;
         let yearlyUsed = 0;
-        
+        let wfhDaysThisMonth = 0;
+        let wfhDaysThisYear = 0;
+        let pendingRequestsCount = 0;
+
         data.forEach(l => {
-          if (l.status !== 'rejected') {
-            const d = new Date(l.start_date);
-            const days = calculateDays(l.start_date, l.end_date);
-            if (d.getFullYear() === currentYear) {
-              yearlyUsed += days;
-              if (d.getMonth() === currentMonth) {
-                monthlyUsed += days;
+          const typeStr = (l.leave_type || '').toLowerCase();
+          const isWfh = typeStr.includes('wfh') || typeStr.includes('work from home');
+          const statusLower = (l.status || '').toLowerCase();
+          const isPending = statusLower === 'pending';
+          const days = calculateDays(l.start_date, l.end_date);
+          const d = new Date(l.start_date);
+
+          if (isPending) {
+            pendingRequestsCount++;
+          }
+
+          if (statusLower !== 'rejected') {
+            if (isWfh) {
+              if (d.getFullYear() === currentYear) {
+                wfhDaysThisYear += days;
+                if (d.getMonth() === currentMonth) {
+                  wfhDaysThisMonth += days;
+                }
+              }
+            } else {
+              if (d.getFullYear() === currentYear) {
+                yearlyUsed += days;
+                if (d.getMonth() === currentMonth) {
+                  monthlyUsed += days;
+                }
               }
             }
           }
         });
-        
+
         // Rollover Logic: Employee earns 2 leaves every month.
-        // Example: In August (month 8), they have earned 16 leaves so far this year.
         const earnedSoFar = (currentMonth + 1) * 2;
-        
-        // Currently available is whatever they've earned so far MINUS whatever they've used all year
         const currentlyAvailable = Math.max(0, earnedSoFar - yearlyUsed);
 
         setLeaveStats({
           monthlyUsed,
-          monthlyAvailable: currentlyAvailable,
+          currentlyAvailable,
           yearlyUsed,
-          yearlyAvailable: Math.max(0, 24 - yearlyUsed)
+          yearlyAvailable: Math.max(0, 24 - yearlyUsed),
+          wfhDaysThisMonth,
+          wfhDaysThisYear,
+          pendingRequestsCount
         });
       }
       setLoading(false);
@@ -131,7 +160,7 @@ function LeaveManagement() {
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
-    
+
     if (!newLeave.start_date || !newLeave.end_date || !newLeave.reason) {
       showToast('error', 'Please fill in all required fields: Start Date, End Date, and Reason.');
       return;
@@ -177,232 +206,245 @@ function LeaveManagement() {
   return (
     <DashboardLayout>
 
-        {/* Page Content */}
-        <div className="leave-content">
-          {/* Toast Notification */}
-          {toast && (
-            <div style={{
-              position: 'fixed',
-              top: '24px',
-              right: '24px',
-              zIndex: 99999,
-              minWidth: '320px',
-              maxWidth: '460px',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              background: toast.type === 'success' ? '#ecfdf5' : '#fef2f2',
-              border: `1.5px solid ${toast.type === 'success' ? '#6ee7b7' : '#fca5a5'}`,
-              animation: 'slideInToast 0.35s cubic-bezier(.22,.61,.36,1)',
-            }}>
-              <span style={{ fontSize: '22px', lineHeight: 1 }}>
-                {toast.type === 'success' ? '✅' : '❌'}
-              </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: '14px', color: toast.type === 'success' ? '#065f46' : '#991b1b', marginBottom: '4px' }}>
-                  {toast.type === 'success' ? 'Leave Submitted!' : 'Submission Failed'}
-                </div>
-                <div style={{ fontSize: '13px', color: toast.type === 'success' ? '#047857' : '#b91c1c', lineHeight: '1.5' }}>
-                  {toast.message}
-                </div>
+      {/* Page Content */}
+      <div className="leave-content">
+        {/* Toast Notification */}
+        {toast && (
+          <div style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            zIndex: 99999,
+            minWidth: '320px',
+            maxWidth: '460px',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            background: toast.type === 'success' ? '#ecfdf5' : '#fef2f2',
+            border: `1.5px solid ${toast.type === 'success' ? '#6ee7b7' : '#fca5a5'}`,
+            animation: 'slideInToast 0.35s cubic-bezier(.22,.61,.36,1)',
+          }}>
+            <span style={{ fontSize: '22px', lineHeight: 1 }}>
+              {toast.type === 'success' ? '✅' : '❌'}
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: toast.type === 'success' ? '#065f46' : '#991b1b', marginBottom: '4px' }}>
+                {toast.type === 'success' ? 'Leave Submitted!' : 'Submission Failed'}
               </div>
-              <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#9ca3af', lineHeight: 1, padding: 0, marginLeft: '4px' }}>×</button>
+              <div style={{ fontSize: '13px', color: toast.type === 'success' ? '#047857' : '#b91c1c', lineHeight: '1.5' }}>
+                {toast.message}
+              </div>
             </div>
-          )}
+            <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#9ca3af', lineHeight: 1, padding: 0, marginLeft: '4px' }}>×</button>
+          </div>
+        )}
 
-          <style>{`
+        <style>{`
             @keyframes slideInToast {
               from { opacity: 0; transform: translateX(60px); }
               to   { opacity: 1; transform: translateX(0); }
             }
           `}</style>
 
-          <div className="page-header-row">
-            <div className="page-title-box">
-              <h1>Leave Management</h1>
-              <p>Apply for leave and track your leave history</p>
-            </div>
-            <button className="btn-primary" onClick={() => setShowModal(true)}>
-              <Plus size={18} /> Apply Leave
-            </button>
+        <div className="page-header-row">
+          <div className="page-title-box">
+            <h1>Leave Management</h1>
+            <p>Apply for leave and track your leave history</p>
           </div>
+          <button className="btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={18} /> Apply Leave
+          </button>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="leave-stats-grid">
-            <div className="leave-stat-card">
-              <div className="leave-icon-wrapper casual">
-                <Plane size={20} />
-              </div>
-              <div className="leave-stat-info">
-                <p className="leave-stat-label">Currently Available</p>
-                <h3 className="leave-stat-value" style={{ color: leaveStats.monthlyAvailable === 0 ? '#ef4444' : 'inherit' }}>
-                  {leaveStats.monthlyAvailable} Days
-                </h3>
-                <p className="leave-stat-meta">Rollover Balance</p>
-              </div>
+        {/* Stats Grid */}
+        <div className="leave-stats-grid">
+          <div className="leave-stat-card">
+            <div className="leave-icon-wrapper casual">
+              <Plane size={20} />
             </div>
-
-            <div className="leave-stat-card">
-              <div className="leave-icon-wrapper sick">
-                <Heart size={20} />
-              </div>
-              <div className="leave-stat-info">
-                <p className="leave-stat-label">Used This Month</p>
-                <h3 className="leave-stat-value">{leaveStats.monthlyUsed} Days</h3>
-                <p className="leave-stat-meta">Current Month</p>
-              </div>
-            </div>
-
-            <div className="leave-stat-card">
-              <div className="leave-icon-wrapper total">
-                <Calendar size={20} />
-              </div>
-              <div className="leave-stat-info">
-                <p className="leave-stat-label">Yearly Balance</p>
-                <h3 className="leave-stat-value">{leaveStats.yearlyAvailable} Days</h3>
-                <p className="leave-stat-meta">Out of 24</p>
-              </div>
-            </div>
-
-            <div className="leave-stat-card">
-              <div className="leave-icon-wrapper wfh">
-                <FileText size={20} />
-              </div>
-              <div className="leave-stat-info">
-                <p className="leave-stat-label">Total Used</p>
-                <h3 className="leave-stat-value">{leaveStats.yearlyUsed} Days</h3>
-                <p className="leave-stat-meta">This Year</p>
-              </div>
+            <div className="leave-stat-info">
+              <p className="leave-stat-label">Currently Available</p>
+              <h3 className="leave-stat-value" style={{ color: leaveStats.currentlyAvailable === 0 ? '#ef4444' : '#16a34a' }}>
+                {leaveStats.currentlyAvailable} Days
+              </h3>
+              <p className="leave-stat-meta">Rollover Balance</p>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="leave-tabs">
-            <button className={`leave-tab ${activeTab === 'Leave History' ? 'active' : ''}`} onClick={() => setActiveTab('Leave History')}>Leave History</button>
-            <button className={`leave-tab ${activeTab === 'Upcoming Leaves' ? 'active' : ''}`} onClick={() => setActiveTab('Upcoming Leaves')}>Upcoming Leaves</button>
-            <button className={`leave-tab ${activeTab === 'Leave Balance' ? 'active' : ''}`} onClick={() => setActiveTab('Leave Balance')}>Leave Balance</button>
+          <div className="leave-stat-card">
+            <div className="leave-icon-wrapper sick">
+              <Heart size={20} />
+            </div>
+            <div className="leave-stat-info">
+              <p className="leave-stat-label">Paid Leaves Used</p>
+              <h3 className="leave-stat-value">{leaveStats.monthlyUsed} Days</h3>
+              <p className="leave-stat-meta">This Month</p>
+            </div>
           </div>
 
-          {/* Filters */}
-          <div className="leave-filters">
-            <div className="filter-dropdown">
-              <span>All Status</span>
-              <ChevronDown size={16} />
+          <div className="leave-stat-card">
+            <div className="leave-icon-wrapper wfh" style={{ background: '#f3e8ff', color: '#7c3aed' }}>
+              <Home size={20} />
             </div>
-            <div className="filter-date">
-              <span>01 May 2025 - 31 May 2025</span>
-              <Calendar size={16} />
+            <div className="leave-stat-info">
+              <p className="leave-stat-label">Work From Home</p>
+              <h3 className="leave-stat-value" style={{ color: '#7c3aed' }}>{leaveStats.wfhDaysThisMonth} Days</h3>
+              <p className="leave-stat-meta">Remote Work ({leaveStats.wfhDaysThisYear} YTD)</p>
             </div>
-            <div className="filter-search">
-              <input type="text" placeholder="Search leave..." />
-              <Search size={16} color="#9ca3af" />
-            </div>
-            <button className="filter-icon-btn">
-              <Calendar size={18} />
-            </button>
           </div>
 
-          {/* Data Table */}
-          <div className="leave-table-container">
-            <table className="leave-table">
-              <thead>
-                <tr>
-                  <th>Leave ID</th>
-                  <th>Leave Type</th>
-                  <th>From Date</th>
-                  <th>To Date</th>
-                  <th>Days</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Applied On</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaves.filter(row => {
-                  if (activeTab === 'Upcoming Leaves') return row.status === 'pending' || new Date(row.start_date) > new Date();
-                  if (activeTab === 'Leave Balance') return row.status === 'approved';
-                  return true;
-                }).map((row) => (
-                  <tr key={row.id}>
-                    <td className="fw-medium">{row.id.substring(0, 8)}</td>
-                    <td>
-                      <span className={`type-badge ${row.leave_type.toLowerCase().replace(/ /g, '-')}`}>
-                        {row.leave_type}
-                      </span>
-                    </td>
-                    <td>{new Date(row.start_date).toLocaleDateString()}</td>
-                    <td>{new Date(row.end_date).toLocaleDateString()}</td>
-                    <td>{calculateDays(row.start_date, row.end_date)}</td>
-                    <td className="text-gray">{row.reason}</td>
-                    <td>
-                      <span className={`status-badge ${row.status.toLowerCase()}`}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td>{new Date(row.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <button className="action-btn">
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="leave-stat-card">
+            <div className="leave-icon-wrapper total" style={{ background: '#fff7ed', color: '#ea580c' }}>
+              <CalendarDays size={20} />
+            </div>
+            <div className="leave-stat-info">
+              <p className="leave-stat-label">Pending Approval</p>
+              <h3 className="leave-stat-value" style={{ color: leaveStats.pendingRequestsCount > 0 ? '#ea580c' : 'inherit' }}>
+                {leaveStats.pendingRequestsCount} Request{leaveStats.pendingRequestsCount === 1 ? '' : 's'}
+              </h3>
+              <p className="leave-stat-meta">Awaiting Admin</p>
+            </div>
           </div>
 
-          {/* Pagination */}
-          <div className="leave-pagination">
-            <p>Showing 1 to 6 of 18 leaves</p>
-            <div className="pagination-controls">
-              <button className="page-btn nav-btn"><ChevronLeft size={16} /></button>
-              <button className="page-btn active">1</button>
-              <button className="page-btn">2</button>
-              <button className="page-btn">3</button>
-              <button className="page-btn nav-btn"><ChevronRight size={16} /></button>
+          <div className="leave-stat-card">
+            <div className="leave-icon-wrapper total">
+              <Calendar size={20} />
+            </div>
+            <div className="leave-stat-info">
+              <p className="leave-stat-label">Yearly Balance</p>
+              <h3 className="leave-stat-value">{leaveStats.yearlyAvailable} Days</h3>
+              <p className="leave-stat-meta">Out of 24 Annual Quota</p>
             </div>
           </div>
         </div>
+
+        {/* Tabs */}
+        <div className="leave-tabs">
+          <button className={`leave-tab ${activeTab === 'Leave History' ? 'active' : ''}`} onClick={() => setActiveTab('Leave History')}>Leave History</button>
+          <button className={`leave-tab ${activeTab === 'Upcoming Leaves' ? 'active' : ''}`} onClick={() => setActiveTab('Upcoming Leaves')}>Upcoming Leaves</button>
+          <button className={`leave-tab ${activeTab === 'Leave Balance' ? 'active' : ''}`} onClick={() => setActiveTab('Leave Balance')}>Leave Balance</button>
+        </div>
+
+        {/* Filters */}
+        <div className="leave-filters">
+          <div className="filter-dropdown">
+            <span>All Status</span>
+            <ChevronDown size={16} />
+          </div>
+          <div className="filter-date">
+            <span>01 May 2025 - 31 May 2025</span>
+            <Calendar size={16} />
+          </div>
+          <div className="filter-search">
+            <input type="text" placeholder="Search leave..." />
+            <Search size={16} color="#9ca3af" />
+          </div>
+          <button className="filter-icon-btn">
+            <Calendar size={18} />
+          </button>
+        </div>
+
+        {/* Data Table */}
+        <div className="leave-table-container">
+          <table className="leave-table">
+            <thead>
+              <tr>
+                <th>Leave ID</th>
+                <th>Leave Type</th>
+                <th>From Date</th>
+                <th>To Date</th>
+                <th>Days</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Applied On</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaves.filter(row => {
+                if (activeTab === 'Upcoming Leaves') return row.status === 'pending' || new Date(row.start_date) > new Date();
+                if (activeTab === 'Leave Balance') return row.status === 'approved';
+                return true;
+              }).map((row) => (
+                <tr key={row.id}>
+                  <td className="fw-medium">{row.id.substring(0, 8)}</td>
+                  <td>
+                    <span className={`type-badge ${row.leave_type.toLowerCase().replace(/ /g, '-')}`}>
+                      {row.leave_type}
+                    </span>
+                  </td>
+                  <td>{new Date(row.start_date).toLocaleDateString()}</td>
+                  <td>{new Date(row.end_date).toLocaleDateString()}</td>
+                  <td>{calculateDays(row.start_date, row.end_date)}</td>
+                  <td className="text-gray">{row.reason}</td>
+                  <td>
+                    <span className={`status-badge ${row.status.toLowerCase()}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>{new Date(row.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <button className="action-btn">
+                      <Eye size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="leave-pagination">
+          <p>Showing 1 to 6 of 18 leaves</p>
+          <div className="pagination-controls">
+            <button className="page-btn nav-btn"><ChevronLeft size={16} /></button>
+            <button className="page-btn active">1</button>
+            <button className="page-btn">2</button>
+            <button className="page-btn">3</button>
+            <button className="page-btn nav-btn"><ChevronRight size={16} /></button>
+          </div>
+        </div>
+      </div>
       {/* Apply Leave Enterprise Modal */}
       <EnterpriseModal isOpen={showModal} onClose={() => setShowModal(false)}>
-        <FormHeader 
-          icon={CalendarDays} 
-          title="Apply for Leave" 
-          description="Submit a new time-off request for manager approval." 
+        <FormHeader
+          icon={CalendarDays}
+          title="Apply for Leave"
+          description="Submit a new time-off request for manager approval."
         />
-        
+
         <form onSubmit={handleApplyLeave}>
           <FormBody>
             <FormSection title="Leave Details" description="Specify the dates and type of leave you are requesting.">
               <FormField label="Leave Type" required fullWidth>
-                <SelectInput 
+                <SelectInput
                   options={['Casual Leave', 'Sick Leave', 'Work From Home', 'Earned Leave', 'Unpaid Leave']}
                   value={newLeave.leave_type}
-                  onChange={(e) => setNewLeave({...newLeave, leave_type: e.target.value})}
+                  onChange={(e) => setNewLeave({ ...newLeave, leave_type: e.target.value })}
                   required
                 />
               </FormField>
 
               <FormField label="Start Date" required>
-                <DateInput 
+                <DateInput
                   value={newLeave.start_date}
-                  onChange={(e) => setNewLeave({...newLeave, start_date: e.target.value})}
+                  onChange={(e) => setNewLeave({ ...newLeave, start_date: e.target.value })}
                   required
                 />
               </FormField>
 
               <FormField label="End Date" required>
-                <DateInput 
+                <DateInput
                   value={newLeave.end_date}
-                  onChange={(e) => setNewLeave({...newLeave, end_date: e.target.value})}
+                  onChange={(e) => setNewLeave({ ...newLeave, end_date: e.target.value })}
                   required
                 />
               </FormField>
-              
+
               <FormField fullWidth>
                 <Checkbox label="Half Day" />
               </FormField>
@@ -410,28 +452,28 @@ function LeaveManagement() {
 
             <FormSection title="Additional Information" description="Provide context and necessary documentation.">
               <FormField label="Reason" required fullWidth>
-                <TextArea 
+                <TextArea
                   placeholder="Explain why you are requesting this leave..."
                   value={newLeave.reason}
-                  onChange={(e) => setNewLeave({...newLeave, reason: e.target.value})}
+                  onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })}
                   required
                 />
               </FormField>
-              
+
               <FormField label="Emergency Contact" fullWidth optional>
                 <TextInput placeholder="Phone number or name..." />
               </FormField>
-              
+
               <FormField label="Supporting Documents" fullWidth optional>
                 <FileUpload hint="Upload medical certificates or relevant docs (Max 5MB)" />
               </FormField>
             </FormSection>
           </FormBody>
-          
-          <FormFooter 
-            onCancel={() => setShowModal(false)} 
+
+          <FormFooter
+            onCancel={() => setShowModal(false)}
             onSubmit={handleApplyLeave}
-            submitText="Submit Application" 
+            submitText="Submit Application"
             isSaving={submitting}
           />
         </form>
