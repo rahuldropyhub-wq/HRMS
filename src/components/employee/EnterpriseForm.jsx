@@ -91,12 +91,15 @@ export const SelectInput = ({ options, ...props }) => (
   </div>
 );
 
-export const FileUpload = ({ hint }) => (
-  <div className="ent-file-upload">
+export const FileUpload = ({ hint, onChange, fileName, ...props }) => (
+  <label className="ent-file-upload" style={{ cursor: 'pointer', display: 'block' }}>
+    <input type="file" style={{ display: 'none' }} onChange={onChange} {...props} />
     <UploadCloud size={28} className="ent-file-icon" />
-    <p className="ent-file-text"><span>Click to upload</span> or drag and drop</p>
-    <p className="ent-file-hint">{hint || 'SVG, PNG, JPG or PDF (max. 5MB)'}</p>
-  </div>
+    <p className="ent-file-text">
+      {fileName ? <strong style={{ color: '#2563eb' }}>📁 {fileName}</strong> : <span>Click to upload attachment</span>}
+    </p>
+    <p className="ent-file-hint">{hint || 'PNG, JPG, PDF, DOCX, ZIP (max. 10MB)'}</p>
+  </label>
 );
 
 export const Checkbox = ({ label, ...props }) => (

@@ -1,4 +1,6 @@
-/* Worksheet Page Styles */
+/* ==========================================
+   HRMS PORTAL - MODERN WORKSHEET STYLES
+   ========================================== */
 
 .worksheet-content {
   padding: 32px 40px;
@@ -7,6 +9,7 @@
   width: 100%;
 }
 
+/* Glassmorphic Header & Page Actions */
 .worksheet-header-actions {
   display: flex;
   align-items: center;
@@ -17,50 +20,77 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: transparent;
-  color: var(--text-dark);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 16px;
+  background-color: var(--white, #ffffff);
+  color: var(--text-dark, #1f2937);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 18px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
 }
 
 .btn-outline:hover {
-  background-color: var(--bg-light);
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
 }
 
-/* Top Bar Stats */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Top Stats & Date Bar */
 .worksheet-top-bar {
   display: flex;
   gap: 20px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .worksheet-date-selector {
-  background-color: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 280px;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .select-date-label {
   font-size: 12px;
-  color: var(--text-gray);
+  font-weight: 500;
+  color: #64748b;
   margin-bottom: 4px;
 }
 
 .select-date-value {
   font-size: 15px;
-  font-weight: 600;
-  color: var(--text-dark);
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .worksheet-stats-row {
@@ -70,165 +100,126 @@
 }
 
 .ws-stat-card {
-  background-color: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   gap: 16px;
   flex: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.ws-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
 }
 
 .ws-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .ws-icon.total {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .ws-icon.completed {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: #ecfdf5;
+  color: #10b981;
 }
 
 .ws-icon.in-progress {
-  background-color: rgba(245, 158, 11, 0.1);
+  background: #fffbeb;
   color: #f59e0b;
 }
 
-.project-badge.development {
-  background-color: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .worksheet-content {
-    padding: 16px;
-  }
-
-  .worksheet-header-actions {
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-  
-  .worksheet-header-actions button {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .worksheet-top-bar {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .worksheet-date-selector {
-    width: 100%;
-  }
-
-  .worksheet-stats-row {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .ws-stat-card {
-    min-width: 140px;
-    flex: 1 1 calc(50% - 12px);
-    padding: 12px;
-  }
-
-  .worksheet-filters {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .worksheet-table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-  }
-}
-
 .ws-icon.hours {
-  background-color: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
+  background: #f3e8ff;
+  color: #9333ea;
 }
 
 .ws-stat-info p {
   font-size: 12px;
-  color: var(--text-gray);
-  margin-bottom: 4px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .ws-stat-info h4 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-dark);
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
 }
 
-/* Entries List */
-.entries-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-dark);
+/* Entries List Section */
+.entries-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+}
+
+.entries-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
 }
 
 .work-entries-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
+/* HIGH END MODERN WORK ENTRY CARD */
 .work-entry-card {
-  background-color: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
+  position: relative;
 }
 
-.work-entry-card.completed-border {
-  border-left: 4px solid #3b82f6;
+.work-entry-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
 
-.work-entry-card.progress-border {
-  border-left: 4px solid #f59e0b;
-}
-
-.entry-number {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
+/* Left Indicator Strip */
+.entry-status-bar {
+  width: 6px;
   flex-shrink: 0;
-  margin-right: 20px;
+  background: #94a3b8;
 }
 
-.completed-border .entry-number {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+.entry-status-bar.submitted {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
 }
 
-.progress-border .entry-number {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+.entry-status-bar.approved {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
 }
 
-.entry-content {
+.entry-main {
+  padding: 20px 24px;
   flex-grow: 1;
 }
 
@@ -236,145 +227,228 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.entry-title-group h4 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 6px;
-}
-
-.entry-project {
-  font-size: 13px;
-  color: var(--text-gray);
-}
-
-.entry-project span {
-  color: var(--text-dark);
-  font-weight: 500;
-  margin-left: 6px;
-}
-
-.entry-meta {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.entry-status {
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.entry-status.status-completed {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-}
-
-.entry-status.status-progress {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-}
-
-.entry-time {
-  font-size: 13px;
-  color: var(--text-dark);
-  font-weight: 500;
-}
-
-.entry-options {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-gray);
-  cursor: pointer;
-}
-
-.entry-description {
-  font-size: 14px;
-  color: var(--text-gray);
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-/* Attachments */
-.entry-attachments {
-  margin-top: 20px;
-}
-
-.attachments-title {
-  font-size: 13px;
-  color: var(--text-gray);
-  margin-bottom: 12px;
-}
-
-.attachments-list {
-  display: flex;
   gap: 16px;
+  margin-bottom: 14px;
+}
+
+.entry-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
-.attachment-chip {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 16px;
-  width: fit-content;
-}
-
-.chip-icon {
-  width: 32px;
-  height: 32px;
+.entry-project-tag {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 3px 10px;
   border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.entry-category-tag {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.entry-status-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.entry-status-badge.submitted {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.entry-status-badge.approved {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.entry-task-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.entry-actions-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.entry-time-pills {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
 }
 
-.chip-icon.image {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+.pill-hours {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  color: #334155;
 }
 
-.chip-icon.file {
-  background-color: #e2e8f0;
+.pill-time {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  color: #475569;
+}
+
+.pill-date {
   color: #64748b;
+  font-weight: 500;
 }
 
-.chip-name {
+/* Sleek Action Buttons */
+.entry-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.ws-btn-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 5px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.chip-size {
-  font-size: 12px;
-  color: var(--text-gray);
+.ws-btn-edit:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
 }
 
-/* Summary Footer */
+.ws-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ws-btn-delete:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+/* Card Description Box */
+.entry-body-box {
+  background: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  padding: 12px 16px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 12px;
+}
+
+.entry-description-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+/* Meta Chips (Blockers, Achievements, Attachments) */
+.entry-footer-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.meta-chip.challenge {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+.meta-chip.achievement {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.meta-chip.attachment {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.meta-chip.attachment a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.meta-chip.attachment a:hover {
+  color: #1d4ed8;
+}
+
+/* Summary Footer Bar */
 .worksheet-summary-footer {
-  background-color: #f8fafc;
-  border-radius: 12px;
-  padding: 24px 40px;
+  margin-top: 28px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px 32px;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  margin-top: 32px;
-  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
 }
 
 .summary-item {
@@ -383,18 +457,55 @@
 
 .summary-item p {
   font-size: 13px;
-  color: var(--text-gray);
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .summary-item h4 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-dark);
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
 }
 
 .summary-divider {
   width: 1px;
   height: 40px;
-  background-color: var(--border);
+  background: #e2e8f0;
+}
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+  .worksheet-content {
+    padding: 16px;
+  }
+  .worksheet-top-bar {
+    flex-direction: column;
+  }
+  .worksheet-date-selector {
+    width: 100%;
+  }
+  .worksheet-stats-row {
+    flex-wrap: wrap;
+  }
+  .entry-header {
+    flex-direction: column;
+  }
+  .entry-actions-right {
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .worksheet-summary-footer {
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+  .summary-divider {
+    width: 100%;
+    height: 1px;
+  }
 }

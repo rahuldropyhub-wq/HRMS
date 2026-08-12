@@ -83,19 +83,21 @@
   border-radius: 12px;
   border: 1px solid var(--border-primary);
   box-shadow: 0 1px 2px 0 var(--card-shadow);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  white-space: nowrap;
 }
 
 th, td {
-  padding: 16px;
+  padding: 14px 16px;
   text-align: left;
   border-bottom: 1px solid var(--border-primary);
   font-size: 14px;
+  white-space: nowrap;
 }
 
 th {
@@ -139,6 +141,7 @@ tbody tr:hover {
 .emp-name {
   font-weight: 500;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .badge {

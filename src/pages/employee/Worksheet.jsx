@@ -25,7 +25,8 @@ import {
   Ticket,
   PackageOpen,
   X,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import {
   EnterpriseModal,
@@ -52,16 +53,26 @@ import {
   getTodayAttendance,
   getMyTasks
 } from '../../services/employeeService';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Download, Eye, Paperclip } from 'lucide-react';
 
 function Worksheet() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // custom delete modal
+  const [previewFile, setPreviewFile] = useState(null); // file preview modal
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [attendance, setAttendance] = useState(null);
   const [taskStats, setTaskStats] = useState({ total: 0, completed: 0, inProgress: 0 });
+
+  const triggerToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 3500);
+  };
   const [formState, setFormState] = useState({
     project: '',
     description: '',
@@ -84,64 +95,197 @@ function Worksheet() {
   };
 
   useEffect(() => {
+    let isMounted = true;
     if (!user) return;
-    const load = async () => {
-      setLoading(true);
-      const [wsRes, attRes, taskRes] = await Promise.all([
-        getMyWorksheets(user.id),
-        getTodayAttendance(user.id),
-        getMyTasks(user.id)
-      ]);
 
-      if (wsRes.data) {
-        setEntries(wsRes.data);
+    const load = async () => {
+      // 1. Fetch primary worksheets data FIRST for instant page load
+      try {
+        const wsRes = await getMyWorksheets(user.id);
+        if (isMounted && wsRes?.data) {
+          setEntries(wsRes.data);
+        }
+      } catch (err) {
+        console.error('Worksheets load error:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false); // Instant load!
+        }
       }
-      if (attRes.data) {
-        setAttendance(attRes.data);
+
+      // 2. Load secondary stats (attendance & tasks) asynchronously without blocking UI
+      try {
+        const [attRes, taskRes] = await Promise.allSettled([
+          getTodayAttendance(user.id),
+          getMyTasks(user.id)
+        ]);
+
+        if (isMounted) {
+          if (attRes.status === 'fulfilled' && attRes.value?.data) {
+            setAttendance(attRes.value.data);
+          }
+          if (taskRes.status === 'fulfilled' && taskRes.value?.data) {
+            const data = taskRes.value.data;
+            const total = data.length;
+            const completed = data.filter(t => (t.status || '').toLowerCase() === 'completed' || (t.status || '').toLowerCase() === 'done').length;
+            const inProgress = data.filter(t => (t.status || '').toLowerCase() === 'in progress' || (t.status || '').toLowerCase() === 'in-progress').length;
+            setTaskStats({ total, completed, inProgress });
+          }
+        }
+      } catch (err) {
+        console.error('Secondary stats error:', err);
       }
-      if (taskRes.data) {
-        const total = taskRes.data.length;
-        const completed = taskRes.data.filter(t => (t.status || '').toLowerCase() === 'completed' || (t.status || '').toLowerCase() === 'done').length;
-        const inProgress = taskRes.data.filter(t => (t.status || '').toLowerCase() === 'in progress' || (t.status || '').toLowerCase() === 'in-progress').length;
-        setTaskStats({ total, completed, inProgress });
-      }
-      setLoading(false);
     };
+
     load();
+    return () => { isMounted = false; };
   }, [user]);
+
+  const encodeWorksheetData = (form) => {
+    const meta = {
+      t: form.title || '',
+      c: form.category || 'Development',
+      st: form.startTime || '10:00',
+      et: form.endTime || '18:00',
+      ws: form.status || 'Completed',
+      ch: form.challenges || '',
+      ac: form.achievements || '',
+      fn: form.fileName || '',
+      fd: form.fileData || '',
+      d: form.description || ''
+    };
+    return `__META__${JSON.stringify(meta)}__META__${form.description || ''}`;
+  };
+
+  const decodeWorksheetData = (entry) => {
+    const rawDesc = entry?.description || '';
+    if (rawDesc.startsWith('__META__')) {
+      try {
+        const parts = rawDesc.split('__META__');
+        const meta = JSON.parse(parts[1]);
+        return {
+          ...entry,
+          title: meta.t,
+          category: meta.c,
+          startTime: meta.st,
+          endTime: meta.et,
+          work_status: meta.ws,
+          challenges: meta.ch,
+          achievements: meta.ac,
+          fileName: meta.fn || '',
+          fileData: meta.fd || '',
+          displayDescription: meta.d || parts[2] || ''
+        };
+      } catch (e) {
+        // fallback
+      }
+    }
+    return {
+      ...entry,
+      title: entry?.project || '',
+      category: 'Development',
+      startTime: '10:00',
+      endTime: '18:00',
+      work_status: 'Completed',
+      challenges: '',
+      achievements: '',
+      fileName: '',
+      fileData: '',
+      displayDescription: rawDesc
+    };
+  };
+
+  const calculateHoursBetween = (startStr, endStr) => {
+    if (!startStr || !endStr) return '';
+    const [startH, startM] = startStr.split(':').map(Number);
+    const [endH, endM] = endStr.split(':').map(Number);
+
+    if (isNaN(startH) || isNaN(endH)) return '';
+
+    let startMinutes = startH * 60 + (startM || 0);
+    let endMinutes = endH * 60 + (endM || 0);
+
+    if (endMinutes < startMinutes) {
+      endMinutes += 24 * 60; // Overnight shift
+    }
+
+    const diffMins = endMinutes - startMinutes;
+    const numHours = (diffMins / 60).toFixed(1);
+    return numHours.endsWith('.0') ? numHours.slice(0, -2) : numHours;
+  };
+
+  const handleStartTimeChange = (newStartTime) => {
+    const computedHours = calculateHoursBetween(newStartTime, formState.endTime);
+    setFormState(prev => ({
+      ...prev,
+      startTime: newStartTime,
+      hours: computedHours || prev.hours
+    }));
+  };
+
+  const handleEndTimeChange = (newEndTime) => {
+    const computedHours = calculateHoursBetween(formState.startTime, newEndTime);
+    setFormState(prev => ({
+      ...prev,
+      endTime: newEndTime,
+      hours: computedHours || prev.hours
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormState(prev => ({
+          ...prev,
+          fileName: file.name,
+          fileData: event.target.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const openCreateModal = () => {
     setEditingEntry(null);
+    const initialStart = '10:00';
+    const initialEnd = '18:00';
     setFormState({
       date: new Date().toISOString().split('T')[0],
       project: 'HRMS Portal',
       title: '',
       category: 'Development',
       description: '',
-      startTime: '09:00',
-      endTime: '17:00',
-      hours: '8.0',
+      startTime: initialStart,
+      endTime: initialEnd,
+      hours: calculateHoursBetween(initialStart, initialEnd),
       status: 'Completed',
       challenges: '',
-      achievements: ''
+      achievements: '',
+      fileName: '',
+      fileData: ''
     });
     setShowModal(true);
   };
 
-  const openEditModal = (entry) => {
+  const openEditModal = (rawEntry) => {
+    const entry = decodeWorksheetData(rawEntry);
     setEditingEntry(entry);
     setFormState({
       date: entry.date || new Date().toISOString().split('T')[0],
       project: entry.project || 'HRMS Portal',
       title: entry.title || entry.project || '',
       category: entry.category || 'Development',
-      description: entry.description || '',
-      startTime: entry.start_time || '09:00',
-      endTime: entry.end_time || '17:00',
-      hours: entry.hours || '1.0',
+      description: entry.displayDescription || '',
+      startTime: entry.startTime || '10:00',
+      endTime: entry.endTime || '18:00',
+      hours: entry.hours ? String(entry.hours) : calculateHoursBetween(entry.startTime, entry.endTime),
       status: entry.work_status || 'Completed',
       challenges: entry.challenges || '',
-      achievements: entry.achievements || ''
+      achievements: entry.achievements || '',
+      fileName: entry.fileName || '',
+      fileData: entry.fileData || ''
     });
     setShowModal(true);
   };
@@ -149,65 +293,98 @@ function Worksheet() {
   const handleSaveEntry = async (e) => {
     e.preventDefault();
     if (!formState.project || !formState.description) {
-      alert('Please fill in Project Name and Description.');
+      triggerToast('Please fill in Project Name and Description.', 'error');
       return;
     }
 
     setSubmitting(true);
+    const encodedDescription = encodeWorksheetData(formState);
     const payload = {
       project: formState.project,
-      title: formState.title || formState.project,
-      category: formState.category,
-      description: formState.description,
-      start_time: formState.startTime,
-      end_time: formState.endTime,
+      description: encodedDescription,
       hours: formState.hours || '1.0',
-      work_status: formState.status,
-      challenges: formState.challenges,
-      achievements: formState.achievements,
       date: formState.date || new Date().toISOString().split('T')[0]
     };
 
     if (editingEntry) {
-      // Update existing entry
+      // Update existing entry in Supabase
       const { data, error } = await updateWorksheet(editingEntry.id, payload);
-      if (!error && data) {
-        setEntries(entries.map(item => item.id === editingEntry.id ? data : item));
+      if (!error) {
+        const updated = data || { ...editingEntry, ...payload };
+        setEntries(entries.map(item => item.id === editingEntry.id ? updated : item));
         setShowModal(false);
+        triggerToast('Work entry updated successfully!', 'success');
       } else {
-        alert('Error updating worksheet: ' + error?.message);
+        triggerToast('Error updating worksheet: ' + error?.message, 'error');
       }
     } else {
-      // Create new entry
+      // Create new entry in Supabase
       const { data, error } = await submitWorksheet({
         employee_id: user.id,
         ...payload,
         status: 'submitted'
       });
-      if (!error && data) {
-        setEntries([data, ...entries]);
+      if (!error) {
+        if (data) {
+          setEntries([data, ...entries]);
+        } else {
+          const { data: fresh } = await getMyWorksheets(user.id);
+          if (fresh) setEntries(fresh);
+        }
         setShowModal(false);
+        triggerToast('Work entry submitted successfully!', 'success');
       } else {
-        alert('Error submitting worksheet: ' + error?.message);
+        triggerToast('Error submitting worksheet: ' + error?.message, 'error');
       }
     }
     setSubmitting(false);
   };
 
-  const handleDeleteEntry = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this work entry?')) return;
+  const confirmDeleteEntry = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    
+    // Optimistically update UI list
+    const previousEntries = [...entries];
+    setEntries(prev => prev.filter(e => String(e.id) !== String(id)));
+    setDeleteTarget(null);
+
     const { error } = await deleteWorksheet(id);
-    if (!error) {
-      setEntries(entries.filter(e => e.id !== id));
+    if (error) {
+      // Revert if DB delete failed
+      setEntries(previousEntries);
+      triggerToast('Error deleting worksheet: ' + (error?.message || 'Permission denied in Supabase DB'), 'error');
     } else {
-      alert('Error deleting worksheet: ' + error.message);
+      triggerToast('Work entry deleted successfully!', 'success');
     }
   };
 
-  // Calculate working hours dynamically
-  const grossHours = attendance?.total_hours ? parseFloat(attendance.total_hours) : 0;
+  // Calculate Worksheet Entry Stats dynamically
+  const totalEntries = entries.length;
+  const completedEntriesCount = entries.filter(raw => {
+    const e = decodeWorksheetData(raw);
+    const st = (e.work_status || e.status || '').toLowerCase();
+    return st === 'completed' || st === 'approved';
+  }).length;
+  const inProgressEntriesCount = entries.filter(raw => {
+    const e = decodeWorksheetData(raw);
+    const st = (e.work_status || e.status || '').toLowerCase();
+    return st === 'in progress' || st === 'submitted' || st === 'in-progress';
+  }).length;
+
+  const totalWorksheetHours = entries.reduce((acc, raw) => {
+    const hrs = parseFloat(raw.hours) || 0;
+    return acc + hrs;
+  }, 0);
+
+  // Calculate working hours dynamically (from attendance or worksheet entries)
+  const grossHours = attendance?.total_hours ? parseFloat(attendance.total_hours) : totalWorksheetHours;
   const breakHours = attendance?.total_break_hours ? parseFloat(attendance.total_break_hours) : 0;
   const netHours = Math.max(0, grossHours - breakHours);
+
+  const displayTotalTasks = Math.max(totalEntries, taskStats.total);
+  const displayCompleted = Math.max(completedEntriesCount, taskStats.completed);
+  const displayInProgress = Math.max(inProgressEntriesCount, taskStats.inProgress);
 
   const formatHoursMins = (numHours) => {
     const h = Math.floor(numHours);
@@ -247,7 +424,7 @@ function Worksheet() {
               </div>
               <div className="ws-stat-info">
                 <p>Total Tasks</p>
-                <h4>{taskStats.total}</h4>
+                <h4>{displayTotalTasks}</h4>
               </div>
             </div>
 
@@ -257,7 +434,7 @@ function Worksheet() {
               </div>
               <div className="ws-stat-info">
                 <p>Completed</p>
-                <h4>{taskStats.completed}</h4>
+                <h4>{displayCompleted}</h4>
               </div>
             </div>
 
@@ -267,7 +444,7 @@ function Worksheet() {
               </div>
               <div className="ws-stat-info">
                 <p>In Progress</p>
-                <h4>{taskStats.inProgress}</h4>
+                <h4>{displayInProgress}</h4>
               </div>
             </div>
 
@@ -302,69 +479,112 @@ function Worksheet() {
               <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>Click "Add Work Entry" above to record your daily tasks.</p>
             </div>
           ) : (
-            entries.map((entry, index) => (
-              <div className="work-entry-card" key={entry.id || index}>
-                <div className="entry-status-bar"></div>
-                <div className="entry-main">
-                  <div className="entry-header">
-                    <div className="entry-title-group">
-                      <h4>{entry.project}</h4>
-                      <p className="entry-project">Hours Spent: <span>{entry.hours || '1.0'} hrs</span></p>
-                    </div>
-                    <div className="entry-meta" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className={`entry-status ${entry.status === 'approved' ? 'status-completed' : 'status-progress'}`}>
-                        {entry.status ? entry.status.toUpperCase() : 'SUBMITTED'}
-                      </span>
-                      <span className="entry-time">{entry.date}</span>
+            entries.map((rawEntry, index) => {
+              const entry = decodeWorksheetData(rawEntry);
+              return (
+                <div className="work-entry-card" key={entry.id || index}>
+                  <div className={`entry-status-bar ${entry.status === 'approved' ? 'approved' : 'submitted'}`}></div>
+                  <div className="entry-main">
+                    <div className="entry-header">
+                      <div className="entry-title-group">
+                        <div className="entry-badges-row">
+                          <span className="entry-project-tag">{entry.project}</span>
+                          {entry.category && <span className="entry-category-tag">{entry.category}</span>}
+                          <span className={`entry-status-badge ${entry.status === 'approved' ? 'approved' : 'submitted'}`}>
+                            {entry.status ? entry.status.toUpperCase() : 'SUBMITTED'}
+                          </span>
+                        </div>
+                        <h3 className="entry-task-title">{entry.title || entry.project}</h3>
+                      </div>
                       
-                      {/* Action Buttons for Edit & Delete */}
-                      <div style={{ display: 'flex', gap: '6px', marginLeft: '6px' }}>
-                        <button 
-                          onClick={() => openEditModal(entry)} 
-                          title="Edit Entry"
-                          style={{
-                            background: '#f3f4f6',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            cursor: 'pointer',
-                            color: '#3b82f6',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}
-                        >
-                          <Edit size={14} /> Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteEntry(entry.id)} 
-                          title="Delete Entry"
-                          style={{
-                            background: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            cursor: 'pointer',
-                            color: '#ef4444',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}
-                        >
-                          <Trash2 size={14} /> Delete
-                        </button>
+                      <div className="entry-actions-right">
+                        <div className="entry-time-pills">
+                          <span className="pill-hours">⏱️ <strong>{entry.hours || '1.0'} hrs</strong></span>
+                          {entry.startTime && entry.endTime && (
+                            <span className="pill-time">🕒 {entry.startTime} - {entry.endTime}</span>
+                          )}
+                          <span className="pill-date">📅 {entry.date}</span>
+                        </div>
+                        
+                        <div className="entry-btn-group">
+                          <button className="ws-btn-edit" onClick={() => openEditModal(rawEntry)} title="Edit Entry">
+                            <Edit size={14} /> Edit
+                          </button>
+                          <button className="ws-btn-delete" onClick={() => setDeleteTarget(entry)} title="Delete Entry">
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="entry-body-box">
+                      <p className="entry-description-text">{entry.displayDescription}</p>
+                    </div>
+
+                    {(entry.challenges || entry.achievements || entry.fileName) && (
+                      <div className="entry-footer-meta">
+                        {entry.challenges && (
+                          <div className="meta-chip challenge">
+                            <span>⚠️ <strong>Blockers:</strong> {entry.challenges}</span>
+                          </div>
+                        )}
+                        {entry.achievements && (
+                          <div className="meta-chip achievement">
+                            <span>🏆 <strong>Achievement:</strong> {entry.achievements}</span>
+                          </div>
+                        )}
+                        {entry.fileName && (
+                          <div className="meta-chip attachment" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                            <span>📎 <strong>Attachment:</strong> {entry.fileName}</span>
+                            <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
+                              <button 
+                                type="button" 
+                                onClick={() => setPreviewFile({ name: entry.fileName, url: entry.fileData })}
+                                style={{
+                                  background: '#ffffff',
+                                  border: '1px solid #bfdbfe',
+                                  borderRadius: '6px',
+                                  padding: '3px 9px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  color: '#2563eb',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Eye size={13} /> View
+                              </button>
+                              {entry.fileData && (
+                                <a 
+                                  href={entry.fileData} 
+                                  download={entry.fileName}
+                                  style={{
+                                    background: '#2563eb',
+                                    color: '#ffffff',
+                                    borderRadius: '6px',
+                                    padding: '3px 9px',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <Download size={13} /> Download
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  
-                  <p className="entry-description">{entry.description}</p>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -386,6 +606,7 @@ function Worksheet() {
           </div>
         </div>
       </div>
+
       {/* Add / Edit Work Entry Enterprise Modal */}
       <EnterpriseModal isOpen={showModal} onClose={() => setShowModal(false)}>
         <FormHeader 
@@ -448,7 +669,7 @@ function Worksheet() {
                   type="time" 
                   className="ent-input" 
                   value={formState.startTime} 
-                  onChange={(e) => setFormState({...formState, startTime: e.target.value})}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   required 
                 />
               </FormField>
@@ -458,7 +679,7 @@ function Worksheet() {
                   type="time" 
                   className="ent-input" 
                   value={formState.endTime} 
-                  onChange={(e) => setFormState({...formState, endTime: e.target.value})}
+                  onChange={(e) => handleEndTimeChange(e.target.value)}
                   required 
                 />
               </FormField>
@@ -496,6 +717,14 @@ function Worksheet() {
                   onChange={(e) => setFormState({...formState, achievements: e.target.value})}
                 />
               </FormField>
+
+              <FormField label="Work Attachment" fullWidth optional>
+                <FileUpload 
+                  fileName={formState.fileName}
+                  onChange={handleFileChange}
+                  hint="Attach screenshots, code snippets, logs, or documents (max 10MB)"
+                />
+              </FormField>
             </FormSection>
           </FormBody>
           
@@ -504,6 +733,161 @@ function Worksheet() {
             submitText={submitting ? "Saving..." : (editingEntry ? "Update Entry" : "Submit Entry")} 
           />
         </form>
+      </EnterpriseModal>
+
+      {/* Custom Delete Confirmation Modal Popup */}
+      <EnterpriseModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <div style={{ padding: '24px', textAlign: 'center' }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: '#fef2f2',
+            color: '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            border: '1px solid #fee2e2'
+          }}>
+            <AlertTriangle size={28} />
+          </div>
+          <h3 style={{ margin: '0 0 8px', color: '#111827', fontSize: '18px', fontWeight: '700' }}>
+            Delete Work Entry?
+          </h3>
+          <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: '14px', lineHeight: '1.5' }}>
+            Are you sure you want to delete this work entry for <strong>{deleteTarget?.project}</strong>? This action cannot be undone.
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button 
+              type="button" 
+              onClick={() => setDeleteTarget(null)}
+              style={{
+                padding: '10px 18px',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
+                background: '#ffffff',
+                color: '#374151',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              onClick={confirmDeleteEntry}
+              style={{
+                padding: '10px 18px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#ffffff',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '14px',
+                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Trash2 size={16} /> Yes, Delete
+            </button>
+          </div>
+        </div>
+      </EnterpriseModal>
+
+      {/* Animated Toast Success / Error Message Banner */}
+      {toast.show && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          right: '24px',
+          zIndex: 9999,
+          background: toast.type === 'error' ? '#fef2f2' : '#ecfdf5',
+          border: toast.type === 'error' ? '1px solid #fecaca' : '1px solid #a7f3d0',
+          color: toast.type === 'error' ? '#991b1b' : '#065f46',
+          padding: '14px 20px',
+          borderRadius: '10px',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '14px',
+          fontWeight: '600',
+          animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}>
+          {toast.type === 'error' ? (
+            <AlertTriangle size={20} color="#dc2626" />
+          ) : (
+            <CheckCircle2 size={20} color="#10b981" />
+          )}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* File Preview Modal Popup */}
+      <EnterpriseModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)}>
+        <div style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Paperclip size={20} color="#2563eb" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>{previewFile?.name}</h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {previewFile?.url && (
+                <a 
+                  href={previewFile.url} 
+                  download={previewFile.name} 
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Download size={14} /> Download
+                </a>
+              )}
+              <button 
+                onClick={() => setPreviewFile(null)}
+                style={{ background: '#f3f4f6', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', textAlign: 'center', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {previewFile?.url?.startsWith('data:image') || previewFile?.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
+              <img 
+                src={previewFile.url} 
+                alt={previewFile.name} 
+                style={{ maxWidth: '100%', maxHeight: '65vh', borderRadius: '8px', objectFit: 'contain', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
+              />
+            ) : (
+              <div style={{ padding: '40px', color: '#64748b' }}>
+                <FileIcon size={56} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
+                <p style={{ fontSize: '15px', margin: '0 0 12px', fontWeight: '500' }}>Document Preview</p>
+                <p style={{ fontSize: '13px', margin: '0 0 16px', color: '#94a3b8' }}>Click download below to open this attachment in your application.</p>
+                {previewFile?.url && (
+                  <a href={previewFile.url} download={previewFile.name} style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'underline' }}>
+                    Download {previewFile.name}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </EnterpriseModal>
     </DashboardLayout>
   );
