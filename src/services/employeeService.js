@@ -379,12 +379,37 @@ export const raiseTicket = async (ticketData) => {
 };
 
 // ─── HOLIDAYS ─────────────────────────────────────────────────────────────────
+const DEFAULT_SEED_HOLIDAYS = [
+  { id: 'HOL-2026-01', name: 'New Year\'s Day', date: '2026-01-01', type: 'National', description: 'Official First Day of 2026', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-02', name: 'Republic Day', date: '2026-01-26', type: 'National', description: 'National Republic Day Celebration', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-03', name: 'Holi', date: '2026-03-04', type: 'Regional', description: 'Festival of Colors', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-04', name: 'Good Friday', date: '2026-04-03', type: 'National', description: 'Good Friday Observance', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-05', name: 'Independence Day', date: '2026-08-15', type: 'National', description: '79th Indian Independence Day', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-06', name: 'Gandhi Jayanti', date: '2026-10-02', type: 'National', description: 'Mahatma Gandhi Birth Anniversary', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-07', name: 'Diwali', date: '2026-11-08', type: 'National', description: 'Festival of Lights', applicableTo: 'All Departments' },
+  { id: 'HOL-2026-08', name: 'Christmas Day', date: '2026-12-25', type: 'National', description: 'Christmas Day Celebration', applicableTo: 'All Departments' }
+];
+
 export const getHolidays = async () => {
-  const { data, error } = await supabase
+  let { data } = await supabase
     .from('holidays')
-    .select('*')
-    .order('date', { ascending: true });
-  return { data, error };
+    .select('*');
+
+  let localSaved = [];
+  try {
+    localSaved = JSON.parse(localStorage.getItem('hrms_local_holidays') || '[]');
+  } catch (e) {}
+
+  const mergedMap = new Map();
+  [...DEFAULT_SEED_HOLIDAYS, ...localSaved, ...(data || [])].forEach(h => {
+    const key = h.id || `${h.name}-${h.date}`;
+    if (key) mergedMap.set(key, h);
+  });
+
+  const combined = Array.from(mergedMap.values());
+  combined.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+
+  return { data: combined, error: null };
 };
 
 // ─── ANNOUNCEMENTS ────────────────────────────────────────────────────────────

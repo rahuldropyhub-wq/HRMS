@@ -616,20 +616,78 @@ export const assignAsset = async (assetId, employeeId) => {
 
 // ─── HOLIDAYS ─────────────────────────────────────────────────────────────────
 export const getHolidays = async () => {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('holidays')
-    .select('*')
-    .order('date', { ascending: true });
-  return { data, error };
+    .select('*');
+
+  if (error) {
+    console.warn('getHolidays query notice:', error?.message);
+  }
+
+  if (data && Array.isArray(data)) {
+    data.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+  }
+  return { data: data || [], error };
 };
 
 export const createHoliday = async (holiday) => {
-  const { data, error } = await supabase
+  const payload = {
+    name: holiday.name,
+    date: holiday.date,
+    type: holiday.type || 'Company',
+    description: holiday.description || '',
+    applicable_to: holiday.applicableTo || holiday.applicable_to || 'All Departments'
+  };
+
+  let res = await supabase
     .from('holidays')
-    .insert(holiday)
-    .select()
-    .single();
-  return { data, error };
+    .insert(payload)
+    .select();
+
+  if (res.error) {
+    console.warn('createHoliday primary payload error:', res.error?.message);
+    res = await supabase
+      .from('holidays')
+      .insert({
+        name: holiday.name,
+        date: holiday.date,
+        type: holiday.type || 'Company'
+      })
+      .select();
+  }
+
+  return { data: res.data ? res.data[0] : null, error: res.error };
+};
+
+export const updateHoliday = async (id, holiday) => {
+  const payload = {
+    name: holiday.name,
+    date: holiday.date,
+    type: holiday.type || 'Company',
+    description: holiday.description || '',
+    applicable_to: holiday.applicableTo || holiday.applicable_to || 'All Departments'
+  };
+
+  let res = await supabase
+    .from('holidays')
+    .update(payload)
+    .eq('id', id)
+    .select();
+
+  if (res.error) {
+    console.warn('updateHoliday primary payload error:', res.error?.message);
+    res = await supabase
+      .from('holidays')
+      .update({
+        name: holiday.name,
+        date: holiday.date,
+        type: holiday.type || 'Company'
+      })
+      .eq('id', id)
+      .select();
+  }
+
+  return { data: res.data ? res.data[0] : null, error: res.error };
 };
 
 export const deleteHoliday = async (id) => {

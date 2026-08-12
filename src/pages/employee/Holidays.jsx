@@ -94,7 +94,7 @@ function Holidays() {
           <div className="holidays-wrapper">
             <div className="holidays-header">
               <div className="holidays-title">
-                <h1>Holiday Calendar 2025</h1>
+                <h1>Holiday Calendar 2026</h1>
                 <p>View all upcoming public and company holidays.</p>
               </div>
 
