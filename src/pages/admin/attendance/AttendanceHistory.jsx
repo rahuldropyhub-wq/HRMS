@@ -129,18 +129,19 @@ const AttendanceHistory = () => {
     document.body.removeChild(link);
   };
 
+  // Build dropdown options dynamically from real data
   const empOptions = [
     { value: '', label: 'All Employees' },
-    ...employeesList.map(e => ({ value: `${e.firstName} ${e.lastName}`.trim(), label: `${e.firstName} ${e.lastName}`.trim() }))
+    ...Array.from(new Set(history.map(r => r.empName).filter(Boolean)))
+        .sort()
+        .map(name => ({ value: name, label: name }))
   ];
 
   const deptOptions = [
     { value: '', label: 'All Departments' },
-    { value: 'Engineering', label: 'Engineering' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Design', label: 'Design' },
-    { value: 'HR', label: 'HR' },
-    { value: 'Sales', label: 'Sales' }
+    ...Array.from(new Set(history.map(r => r.dept).filter(d => d && d !== '-')))
+        .sort()
+        .map(d => ({ value: d, label: d }))
   ];
 
   return (

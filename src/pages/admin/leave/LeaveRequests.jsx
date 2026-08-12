@@ -41,18 +41,25 @@ const LeaveRequests = () => {
     setLoading(true);
     const { data } = await getAllLeaveRequests();
     if (data) {
-      const mapped = data.map(req => ({
-        ...req,
-        empName: req.profiles ? `${req.profiles.first_name} ${req.profiles.last_name}` : 'Unknown',
-        avatar: req.profiles ? (req.profiles.first_name.charAt(0) + req.profiles.last_name.charAt(0)).toUpperCase() : 'U',
-        empId: req.employee_id.substring(0, 8),
-        dept: req.profiles?.departments?.name || 'Unassigned',
-        type: req.leave_type,
-        from: new Date(req.start_date).toLocaleDateString(),
-        to: new Date(req.end_date).toLocaleDateString(),
-        days: calculateDays(req.start_date, req.end_date),
-        appliedOn: new Date(req.created_at).toLocaleDateString(),
-      }));
+      const mapped = data.map(req => {
+        const firstName = req.profiles?.first_name || 'Unknown';
+        const lastName  = req.profiles?.last_name  || '';
+        // Normalize status to lowercase for consistent comparisons throughout
+        const status = (req.status || 'pending').toLowerCase();
+        return {
+          ...req,
+          status,
+          empName: `${firstName} ${lastName}`.trim(),
+          avatar: `${firstName.charAt(0)}${lastName.charAt(0) || '?'}`.toUpperCase(),
+          empId: (req.employee_id || '').substring(0, 8),
+          dept: req.profiles?.departments?.name || req.profiles?.department || 'Unassigned',
+          type: req.leave_type || 'Leave',
+          from: req.start_date ? new Date(req.start_date).toLocaleDateString() : '--',
+          to: req.end_date ? new Date(req.end_date).toLocaleDateString() : '--',
+          days: req.start_date && req.end_date ? calculateDays(req.start_date, req.end_date) : 1,
+          appliedOn: req.created_at ? new Date(req.created_at).toLocaleDateString() : '--',
+        };
+      });
       setRequests(mapped);
     } else {
       setRequests([]);
@@ -62,11 +69,11 @@ const LeaveRequests = () => {
 
   // Filter Logic
   const filteredRequests = requests.filter(req => {
-    const empName = req.profiles ? `${req.profiles.first_name} ${req.profiles.last_name}` : '';
-    const matchesTab = activeTab === 'All' ? true : req.status === activeTab.toLowerCase();
-    const matchesSearch = empName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = deptFilter ? req.profiles?.departments?.name === deptFilter : true;
-    const matchesType = typeFilter ? req.leave_type === typeFilter : true;
+    // req.status is already normalized to lowercase at load time
+    const matchesTab    = activeTab === 'All' ? true : req.status === activeTab.toLowerCase();
+    const matchesSearch = req.empName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept   = deptFilter ? (req.profiles?.departments?.name || req.profiles?.department || req.dept) === deptFilter : true;
+    const matchesType   = typeFilter ? req.leave_type === typeFilter : true;
     return matchesTab && matchesSearch && matchesDept && matchesType;
   });
 
@@ -227,11 +234,15 @@ const LeaveRequests = () => {
                 <td>{req.days}</td>
                 <td>{req.appliedOn}</td>
                 <td>
-                  <span className={`badge ${req.status.toLowerCase()}`}>{req.status}</span>
+                  {/* status is already lowercase from normalization */}
+                  <span className={`badge ${req.status}`}>
+                    {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                  </span>
                 </td>
                 <td>
                   <div className="lr-action-group">
-                    {req.status === 'Pending' && (
+                    {/* status is normalized to lowercase */}
+                    {req.status === 'pending' && (
                       <>
                         <button className="lr-btn-approve" title="Approve" onClick={() => initiateAction(req, 'approve')}>
                           <Check size={13} /> Approve
@@ -241,7 +252,7 @@ const LeaveRequests = () => {
                         </button>
                       </>
                     )}
-                    {req.status === 'Rejected' && (
+                    {req.status === 'rejected' && (
                       <button className="lr-btn-sendback" title="Reconsider" onClick={() => initiateAction(req, 'approve')}>
                         <Undo2 size={13} /> Send Back
                       </button>
@@ -370,12 +381,14 @@ const LeaveRequests = () => {
                   <div className="detail-row">
                     <div className="label">Current Status</div>
                     <div className="value">
-                      <span className={`badge ${selectedRequest.status.toLowerCase()}`}>{selectedRequest.status}</span>
+                      <span className={`badge ${selectedRequest.status}`}>
+                        {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {selectedRequest.status === 'Pending' && (
+                {selectedRequest.status === 'pending' && (
                   <div className="drawer-section">
                     <h3>Admin Comment (Optional)</h3>
                     <textarea 
@@ -388,7 +401,7 @@ const LeaveRequests = () => {
                 )}
               </div>
               
-              {selectedRequest.status === 'Pending' && (
+              {selectedRequest.status === 'pending' && (
                 <div className="drawer-footer">
                   <button className="btn-reject" onClick={() => initiateAction(selectedRequest, 'reject')}>Reject</button>
                   <button className="btn-approve" onClick={() => initiateAction(selectedRequest, 'approve')}>Approve</button>

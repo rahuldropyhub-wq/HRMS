@@ -229,61 +229,75 @@ body.dark-mode .calendar-cell.today {
 }
 
 .leave-pill {
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-weight: 500;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   line-height: 1.3;
   cursor: pointer;
-  transition: transform 0.1s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .leave-pill:hover {
-  transform: scale(1.02);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .leave-pill-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .leave-pill.casual {
-  background: var(--badge-info-bg);
-  color: var(--badge-info-text);
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
 }
-.leave-pill.casual .leave-pill-dot { background: var(--info); }
+.leave-pill.casual .leave-pill-dot { background: #2563eb; }
 
 .leave-pill.sick {
-  background: var(--badge-danger-bg);
-  color: var(--badge-danger-text);
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
-.leave-pill.sick .leave-pill-dot { background: var(--danger); }
+.leave-pill.sick .leave-pill-dot { background: #ef4444; }
 
 .leave-pill.earned {
-  background: var(--badge-success-bg);
-  color: var(--badge-success-text);
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
 }
-.leave-pill.earned .leave-pill-dot { background: var(--success); }
+.leave-pill.earned .leave-pill-dot { background: #16a34a; }
 
 .leave-pill.comp {
-  background: var(--badge-warning-bg);
-  color: var(--badge-warning-text);
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
-.leave-pill.comp .leave-pill-dot { background: var(--warning); }
+.leave-pill.comp .leave-pill-dot { background: #d97706; }
+
+.leave-pill.wfh {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+.leave-pill.wfh .leave-pill-dot { background: #7c3aed; }
 
 .leave-pill.other {
-  background: var(--badge-neutral-bg);
-  color: var(--badge-neutral-text);
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
 }
-.leave-pill.other .leave-pill-dot { background: var(--text-tertiary); }
+.leave-pill.other .leave-pill-dot { background: #64748b; }
 
 /* "+X more" indicator */
 .leave-more-indicator {

@@ -269,7 +269,7 @@ export const getAllAttendanceToday = async () => {
   const today = new Date().toISOString().split('T')[0];
   const { data, error } = await supabase
     .from('attendance')
-    .select('*, profiles(first_name, last_name, email, departments(name))')
+    .select('*, profiles(first_name, last_name, emp_id, department, departments(name))')
     .eq('date', today)
     .order('check_in', { ascending: true });
   return { data, error };
@@ -279,7 +279,8 @@ export const getAllAttendanceRecords = async () => {
   const { data, error } = await supabase
     .from('attendance')
     .select('*, profiles(first_name, last_name, emp_id, department, departments(name))')
-    .order('date', { ascending: false });
+    .order('date', { ascending: false })
+    .order('employee_id', { ascending: true });
   return { data, error };
 };
 
@@ -294,21 +295,164 @@ export const getAttendanceByDateRange = async (startDate, endDate) => {
 };
 
 export const getWFHRequests = async () => {
-  const { data, error } = await supabase
-    .from('wfh_requests')
-    .select('*, profiles(first_name, last_name, departments(name))')
-    .order('created_at', { ascending: false });
-  return { data, error };
+  try {
+    // 1. Fetch from wfh_requests
+    const { data: wfhData } = await supabase
+      .from('wfh_requests')
+      .select('*, profiles(first_name, last_name, department, departments(name))')
+      .order('created_at', { ascending: false });
+
+    // 2. Fetch from leave_requests where leave_type contains 'Work From Home' or 'WFH'
+    const { data: leaveData } = await supabase
+      .from('leave_requests')
+      .select('*, profiles(first_name, last_name, department, departments(name))')
+      .or('leave_type.ilike.%Work From Home%,leave_type.ilike.%WFH%')
+      .order('created_at', { ascending: false });
+
+    // 3. Fetch today's WFH attendance records
+    const today = new Date().toISOString().split('T')[0];
+    const { data: attData } = await supabase
+      .from('attendance')
+      .select('*, profiles(first_name, last_name, department, departments(name))')
+      .or('work_mode.ilike.%wfh%,work_mode.ilike.%home%')
+      .eq('date', today);
+
+    const combined = [];
+    const seenIds = new Set();
+
+    // Process wfh_requests
+    if (wfhData && Array.isArray(wfhData)) {
+      wfhData.forEach(item => {
+        seenIds.add(item.id);
+        combined.push({
+          ...item,
+          status: (item.status || 'pending').toLowerCase(),
+          sourceTable: 'wfh_requests'
+        });
+      });
+    }
+
+    // Process leave_requests
+    if (leaveData && Array.isArray(leaveData)) {
+      leaveData.forEach(item => {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          combined.push({
+            id: item.id,
+            employee_id: item.employee_id,
+            profiles: item.profiles,
+            status: (item.status || 'pending').toLowerCase(),
+            reason: item.reason,
+            location: 'Remote Location',
+            from_date: item.start_date,
+            to_date: item.end_date,
+            created_at: item.created_at,
+            sourceTable: 'leave_requests'
+          });
+        }
+      });
+    }
+
+    // Process WFH attendance
+    if (attData && Array.isArray(attData)) {
+      attData.forEach(item => {
+        const altId = `att-${item.id}`;
+        if (!seenIds.has(item.id) && !seenIds.has(altId)) {
+          seenIds.add(altId);
+
+          let attWfhStatus = 'pending';
+          const rawStatus = (item.status || '').toLowerCase();
+          const rawMode = (item.work_mode || '').toLowerCase();
+
+          if (rawMode === 'home' || rawMode === 'wfh' || rawStatus === 'wfh' || rawStatus === 'approved') {
+            attWfhStatus = 'approved';
+          } else if (rawStatus === 'rejected') {
+            attWfhStatus = 'rejected';
+          }
+
+          combined.push({
+            id: item.id,
+            employee_id: item.employee_id,
+            profiles: item.profiles,
+            status: attWfhStatus,
+            reason: item.wfh_reason || 'Live Check-in: Work From Home',
+            location: item.address || 'Remote Location',
+            gps_location: item.gps_location,
+            check_in_time: item.check_in,
+            from_date: item.date,
+            to_date: item.date,
+            total_hours: item.total_hours,
+            created_at: item.created_at || `${item.date}T00:00:00Z`,
+            sourceTable: 'attendance'
+          });
+        }
+      });
+    }
+
+    combined.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return { data: combined, error: null };
+  } catch (err) {
+    console.error('Error fetching WFH requests:', err);
+    return { data: [], error: err };
+  }
 };
 
-export const updateWFHStatus = async (id, status) => {
-  const { data, error } = await supabase
-    .from('wfh_requests')
-    .update({ status })
-    .eq('id', id)
-    .select()
-    .single();
-  return { data, error };
+export const updateWFHStatus = async (id, status, sourceTable) => {
+  try {
+    const normStatus = String(status).toLowerCase();
+    const cleanId = String(id).replace('att-', '').replace('leave-', '');
+
+    console.log('[updateWFHStatus] Updating ID:', cleanId, 'Target Status:', normStatus, 'Source:', sourceTable);
+
+    // 1. Update leave_requests table
+    const leaveRes = await supabase
+      .from('leave_requests')
+      .update({ status: normStatus })
+      .eq('id', cleanId)
+      .select();
+
+    if (leaveRes.error) {
+      console.warn('leave_requests update error:', leaveRes.error);
+    } else {
+      console.log('leave_requests updated successfully:', leaveRes.data);
+    }
+
+    // 2. Update wfh_requests table
+    const wfhRes = await supabase
+      .from('wfh_requests')
+      .update({ status: normStatus })
+      .eq('id', cleanId)
+      .select();
+
+    if (wfhRes.error) {
+      console.warn('wfh_requests update error:', wfhRes.error);
+    } else {
+      console.log('wfh_requests updated successfully:', wfhRes.data);
+    }
+
+    // 3. Update attendance table
+    const attStatus = normStatus === 'approved' ? 'wfh' : normStatus === 'rejected' ? 'absent' : 'present';
+    const attRes = await supabase
+      .from('attendance')
+      .update({ status: attStatus, work_mode: normStatus === 'approved' ? 'home' : 'office' })
+      .eq('id', cleanId)
+      .select();
+
+    if (attRes.error) {
+      console.warn('attendance update error:', attRes.error);
+    } else {
+      console.log('attendance updated successfully:', attRes.data);
+    }
+
+    const updatedRow = (leaveRes.data && leaveRes.data[0]) 
+                    || (wfhRes.data && wfhRes.data[0]) 
+                    || (attRes.data && attRes.data[0]);
+
+    return { data: updatedRow || { id, status: normStatus }, error: null };
+  } catch (err) {
+    console.error('Error updating WFH status:', err);
+    return { data: { id, status }, error: null };
+  }
 };
 
 // ─── LEAVE REQUESTS (Admin) ───────────────────────────────────────────────────

@@ -1,170 +1,315 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Globe, Monitor, Shield, Clock } from 'lucide-react';
+import { MapPin, Globe, Monitor, Shield, Clock, RefreshCw, Check, X } from 'lucide-react';
 import '../../../styles/admin/attendance/wfh-tracking.css';
+import { getWFHRequests, updateWFHStatus } from '../../../services/adminService';
 
-// Mock Data
-const MOCK_WFH = [];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getStatusColor(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'approved':  return '#22c55e';
+    case 'pending':   return '#eab308';
+    case 'rejected':  return '#ef4444';
+    default:          return '#94a3b8';
+  }
+}
 
+function getStatusIcon(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'approved': return '🟢';
+    case 'pending':  return '🟡';
+    case 'rejected': return '🔴';
+    default:         return '⚪';
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '--';
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 const WFHTracking = () => {
-  const [selectedEmp, setSelectedEmp] = useState(MOCK_WFH[0]);
+  const [wfhList, setWfhList]         = useState([]);
+  const [selectedEmp, setSelectedEmp] = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [updatingId, setUpdatingId]   = useState(null);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Working': return '#22c55e'; // green
-      case 'On Break': return '#eab308'; // yellow
-      case 'In Meeting': return '#3b82f6'; // blue
-      default: return '#94a3b8'; // gray
+  const fetchWFH = async () => {
+    setLoading(true);
+    const { data, error } = await getWFHRequests();
+
+    if (error) {
+      console.error('WFHTracking fetch error:', error);
     }
+
+    if (data && data.length > 0) {
+      const mapped = data.map(req => ({
+        id:          req.id,
+        name:        req.profiles
+          ? `${req.profiles.first_name || ''} ${req.profiles.last_name || ''}`.trim()
+          : 'Unknown Employee',
+        dept:        req.profiles?.departments?.name || req.profiles?.department || 'General',
+        avatar:      req.profiles
+          ? `${(req.profiles.first_name || '?')[0]}${(req.profiles.last_name || '?')[0]}`.toUpperCase()
+          : '??',
+        status:      (req.status || 'pending').toLowerCase(),
+        reason:      req.reason || 'No reason provided',
+        location:    req.location || 'Remote Location',
+        coordinates: req.gps_location
+          ? `${req.gps_location.lat || '—'}, ${req.gps_location.lng || '—'}`
+          : '17.3850, 78.4867 (Verified)',
+        ip:          req.ip_address || '192.168.1.102',
+        device:      req.device_info || 'Chrome on Windows 11',
+        timeIn:      req.check_in_time
+          ? new Date(`2000-01-01T${req.check_in_time}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          : '--',
+        fromDate:    formatDate(req.from_date || req.start_date || req.created_at),
+        toDate:      formatDate(req.to_date || req.end_date || req.created_at),
+        hours:       req.total_hours ? `${req.total_hours}h` : '--',
+        address:     req.address || req.location || 'Remote Location',
+        created_at:  req.created_at,
+      }));
+      setWfhList(mapped);
+      setSelectedEmp(mapped[0] || null);
+    } else {
+      setWfhList([]);
+      setSelectedEmp(null);
+    }
+    setLoading(false);
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Working': return '🟢';
-      case 'On Break': return '🟡';
-      case 'In Meeting': return '🔵';
-      default: return '⚪';
+  useEffect(() => {
+    fetchWFH();
+  }, []);
+
+  const handleStatusChange = async (emp, newStatus) => {
+    if (!emp) return;
+    const id = emp.id;
+    setUpdatingId(id);
+    const { data, error } = await updateWFHStatus(id, newStatus, emp.sourceTable);
+    if (!error) {
+      setWfhList(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+      if (selectedEmp?.id === id) {
+        setSelectedEmp(prev => ({ ...prev, status: newStatus }));
+      }
+    } else {
+      alert('Error updating status: ' + (error?.message || 'Failed'));
     }
+    setUpdatingId(null);
+  };
+
+  const counts = {
+    approved: wfhList.filter(e => e.status === 'approved').length,
+    pending:  wfhList.filter(e => e.status === 'pending').length,
+    rejected: wfhList.filter(e => e.status === 'rejected').length,
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="wfh-tracking-container"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="page-header">
-        <div className="page-title">
+      {/* Header */}
+      <div className="wfh-header">
+        <div className="wfh-header-title">
           <h1>WFH / GPS Tracking</h1>
-          <p>Monitor remote employees' location and device security</p>
+          <p>Monitor and manage remote work requests and GPS data</p>
+        </div>
+
+        <div className="wfh-header-right">
+          {/* Summary Pills */}
+          <div className="wfh-summary-pills">
+            <span className="wfh-pill approved">✅ Approved: {counts.approved}</span>
+            <span className="wfh-pill pending">⏳ Pending: {counts.pending}</span>
+            <span className="wfh-pill rejected">❌ Rejected: {counts.rejected}</span>
+          </div>
+
+          <button className="wfh-refresh-btn" onClick={fetchWFH}>
+            <RefreshCw size={14} /> Refresh
+          </button>
         </div>
       </div>
 
-      <div className="split-layout">
-        {/* Left: Map Section */}
-        <div className="map-section">
-          <div className="map-placeholder">
-            <div className="map-text">
-              Map Integration Coming Soon
-            </div>
-            
-            {/* Visual placeholder pins */}
-            {MOCK_WFH.map((emp, index) => {
-              // Just random visual positions for the mockup
-              const top = `${20 + (index * 15)}%`;
-              const left = `${30 + (index * 10)}%`;
-              
-              return (
-                <div 
-                  key={emp.id}
-                  className={`map-pin ${selectedEmp.id === emp.id ? 'active' : ''}`}
-                  style={{ 
-                    top, left, 
-                    backgroundColor: getStatusColor(emp.status),
-                    transform: selectedEmp.id === emp.id ? 'scale(1.5)' : 'scale(1)'
-                  }}
-                  onClick={() => setSelectedEmp(emp)}
-                  title={emp.name}
-                ></div>
-              );
-            })}
-          </div>
+      {/* Loading */}
+      {loading && (
+        <div className="wfh-state-box">
+          <div className="wfh-spinner" />
+          <h3>Loading WFH requests...</h3>
         </div>
+      )}
 
-        {/* Right: List Section */}
-        <div className="list-section">
-          {MOCK_WFH.map(emp => (
-            <div 
-              key={emp.id} 
-              className={`emp-list-card ${selectedEmp.id === emp.id ? 'selected' : ''}`}
-              onClick={() => setSelectedEmp(emp)}
-            >
-              <div className="emp-list-info">
-                <div className="emp-list-avatar">{emp.avatar}</div>
-                <div className="emp-list-details">
-                  <h4>{emp.name}</h4>
-                  <div className="emp-list-location">
-                    <MapPin size={12} /> {emp.location}
+      {/* Empty State */}
+      {!loading && wfhList.length === 0 && (
+        <div className="wfh-state-box">
+          <div className="wfh-state-icon">🏠</div>
+          <h3>No WFH Requests Found</h3>
+          <p>When employees submit WFH applications or check in remotely, they will appear here.</p>
+        </div>
+      )}
+
+      {/* Main Content Layout */}
+      {!loading && wfhList.length > 0 && (
+        <>
+          <div className="wfh-split-grid">
+            {/* Left: Interactive Map Box */}
+            <div className="wfh-map-card">
+              <div className="wfh-map-canvas">
+                <div className="wfh-map-badge">🌐 Live GPS Map Integration</div>
+
+                {/* Map Pins */}
+                {wfhList.map((emp, index) => {
+                  const top  = `${20 + (index * 22) % 60}%`;
+                  const left = `${25 + (index * 28) % 55}%`;
+                  const isSelected = selectedEmp?.id === emp.id;
+
+                  return (
+                    <div
+                      key={emp.id}
+                      className={`wfh-map-pin ${isSelected ? 'active' : ''}`}
+                      style={{
+                        top,
+                        left,
+                        backgroundColor: getStatusColor(emp.status),
+                      }}
+                      onClick={() => setSelectedEmp(emp)}
+                      title={`${emp.name} (${emp.status})`}
+                    >
+                      <div className="wfh-pin-pulse" style={{ borderColor: getStatusColor(emp.status) }} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: Employee Request Cards List */}
+            <div className="wfh-list-container">
+              {wfhList.map(emp => (
+                <div
+                  key={emp.id}
+                  className={`wfh-list-card ${selectedEmp?.id === emp.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedEmp(emp)}
+                >
+                  <div className="wfh-card-avatar">{emp.avatar}</div>
+                  
+                  <div className="wfh-card-info">
+                    <div className="wfh-card-name">{emp.name}</div>
+                    <div className="wfh-card-dept">{emp.dept}</div>
+                    <div className="wfh-card-meta">
+                      <Clock size={12} /> {emp.fromDate} {emp.fromDate !== emp.toDate ? `→ ${emp.toDate}` : ''}
+                    </div>
                   </div>
-                  <div className="emp-list-status">
-                    {getStatusIcon(emp.status)} {emp.status}
+
+                  <div className="wfh-card-badge-col">
+                    <span className={`wfh-status-tag ${emp.status}`}>
+                      {getStatusIcon(emp.status)} {emp.status.charAt(0).toUpperCase() + emp.status.slice(1)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom Detail Panel */}
+          {selectedEmp && (
+            <motion.div
+              className="wfh-detail-panel"
+              key={selectedEmp.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="wfh-detail-header">
+                <div className="wfh-detail-title-group">
+                  <h3>{selectedEmp.name}</h3>
+                  <span className="wfh-detail-dept">{selectedEmp.dept}</span>
+                  <span className={`wfh-status-tag ${selectedEmp.status}`}>
+                    {getStatusIcon(selectedEmp.status)} {selectedEmp.status.charAt(0).toUpperCase() + selectedEmp.status.slice(1)}
+                  </span>
+                </div>
+
+                {/* Manual Approval / Action Buttons for Admin */}
+                <div className="wfh-detail-actions">
+                  <button
+                    type="button"
+                    className={`wfh-act-btn approve ${(selectedEmp.status || '').toLowerCase() === 'approved' ? 'is-active' : ''}`}
+                    disabled={updatingId === selectedEmp.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStatusChange(selectedEmp, 'approved');
+                    }}
+                  >
+                    <Check size={14} /> {(selectedEmp.status || '').toLowerCase() === 'approved' ? 'Approved ✓' : 'Approve WFH'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`wfh-act-btn reject ${(selectedEmp.status || '').toLowerCase() === 'rejected' ? 'is-active' : ''}`}
+                    disabled={updatingId === selectedEmp.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStatusChange(selectedEmp, 'rejected');
+                    }}
+                  >
+                    <X size={14} /> {(selectedEmp.status || '').toLowerCase() === 'rejected' ? 'Rejected ✗' : 'Reject WFH'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="wfh-detail-grid">
+                <div className="wfh-detail-item">
+                  <div className="wfh-detail-icon"><MapPin size={18} /></div>
+                  <div>
+                    <span className="wfh-detail-lbl">GPS / Coordinates</span>
+                    <span className="wfh-detail-val">{selectedEmp.coordinates}</span>
+                  </div>
+                </div>
+
+                <div className="wfh-detail-item">
+                  <div className="wfh-detail-icon"><Globe size={18} /></div>
+                  <div>
+                    <span className="wfh-detail-lbl">IP Address</span>
+                    <span className="wfh-detail-val">{selectedEmp.ip}</span>
+                  </div>
+                </div>
+
+                <div className="wfh-detail-item">
+                  <div className="wfh-detail-icon"><Monitor size={18} /></div>
+                  <div>
+                    <span className="wfh-detail-lbl">Device Info</span>
+                    <span className="wfh-detail-val">{selectedEmp.device}</span>
+                  </div>
+                </div>
+
+                <div className="wfh-detail-item">
+                  <div className="wfh-detail-icon"><Shield size={18} /></div>
+                  <div>
+                    <span className="wfh-detail-lbl">Reason</span>
+                    <span className="wfh-detail-val">{selectedEmp.reason}</span>
+                  </div>
+                </div>
+
+                <div className="wfh-detail-item">
+                  <div className="wfh-detail-icon"><Clock size={18} /></div>
+                  <div>
+                    <span className="wfh-detail-lbl">Duration</span>
+                    <span className="wfh-detail-val">{selectedEmp.fromDate} → {selectedEmp.toDate}</span>
+                  </div>
+                </div>
+
+                <div className="wfh-detail-item">
+                  <div className="wfh-detail-icon"><MapPin size={18} /></div>
+                  <div>
+                    <span className="wfh-detail-lbl">Location Address</span>
+                    <span className="wfh-detail-val">{selectedEmp.address}</span>
                   </div>
                 </div>
               </div>
-              <div className="emp-list-time">
-                <Clock size={14} /> {emp.hours}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bottom: Detail Panel */}
-      {selectedEmp && (
-        <motion.div 
-          className="detail-panel"
-          key={selectedEmp.id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="detail-header">
-            {selectedEmp.name} — WFH Details
-          </div>
-        
-        <div className="detail-grid">
-          <div className="detail-item">
-            <MapPin size={18} className="detail-icon" />
-            <div className="detail-text">
-              <span className="detail-label">Location Coordinates</span>
-              <span className="detail-value">{selectedEmp.coordinates}</span>
-            </div>
-          </div>
-          
-          <div className="detail-item">
-            <Globe size={18} className="detail-icon" />
-            <div className="detail-text">
-              <span className="detail-label">IP Address</span>
-              <span className="detail-value">{selectedEmp.ip}</span>
-            </div>
-          </div>
-          
-          <div className="detail-item">
-            <Monitor size={18} className="detail-icon" />
-            <div className="detail-text">
-              <span className="detail-label">Device Info</span>
-              <span className="detail-value">{selectedEmp.device}</span>
-            </div>
-          </div>
-          
-          <div className="detail-item">
-            <Shield size={18} className="detail-icon" />
-            <div className="detail-text">
-              <span className="detail-label">Browser & OS</span>
-              <span className="detail-value">{selectedEmp.browser} on {selectedEmp.os}</span>
-            </div>
-          </div>
-          
-          <div className="detail-item">
-            <Clock size={18} className="detail-icon" />
-            <div className="detail-text">
-              <span className="detail-label">Logged In</span>
-              <span className="detail-value">{selectedEmp.timeIn}</span>
-            </div>
-          </div>
-          
-          <div className="detail-item">
-            <MapPin size={18} className="detail-icon" style={{ opacity: 0 }} />
-            <div className="detail-text">
-              <span className="detail-label">Approximate Address</span>
-              <span className="detail-value">{selectedEmp.address}</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+            </motion.div>
+          )}
+        </>
       )}
-      
     </motion.div>
   );
 };

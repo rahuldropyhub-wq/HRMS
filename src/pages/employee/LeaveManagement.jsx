@@ -149,12 +149,27 @@ function LeaveManagement() {
     });
 
     if (data) {
+      if (newLeave.leave_type === 'Work From Home') {
+        try {
+          await supabase.from('wfh_requests').insert({
+            employee_id: user.id,
+            reason: newLeave.reason,
+            from_date: newLeave.start_date,
+            to_date: newLeave.end_date,
+            status: 'pending',
+            location: 'Remote Location'
+          });
+        } catch (e) {
+          console.warn('wfh_requests sync optional notice:', e);
+        }
+      }
+
       setLeaves([data, ...leaves]);
       setShowModal(false);
       setNewLeave({ leave_type: 'Casual Leave', start_date: '', end_date: '', reason: '' });
-      showToast('success', '🎉 Your leave application has been submitted successfully! It is now pending approval.');
+      showToast('success', '🎉 Your request has been submitted successfully! It is now pending approval.');
     } else {
-      showToast('error', 'Failed to submit leave: ' + (error?.message || 'Unknown error. Please try again.'));
+      showToast('error', 'Failed to submit request: ' + (error?.message || 'Unknown error. Please try again.'));
     }
     setSubmitting(false);
   };
@@ -415,7 +430,9 @@ function LeaveManagement() {
           
           <FormFooter 
             onCancel={() => setShowModal(false)} 
+            onSubmit={handleApplyLeave}
             submitText="Submit Application" 
+            isSaving={submitting}
           />
         </form>
       </EnterpriseModal>

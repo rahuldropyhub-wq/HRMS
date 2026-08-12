@@ -16,8 +16,27 @@ import { supabase } from '../../lib/supabaseClient';
 import '../../styles/admin/admin-layout.css';
 
 const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, children }) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  
+  const location = useLocation();
+
+  const hasActiveChild = React.useMemo(() => {
+    let active = false;
+    React.Children.forEach(children, child => {
+      if (!child) return;
+      if (child.key && location.pathname.startsWith(String(child.key))) {
+        active = true;
+      }
+    });
+    return active;
+  }, [location.pathname, children]);
+
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded || hasActiveChild);
+
+  useEffect(() => {
+    if (hasActiveChild) {
+      setIsExpanded(true);
+    }
+  }, [hasActiveChild]);
+
   // Force expand when sidebar is collapsed so icons are always visible
   const showContent = !title || isExpanded || isSidebarCollapsed;
 
@@ -72,6 +91,9 @@ const AdminLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
+  const [pendingWorksheetCount, setPendingWorksheetCount] = useState(0);
+  const [openTicketCount, setOpenTicketCount] = useState(0);
   const location = useLocation();
 
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -83,36 +105,56 @@ const AdminLayout = () => {
       setIsDarkMode(true);
     }
 
-    // Fetch initial notification count
-    const fetchNotifications = async () => {
+    // Fetch initial original badge counts from DB
+    const fetchBadgeCounts = async () => {
       try {
-        const { count: pendingLeaves } = await supabase
-          .from('leaves')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'Pending');
-          
-        const { count: openTickets } = await supabase
+        // 1. Pending Leaves count (check leave_requests table)
+        const { data: leaveReqs } = await supabase
+          .from('leave_requests')
+          .select('id, status');
+        
+        const pLeaves = leaveReqs 
+          ? leaveReqs.filter(l => (l.status || '').toLowerCase() === 'pending').length 
+          : 0;
+        setPendingLeaveCount(pLeaves);
+
+        // 2. Pending Worksheets count
+        const { data: wsData } = await supabase
+          .from('worksheets')
+          .select('id, status');
+
+        const pWorksheets = wsData 
+          ? wsData.filter(w => (w.status || '').toLowerCase() === 'pending' || (w.status || '').toLowerCase() === 'submitted').length 
+          : 0;
+        setPendingWorksheetCount(pWorksheets);
+
+        // 3. Open Tickets count
+        const { data: tickData } = await supabase
           .from('tickets')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'Open');
-          
-        setNotificationCount((pendingLeaves || 0) + (openTickets || 0));
+          .select('id, status');
+
+        const oTickets = tickData 
+          ? tickData.filter(t => (t.status || '').toLowerCase() === 'open' || (t.status || '').toLowerCase() === 'pending').length 
+          : 0;
+        setOpenTicketCount(oTickets);
+
+        setNotificationCount(pLeaves + oTickets);
       } catch (err) {
-        console.error("Error fetching notifications:", err);
+        console.error("Error fetching badge counts:", err);
       }
     };
     
-    fetchNotifications();
+    fetchBadgeCounts();
 
-    // Set up real-time subscription for leaves and tickets
-    const leaveSub = supabase.channel('leaves-changes-admin')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leaves' }, () => {
-        fetchNotifications();
+    // Real-time subscription for leaves, worksheets, and tickets
+    const leaveSub = supabase.channel('leave_reqs-changes-admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+        fetchBadgeCounts();
       }).subscribe();
 
     const ticketSub = supabase.channel('tickets-changes-admin')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
-        fetchNotifications();
+        fetchBadgeCounts();
       }).subscribe();
 
     return () => {
@@ -128,8 +170,6 @@ const AdminLayout = () => {
     localStorage.setItem('dropyhub-theme', isDark ? 'dark' : 'light');
   };
 
-  const isActive = (path) => location.pathname === path ? 'active' : '';
-
   const getBreadcrumbName = () => {
     const path = location.pathname;
     if (path === '/admin/dashboard' || path === '/admin') return 'Dashboard';
@@ -138,45 +178,48 @@ const AdminLayout = () => {
     return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace(/-/g, ' ');
   };
 
-  const renderNavItem = (icon, label, path, badge = null) => {
-    const Icon = icon;
+  const renderNavItem = (Icon, label, path, badge = null) => {
+    const active = location.pathname === path;
     return (
-      <li key={path} className="nav-item-wrapper" style={{ position: 'relative' }}>
-        <Link to={path} className={`admin-nav-item ${isActive(path)}`}>
+      <li key={path}>
+        <Link 
+          to={path} 
+          className={`admin-nav-item ${active ? 'active' : ''} ${isSidebarCollapsed ? 'collapsed' : ''}`}
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
           <Icon size={18} className="admin-nav-icon" />
           <motion.span 
-            className="admin-nav-label"
+            className="admin-nav-text"
             initial={false}
-            animate={{ 
-              opacity: isSidebarCollapsed ? 0 : 1,
-              width: isSidebarCollapsed ? 0 : 'auto',
-              display: isSidebarCollapsed ? 'none' : 'block'
-            }}
+            animate={{ opacity: isSidebarCollapsed ? 0 : 1, display: isSidebarCollapsed ? 'none' : 'block' }}
           >
             {label}
           </motion.span>
-          {badge && (
-            <motion.span 
-              className="admin-nav-badge"
-              animate={{
-                opacity: isSidebarCollapsed ? 0 : 1,
-                display: isSidebarCollapsed ? 'none' : 'block'
-              }}
-            >
-              {badge}
-            </motion.span>
+          {badge && !isSidebarCollapsed && (
+            <span className="admin-nav-badge">{badge}</span>
           )}
         </Link>
-        {isSidebarCollapsed && (
-          <div className="nav-tooltip">{label}</div>
-        )}
       </li>
     );
   };
 
   return (
     <div className="admin-layout">
-      {/* Mobile Overlay */}
+      {/* Mobile Topbar */}
+      <div className="admin-mobile-header">
+        <div className="admin-brand">
+          <img src="/Fevicon.png" alt="Icon" className="admin-logo-img" />
+          <span>Dropyhub Admin</span>
+        </div>
+        <button 
+          className="admin-mobile-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Mobile Backdrop Overlay */}
       <div 
         className={`admin-mobile-overlay ${isMobileMenuOpen ? 'active' : ''}`}
         onClick={() => setIsMobileMenuOpen(false)}
@@ -220,21 +263,20 @@ const AdminLayout = () => {
           <NavSection title="Attendance Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(Activity, 'Live Attendance', '/admin/attendance/live')}
             {renderNavItem(Clock, 'Attendance History', '/admin/attendance/history')}
-            {renderNavItem(MapPin, 'WFH / GPS Tracking', '/admin/attendance/wfh-tracking')}
           </NavSection>
 
           <NavSection title="Leave Management" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
-            {renderNavItem(CalendarDays, 'Leave Requests', '/admin/leave/requests', '12')}
+            {renderNavItem(CalendarDays, 'Leave Requests', '/admin/leave/requests', pendingLeaveCount > 0 ? String(pendingLeaveCount) : null)}
             {renderNavItem(CalendarRange, 'Leave Calendar', '/admin/leave/calendar')}
           </NavSection>
 
           <NavSection title="Task & Worksheet" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(ListTodo, 'Task Dashboard', '/admin/tasks')}
-            {renderNavItem(ClipboardCheck, 'Worksheets (Pending)', '/admin/worksheets', '5')}
+            {renderNavItem(ClipboardCheck, 'Worksheets (Pending)', '/admin/worksheets', pendingWorksheetCount > 0 ? String(pendingWorksheetCount) : null)}
           </NavSection>
 
           <NavSection title="Tickets & Assets" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
-            {renderNavItem(Ticket, 'Ticket Queue', '/admin/tickets', '3')}
+            {renderNavItem(Ticket, 'Ticket Queue', '/admin/tickets', openTicketCount > 0 ? String(openTicketCount) : null)}
             {renderNavItem(Package, 'Asset Inventory', '/admin/assets')}
           </NavSection>
 

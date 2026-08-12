@@ -106,9 +106,9 @@ export const Checkbox = ({ label, ...props }) => (
   </label>
 );
 
-export const FormFooter = ({ onCancel, onSubmit, onSave, submitText = 'Submit', saveLabel, isSaving, saveDraft = false }) => {
+export const FormFooter = ({ onCancel, onSubmit, onSave, submitText = 'Submit', saveLabel, isSaving, saveDraft = false, type }) => {
   const handleAction = onSave || onSubmit;
-  const label = isSaving ? 'Saving...' : (saveLabel || submitText);
+  const label = isSaving ? 'Submitting...' : (saveLabel || submitText);
 
   return (
     <div className="ent-form-footer">
@@ -123,7 +123,7 @@ export const FormFooter = ({ onCancel, onSubmit, onSave, submitText = 'Submit', 
         </button>
       )}
       <button 
-        type="button" 
+        type={type || (handleAction ? "button" : "submit")} 
         className="ent-btn ent-btn-primary" 
         onClick={handleAction}
         disabled={isSaving}

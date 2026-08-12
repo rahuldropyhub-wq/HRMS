@@ -1,28 +1,124 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
+import { supabase } from '../../../lib/supabaseClient';
 import '../../../styles/admin/leave/leave-calendar.css';
 
 const LeaveCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 1)); // August 2026
+  const [currentDate, setCurrentDate] = useState(new Date()); // Current date by default
   const [selectedDate, setSelectedDate] = useState(null);
   const [department, setDepartment] = useState('all');
   const [leaveType, setLeaveType] = useState('all');
+  const [leavesData, setLeavesData] = useState([]);
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // MOCK DATA - Leaves for the month
-  const leavesData = [
-    { id: 1, employee: 'Priya Patel', initials: 'PP', type: 'sick', typeName: 'Sick Leave', from: 6, to: 8, department: 'marketing' },
-    { id: 2, employee: 'Amit Kumar', initials: 'AK', type: 'casual', typeName: 'Casual Leave', from: 6, to: 6, department: 'design' },
-    { id: 3, employee: 'Neha Gupta', initials: 'NG', type: 'earned', typeName: 'Earned Leave', from: 7, to: 7, department: 'hr' },
-    { id: 4, employee: 'Vikram Singh', initials: 'VS', type: 'comp', typeName: 'Comp Off', from: 12, to: 12, department: 'engineering' },
-    { id: 5, employee: 'Anjali Rao', initials: 'AR', type: 'other', typeName: 'Other', from: 20, to: 22, department: 'sales' },
-    { id: 6, employee: 'Rahul Sharma', initials: 'RS', type: 'casual', typeName: 'Casual Leave', from: 14, to: 15, department: 'engineering' },
-    { id: 7, employee: 'Sneha Verma', initials: 'SV', type: 'sick', typeName: 'Sick Leave', from: 25, to: 26, department: 'finance' },
-    { id: 8, employee: 'Karan Mehta', initials: 'KM', type: 'earned', typeName: 'Earned Leave', from: 18, to: 20, department: 'operations' },
-  ];
+  useEffect(() => {
+    fetchRealCalendarData();
+  }, [currentDate]);
 
-  const departmentOptions = [
+  const fetchRealCalendarData = async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch departments
+      const { data: deptData } = await supabase.from('departments').select('*');
+      if (deptData && deptData.length > 0) {
+        setDepartmentsList([
+          { value: 'all', label: 'All Departments' },
+          ...deptData.map(d => ({ value: (d.name || '').toLowerCase(), label: d.name }))
+        ]);
+      }
+
+      // 2. Fetch all profiles map to prevent FK join errors
+      const { data: profData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, department, departments(name)');
+
+      const profMap = {};
+      if (profData) {
+        profData.forEach(p => {
+          profMap[p.id] = p;
+        });
+      }
+
+      // 3. Fetch leave_requests
+      const { data: leaveReqs, error: lErr } = await supabase
+        .from('leave_requests')
+        .select('*');
+
+      if (lErr) console.warn('leave_requests fetch notice:', lErr);
+
+      // 4. Fetch wfh_requests
+      const { data: wfhReqs, error: wErr } = await supabase
+        .from('wfh_requests')
+        .select('*');
+
+      if (wErr) console.warn('wfh_requests fetch notice:', wErr);
+
+      const parsedLeaves = [];
+
+      const processItem = (item, isWfh = false) => {
+        const emp = profMap[item.employee_id] || item.profiles;
+        const firstName = emp?.first_name || '';
+        const lastName = emp?.last_name || '';
+        const name = (firstName + ' ' + lastName).trim() || (item.employee_name || 'Employee');
+        const initials = `${(firstName || 'E')[0]}${(lastName || 'E')[0]}`.toUpperCase();
+        const deptName = emp?.departments?.name || emp?.department || 'general';
+
+        const rawStart = item.start_date || item.from_date;
+        const rawEnd = item.end_date || item.to_date;
+
+        if (!rawStart) return;
+
+        // Parse YYYY-MM-DD cleanly without timezone offset shifts
+        const parseDate = (dStr) => {
+          if (!dStr) return null;
+          const parts = String(dStr).split('T')[0].split('-');
+          if (parts.length === 3) {
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          }
+          return new Date(dStr);
+        };
+
+        const sDate = parseDate(rawStart);
+        const eDate = rawEnd ? parseDate(rawEnd) : sDate;
+
+        const typeStr = (item.leave_type || (isWfh ? 'Work From Home' : 'Leave')).toLowerCase();
+        let type = 'other';
+        if (typeStr.includes('sick')) type = 'sick';
+        else if (typeStr.includes('casual')) type = 'casual';
+        else if (typeStr.includes('earn')) type = 'earned';
+        else if (typeStr.includes('comp')) type = 'comp';
+        else if (typeStr.includes('wfh') || typeStr.includes('home')) type = 'wfh';
+
+        parsedLeaves.push({
+          id: item.id,
+          employee: name,
+          initials,
+          type,
+          typeName: item.leave_type || (isWfh ? 'Work From Home' : 'Leave'),
+          status: (item.status || 'pending').toLowerCase(),
+          startDate: sDate,
+          endDate: eDate,
+          department: deptName.toLowerCase(),
+          departmentLabel: deptName
+        });
+      };
+
+      if (leaveReqs) leaveReqs.forEach(l => processItem(l, false));
+      if (wfhReqs) wfhReqs.forEach(w => processItem(w, true));
+
+      console.log('Parsed live calendar leaves:', parsedLeaves);
+      setLeavesData(parsedLeaves);
+    } catch (err) {
+      console.error('Error fetching calendar leaves:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const defaultDepartmentOptions = [
     { value: 'all', label: 'All Departments' },
     { value: 'engineering', label: 'Engineering' },
     { value: 'marketing', label: 'Marketing' },
@@ -39,6 +135,7 @@ const LeaveCalendar = () => {
     { value: 'sick', label: 'Sick Leave' },
     { value: 'earned', label: 'Earned Leave' },
     { value: 'comp', label: 'Comp Off' },
+    { value: 'wfh', label: 'Work From Home' },
     { value: 'other', label: 'Other' },
   ];
 
@@ -53,7 +150,6 @@ const LeaveCalendar = () => {
   const daysInMonth = lastDayOfMonth.getDate();
   
   // Get day of week for first day (0=Sun, 1=Mon, ...)
-  // Convert to Monday-first: (0=Mon, 6=Sun)
   let startDayOfWeek = firstDayOfMonth.getDay() - 1;
   if (startDayOfWeek === -1) startDayOfWeek = 6; // Sunday becomes 6
 
@@ -69,13 +165,21 @@ const LeaveCalendar = () => {
       if (leaveType !== 'all' && leave.type !== leaveType) return false;
       return true;
     });
-  }, [department, leaveType]);
+  }, [leavesData, department, leaveType]);
 
   // Get leaves for a specific date
   const getLeavesForDate = (dateNum) => {
-    return filteredLeaves.filter(leave => 
-      dateNum >= leave.from && dateNum <= leave.to
-    );
+    const targetDate = new Date(year, month, dateNum);
+    targetDate.setHours(0, 0, 0, 0);
+
+    return filteredLeaves.filter(leave => {
+      if (!leave.startDate || !leave.endDate) return false;
+      const s = new Date(leave.startDate);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(leave.endDate);
+      e.setHours(0, 0, 0, 0);
+      return targetDate >= s && targetDate <= e;
+    });
   };
 
   // Navigation
@@ -153,7 +257,7 @@ const LeaveCalendar = () => {
           <CustomDropdown
             value={department}
             onChange={setDepartment}
-            options={departmentOptions}
+            options={departmentsList.length > 0 ? departmentsList : defaultDepartmentOptions}
             placeholder="Department"
           />
           <CustomDropdown
@@ -204,7 +308,7 @@ const LeaveCalendar = () => {
                       title={`${leave.employee} — ${leave.typeName}`}
                     >
                       <span className="leave-pill-dot"></span>
-                      <span>{leave.employee.split(' ')[0]}</span>
+                      <strong style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '0.2px' }}>{leave.employee.split(' ')[0]}</strong>
                     </div>
                   ))}
                   {moreCount > 0 && (

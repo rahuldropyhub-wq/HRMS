@@ -280,7 +280,7 @@
 /* Admin Header */
 .admin-header {
   height: 72px;
-  background: var(--var(--card-bg));
+  background: var(--card-bg);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -449,8 +449,23 @@
   padding: 24px;
 }
 
+/* Mobile Header */
+.admin-mobile-header {
+  display: none;
+  height: 60px;
+  padding: 0 16px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
+  .admin-mobile-header {
+    display: flex;
+  }
+
   .admin-sidebar {
     position: fixed;
     top: 0;
