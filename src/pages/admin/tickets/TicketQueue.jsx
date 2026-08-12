@@ -72,8 +72,8 @@ const TicketQueue = () => {
       <div className="tabs-bar">
         {['Open', 'In Progress', 'Resolved', 'Closed', 'All'].map(tab => {
           const count = tab === 'All' 
-            ? MOCK_TICKETS.length 
-            : MOCK_TICKETS.filter(t => t.status === tab).length;
+            ? tickets.length 
+            : tickets.filter(t => t.status.toLowerCase() === tab.toLowerCase()).length;
           return (
             <button 
               key={tab} 

@@ -16,8 +16,9 @@ export const getAllEmployees = async () => {
 
   const profiles = (profilesRes.data || []).map(p => ({
     id: p.emp_id || p.id,
-    firstName: p.first_name,
-    lastName: p.last_name,
+    empCode: p.emp_id || p.raw_data?.empId || p.raw_data?.emp_id || p.raw_data?.empCode || p.id,
+    firstName: p.first_name || p.raw_data?.firstName,
+    lastName: p.last_name || p.raw_data?.lastName,
     email: p.email,
     phone: p.phone,
     department: p.departments?.name || p.department || '-',
@@ -37,6 +38,7 @@ export const getAllEmployees = async () => {
     .filter(inv => !profileEmails.has(inv.email?.toLowerCase())) // ← Skip if already has a profile
     .map(inv => ({
       id: inv.raw_data?.empId || inv.id,
+      empCode: inv.raw_data?.empId || inv.raw_data?.emp_id || inv.raw_data?.empCode || inv.id,
       firstName: inv.first_name || inv.raw_data?.firstName,
       lastName: inv.last_name || inv.raw_data?.lastName,
       email: inv.email,
@@ -542,20 +544,62 @@ export const updateTicketStatus = async (id, status) => {
 
 // ─── ASSETS ───────────────────────────────────────────────────────────────────
 export const getAllAssets = async () => {
-  const { data, error } = await supabase
-    .from('assets')
-    .select('*')
-    .order('created_at', { ascending: false });
-  return { data, error };
+  let { data, error } = await supabase.from('assets').select('*');
+  if (data && Array.isArray(data)) {
+    data.sort((a, b) => new Date(b.created_at || b.assignment_date || 0) - new Date(a.created_at || a.assignment_date || 0));
+  }
+  return { data: data || [], error };
 };
 
 export const createAsset = async (assetData) => {
-  const { data, error } = await supabase
-    .from('assets')
-    .insert(assetData)
-    .select()
-    .single();
-  return { data, error };
+  const code = assetData.asset_code || assetData.asset_id || assetData.assetId || ('AST-' + Math.floor(1000 + Math.random() * 9000));
+
+  // 1. Primary insert sending asset_code (matching your Supabase table's NOT NULL constraint)
+  const fullPayload = {
+    asset_code: code,
+    asset_id: code,
+    name: assetData.name,
+    category: assetData.category || 'Laptop',
+    assigned_to: assetData.assigned_to || 'Unassigned',
+    status: assetData.status || 'available',
+    serial_number: assetData.serial_number || '',
+    brand_model: assetData.brand_model || '',
+    assignment_date: assetData.assignment_date || new Date().toISOString().split('T')[0],
+    condition: assetData.condition || 'Good',
+    location: assetData.location || 'Headquarters',
+    remarks: assetData.remarks || ''
+  };
+
+  let res = await supabase.from('assets').insert(fullPayload).select();
+
+  if (res.error) {
+    console.warn('createAsset full payload notice:', res.error?.message);
+
+    // 2. Clean payload with asset_code for existing DB schema
+    const cleanPayload = {
+      asset_code: code,
+      name: assetData.name,
+      category: assetData.category || 'Laptop',
+      assigned_to: assetData.assigned_to || 'Unassigned',
+      status: assetData.status || 'available'
+    };
+
+    res = await supabase.from('assets').insert(cleanPayload).select();
+
+    if (res.error) {
+      console.warn('createAsset clean payload notice:', res.error?.message);
+
+      // 3. Fallback without asset_code in case table schema varies
+      res = await supabase.from('assets').insert({
+        name: assetData.name,
+        category: assetData.category || 'Laptop',
+        assigned_to: assetData.assigned_to || 'Unassigned',
+        status: assetData.status || 'available'
+      }).select();
+    }
+  }
+
+  return { data: res.data ? res.data[0] : null, error: res.error };
 };
 
 export const assignAsset = async (assetId, employeeId) => {

@@ -399,12 +399,77 @@ export const getAnnouncements = async () => {
 
 // ─── ASSETS (Employee view) ───────────────────────────────────────────────────
 export const getMyAssets = async (userId) => {
-  const { data, error } = await supabase
-    .from('asset_assignments')
-    .select('*, assets(*)')
-    .eq('employee_id', userId)
-    .eq('status', 'active');
-  return { data, error };
+  try {
+    // 1. Get logged-in user profile details (name, email, emp_id)
+    const { data: prof } = await getProfile(userId);
+    const fullName = `${prof?.first_name || ''} ${prof?.last_name || ''}`.trim();
+    const empCode = prof?.emp_id || prof?.empCode;
+    const userEmail = prof?.email;
+
+    // 2. Fetch directly from assets table
+    const { data: allAssets } = await supabase.from('assets').select('*');
+
+    // 3. Also fetch from asset_assignments table if it exists
+    const { data: assignments } = await supabase
+      .from('asset_assignments')
+      .select('*, assets(*)')
+      .eq('employee_id', userId);
+
+    let myAssets = [];
+
+    if (allAssets && allAssets.length > 0) {
+      myAssets = allAssets.filter(a => {
+        const assigned = String(a.assigned_to || a.assignedTo || '').toLowerCase();
+        if (!assigned || assigned === 'unassigned') return false;
+        
+        return (
+          assigned.includes(userId?.toLowerCase()) ||
+          (fullName && assigned.includes(fullName.toLowerCase())) ||
+          (empCode && assigned.includes(String(empCode).toLowerCase())) ||
+          (userEmail && assigned.includes(userEmail.toLowerCase()))
+        );
+      });
+    }
+
+    // 4. Merge asset_assignments
+    if (assignments && assignments.length > 0) {
+      assignments.forEach(assign => {
+        if (assign.assets) {
+          myAssets.push(assign.assets);
+        }
+      });
+    }
+
+    // 5. Merge local assets saved by Admin
+    try {
+      const localSaved = JSON.parse(localStorage.getItem('hrms_local_assets') || '[]');
+      localSaved.forEach(a => {
+        const assigned = String(a.assignedTo || a.assigned_to || '').toLowerCase();
+        if (assigned && assigned !== 'unassigned') {
+          if (
+            assigned.includes(userId?.toLowerCase()) ||
+            (fullName && assigned.includes(fullName.toLowerCase())) ||
+            (empCode && assigned.includes(String(empCode).toLowerCase())) ||
+            (userEmail && assigned.includes(userEmail.toLowerCase()))
+          ) {
+            myAssets.push(a);
+          }
+        }
+      });
+    } catch (e) {}
+
+    // Deduplicate by asset id/code
+    const uniqueMap = new Map();
+    myAssets.forEach(item => {
+      const key = item.asset_id || item.asset_code || item.id;
+      if (key) uniqueMap.set(key, item);
+    });
+
+    return { data: Array.from(uniqueMap.values()), error: null };
+  } catch (err) {
+    console.error('getMyAssets error:', err);
+    return { data: [], error: err };
+  }
 };
 
 // --- NOTIFICATIONS ------------------------------------------------------------
