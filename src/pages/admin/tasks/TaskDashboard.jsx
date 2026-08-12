@@ -42,7 +42,32 @@ const TaskDashboard = () => {
     const load = async () => {
       setLoading(true);
       const { data } = await getAllTasks();
-      setTasks(data || []);
+      if (data) {
+        const parsed = data.map(t => {
+          const assigneeName = t.profiles 
+            ? `${t.profiles.first_name || ''} ${t.profiles.last_name || ''}`.trim() 
+            : 'Employee';
+          const initials = `${(t.profiles?.first_name || 'E')[0]}${(t.profiles?.last_name || 'E')[0]}`.toUpperCase();
+          let st = (t.status || 'todo').toLowerCase();
+          if (st === 'pending') st = 'todo';
+          if (st === 'in progress') st = 'in-progress';
+          if (st === 'done') st = 'completed';
+
+          return {
+            id: t.id,
+            title: t.title || 'Untitled Task',
+            project: t.project_name || 'Internal',
+            assignee: assigneeName,
+            avatar: initials,
+            priority: (t.priority || 'Medium').charAt(0).toUpperCase() + (t.priority || 'medium').slice(1),
+            due: t.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
+            status: st,
+            rawStatus: t.status || 'Pending',
+            comments: 0
+          };
+        });
+        setTasks(parsed);
+      }
       setLoading(false);
     };
     load();
@@ -100,7 +125,7 @@ const TaskDashboard = () => {
             transition={{ duration: 0.2 }}
           >
             {columns.map(col => {
-              const colTasks = MOCK_TASKS.filter(t => t.status === col.id);
+              const colTasks = tasks.filter(t => t.status === col.id);
               return (
                 <div key={col.id} className={`kanban-column ${col.class}`}>
                   <div className="column-header">
@@ -137,7 +162,7 @@ const TaskDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_TASKS.map(task => (
+                {tasks.map(task => (
                   <tr key={task.id}>
                     <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{task.title}</td>
                     <td>{task.project}</td>

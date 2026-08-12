@@ -341,6 +341,24 @@ export const submitWorksheet = async (worksheetData) => {
   return { data, error };
 };
 
+export const updateWorksheet = async (id, updates) => {
+  const { data, error } = await supabase
+    .from('worksheets')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
+};
+
+export const deleteWorksheet = async (id) => {
+  const { error } = await supabase
+    .from('worksheets')
+    .delete()
+    .eq('id', id);
+  return { error };
+};
+
 // ─── TICKETS ──────────────────────────────────────────────────────────────────
 export const getMyTickets = async (userId) => {
   const { data, error } = await supabase

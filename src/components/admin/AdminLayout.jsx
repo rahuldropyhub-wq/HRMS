@@ -283,7 +283,6 @@ const AdminLayout = () => {
           <NavSection title="Organization" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
             {renderNavItem(Building2, 'Departments', '/admin/organization/departments')}
             {renderNavItem(Briefcase, 'Designations', '/admin/organization/designations')}
-            {renderNavItem(Users, 'Org Chart', '/admin/organization/chart')}
             {renderNavItem(CalendarOff, 'Company Holidays', '/admin/organization/holidays')}
             {renderNavItem(Megaphone, 'Announcements', '/admin/announcements')}
           </NavSection>

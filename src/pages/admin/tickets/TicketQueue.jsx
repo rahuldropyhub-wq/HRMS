@@ -1,26 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Eye, SearchX } from 'lucide-react';
+import { Search, Plus, Eye, SearchX, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../../../styles/admin/tickets/ticket-queue.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-
-const MOCK_TICKETS = [];
+import { getAllTickets, updateTicketStatus } from '../../../services/adminService';
 
 const TicketQueue = () => {
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Open');
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
 
-  const filteredTickets = MOCK_TICKETS.filter(t => {
-    const matchesTab = activeTab === 'All' ? true : t.status === activeTab;
+  const fetchTickets = async () => {
+    setLoading(true);
+    const { data } = await getAllTickets();
+    if (data) {
+      const parsed = data.map(t => ({
+        id: t.id,
+        subject: t.subject || t.title || 'Support Request',
+        raisedBy: t.profiles ? `${t.profiles.first_name || ''} ${t.profiles.last_name || ''}`.trim() : 'Employee',
+        dept: t.profiles?.departments?.name || t.profiles?.department || 'General',
+        priority: t.priority || 'Medium',
+        status: t.status ? (t.status.charAt(0).toUpperCase() + t.status.slice(1)) : 'Open',
+        date: t.created_at ? new Date(t.created_at).toLocaleDateString() : 'Today'
+      }));
+      setTickets(parsed);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const handleStatusChange = async (ticketId, newStatus) => {
+    await updateTicketStatus(ticketId, newStatus.toLowerCase());
+    fetchTickets();
+  };
+
+  const filteredTickets = tickets.filter(t => {
+    const matchesTab = activeTab === 'All' ? true : t.status.toLowerCase() === activeTab.toLowerCase();
     const matchesSearch = t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           t.raisedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           t.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = deptFilter ? t.dept === deptFilter : true;
-    const matchesPri = priorityFilter ? t.priority === priorityFilter : true;
+    const matchesDept = deptFilter ? t.dept.toLowerCase() === deptFilter.toLowerCase() : true;
+    const matchesPri = priorityFilter ? t.priority.toLowerCase() === priorityFilter.toLowerCase() : true;
     return matchesTab && matchesSearch && matchesDept && matchesPri;
   });
 

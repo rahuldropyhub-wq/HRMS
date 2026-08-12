@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, CheckCircle, XCircle, Eye, Clock, X, SearchX, Calendar, Undo2 } from 'lucide-react';
+import { Search, Filter, CheckCircle, XCircle, Eye, Clock, X, SearchX, Calendar, Undo2, Loader2 } from 'lucide-react';
 import '../../../styles/admin/worksheet/worksheet-review.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-
-const MOCK_WORKSHEETS = [];
+import { getAllWorksheets, updateWorksheetStatus } from '../../../services/adminService';
 
 const WorksheetReview = () => {
   const [activeTab, setActiveTab] = useState('Pending');
@@ -13,16 +12,61 @@ const WorksheetReview = () => {
   const [empFilter, setEmpFilter] = useState('');
   const [projFilter, setProjFilter] = useState('');
   
-  const [worksheets, setWorksheets] = useState(MOCK_WORKSHEETS);
+  const [worksheets, setWorksheets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedSheet, setSelectedSheet] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [adminComment, setAdminComment] = useState('');
+
+  const fetchWorksheets = async () => {
+    setLoading(true);
+    const { data } = await getAllWorksheets();
+    if (data) {
+      const parsed = data.map(w => {
+        const empName = w.profiles 
+          ? `${w.profiles.first_name || ''} ${w.profiles.last_name || ''}`.trim() 
+          : 'Employee';
+        const initials = `${(w.profiles?.first_name || 'E')[0]}${(w.profiles?.last_name || 'E')[0]}`.toUpperCase();
+        const rawStatus = (w.status || 'submitted').toLowerCase();
+        let status = 'Pending';
+        if (rawStatus === 'approved') status = 'Approved';
+        if (rawStatus === 'rejected') status = 'Rejected';
+
+        return {
+          id: w.id,
+          empName,
+          avatar: initials,
+          date: w.date || new Date().toISOString().split('T')[0],
+          project: w.project || 'General Task',
+          tasks: [
+            {
+              title: w.project || 'Daily Work',
+              project: w.project || 'Internal',
+              status: 'Completed',
+              hrs: w.hours || '1.0',
+              notes: w.description || 'No detailed notes provided.'
+            }
+          ],
+          totalHrs: w.hours || '1.0',
+          submittedAt: w.created_at ? new Date(w.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+          status,
+          rawStatus: w.status
+        };
+      });
+      setWorksheets(parsed);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchWorksheets();
+  }, []);
 
   const filteredSheets = worksheets.filter(ws => {
     const matchesTab = activeTab === 'All' ? true : ws.status === activeTab;
     const matchesDate = dateFilter ? ws.date.includes(dateFilter) : true;
     const matchesEmp = empFilter ? ws.empName.toLowerCase().includes(empFilter.toLowerCase()) : true;
-    const matchesProj = projFilter ? ws.project === projFilter : true;
+    const matchesProj = projFilter ? ws.project.toLowerCase().includes(projFilter.toLowerCase()) : true;
     return matchesTab && matchesDate && matchesEmp && matchesProj;
   });
 
@@ -37,9 +81,10 @@ const WorksheetReview = () => {
     setTimeout(() => setSelectedSheet(null), 300);
   };
 
-  const handleAction = (ws, action) => {
-    const newStatus = action === 'approve' ? 'Approved' : 'Rejected';
-    setWorksheets(prev => prev.map(w => w.id === ws.id ? { ...w, status: newStatus } : w));
+  const handleAction = async (ws, action) => {
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    await updateWorksheetStatus(ws.id, newStatus);
+    fetchWorksheets();
     closeDrawer();
   };
 

@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Filter, Edit, Trash2, ShieldCheck, SearchX, Box, CheckCircle, Wrench, X, UserPlus } from 'lucide-react';
+import { Search, Plus, Filter, Edit, Trash2, ShieldCheck, SearchX, Box, CheckCircle, Wrench, X, UserPlus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import '../../../styles/admin/assets/asset-inventory.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-
-const MOCK_ASSETS = [];
+import { getAllAssets, createAsset } from '../../../services/adminService';
 
 const AssetInventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,33 +14,54 @@ const AssetInventory = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [assignFilter, setAssignFilter] = useState('');
 
-  const [assets, setAssets] = useState(MOCK_ASSETS);
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
+  const fetchAssets = async () => {
+    setLoading(true);
+    const { data } = await getAllAssets();
+    if (data) {
+      const parsed = data.map(a => ({
+        id: a.id,
+        name: a.name || a.asset_name || 'Hardware Asset',
+        category: a.category || 'Laptop',
+        assignedTo: a.assigned_to || 'Unassigned',
+        status: a.status ? (a.status.charAt(0).toUpperCase() + a.status.slice(1)) : 'Available',
+        purchaseDate: a.purchase_date || 'N/A',
+        warranty: a.warranty || 'N/A'
+      }));
+      setAssets(parsed);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAssets();
+  }, []);
+
   const filteredAssets = assets.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          a.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = catFilter ? a.category === catFilter : true;
-    const matchesStatus = statusFilter ? a.status === statusFilter : true;
+    const matchesSearch = (a.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (a.id || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCat = catFilter ? (a.category || '').toLowerCase() === catFilter.toLowerCase() : true;
+    const matchesStatus = statusFilter ? (a.status || '').toLowerCase() === statusFilter.toLowerCase() : true;
     const matchesAssign = assignFilter === 'Assigned' ? a.assignedTo !== 'Unassigned' : 
                           assignFilter === 'Unassigned' ? a.assignedTo === 'Unassigned' : true;
     return matchesSearch && matchesCat && matchesStatus && matchesAssign;
   });
 
-  const onSubmit = (data) => {
-    const newAsset = {
-      id: `AST-0${assets.length + 1}`,
+  const onSubmit = async (data) => {
+    await createAsset({
       name: data.name,
       category: data.category,
-      assignedTo: 'Unassigned',
-      status: 'Available',
-      purchaseDate: data.purchaseDate || 'N/A',
-      warranty: data.warranty || 'N/A'
-    };
-    setAssets([newAsset, ...assets]);
-    setIsModalOpen(false);
+      status: 'available',
+      purchase_date: data.purchaseDate,
+      warranty: data.warranty
+    });
     reset();
+    setIsModalOpen(false);
+    fetchAssets();
   };
 
   const closeModal = () => {
