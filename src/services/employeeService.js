@@ -134,7 +134,7 @@ export const updateProfile = async (userId, updates) => {
         })
         .eq('id', inv.id)
         .select()
-        .single();
+        .maybeSingle();
 
       return { data: { ...prof, ...updatedRaw }, error: invErr };
     }
@@ -205,7 +205,7 @@ export const checkIn = async (userId, workMode, wfhReason, gpsLocation) => {
       total_break_hours: 0
     })
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -219,7 +219,7 @@ export const startBreak = async (attendanceId, breaksArray, reason) => {
     .update({ breaks: updatedBreaks })
     .eq('id', attendanceId)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -250,7 +250,7 @@ export const endBreak = async (attendanceId, breaksArray, breakIndex) => {
     .update({ breaks: updatedBreaks, total_break_hours: totalBreakHours })
     .eq('id', attendanceId)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -279,7 +279,7 @@ export const checkOut = async (userId) => {
     .update({ check_out: now, total_hours: netHours })
     .eq('id', record.id)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -438,7 +438,7 @@ export const submitWorksheet = async (worksheetData) => {
     .from('worksheets')
     .insert(worksheetData)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -448,7 +448,7 @@ export const updateWorksheet = async (id, updates) => {
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -542,7 +542,7 @@ export const raiseTicket = async (ticketData) => {
   };
 
   try {
-    const { data: dbData } = await supabase.from('tickets').insert(dbPayload).select().single();
+    const { data: dbData } = await supabase.from('tickets').insert(dbPayload).select().maybeSingle();
     if (dbData) {
       Object.assign(formattedTicket, dbData);
     }
@@ -709,7 +709,7 @@ export const markNotificationAsRead = async (notificationId) => {
     .update({ is_read: true })
     .eq('id', notificationId)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 

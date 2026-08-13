@@ -3,8 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || 'placeholder';
+const rawUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
+const rawKey = process.env.SUPABASE_SERVICE_KEY || 'placeholder';
+
+const supabaseUrl = rawUrl.trim().replace(/[\r\n\t ]+/g, '');
+const supabaseServiceKey = rawKey.trim().replace(/[\r\n\t ]+/g, '');
 
 const isConfigured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY && !process.env.SUPABASE_URL.includes('placeholder'));
 

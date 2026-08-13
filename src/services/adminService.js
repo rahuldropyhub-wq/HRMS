@@ -148,7 +148,7 @@ export const createEmployee = async (employeeData) => {
       raw_data: employeeData.raw_data
     })
     .select()
-    .single();
+    .maybeSingle();
 
   return { data, error };
 };
@@ -214,7 +214,7 @@ export const createDepartment = async (dept) => {
     .from('departments')
     .insert(dept)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -224,7 +224,7 @@ export const updateDepartment = async (id, updates) => {
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -247,7 +247,7 @@ export const createDesignation = async (desig) => {
     .from('designations')
     .insert(desig)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -257,7 +257,7 @@ export const updateDesignation = async (id, updates) => {
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -472,7 +472,7 @@ export const updateLeaveStatus = async (id, status, approvedBy) => {
     .update({ status, approved_by: approvedBy })
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -557,7 +557,7 @@ export const updateWorksheetStatus = async (id, status) => {
     .update({ status })
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -692,7 +692,7 @@ export const assignAsset = async (assetId, employeeId) => {
     .from('asset_assignments')
     .insert({ asset_id: assetId, employee_id: employeeId, assigned_date: new Date().toISOString().split('T')[0], status: 'active' })
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -791,7 +791,7 @@ export const createAnnouncement = async (announcement) => {
     .from('announcements')
     .insert(announcement)
     .select()
-    .single();
+    .maybeSingle();
   return { data, error };
 };
 
@@ -909,7 +909,7 @@ export const createProject = async ({ name, description, status, priority, start
       .from('projects')
       .insert({ name, description, status: status || 'planning', priority: priority || 'medium', start_date, end_date, tags: tags || [], created_by })
       .select()
-      .single();
+      .maybeSingle();
 
     if (projErr) throw projErr;
 

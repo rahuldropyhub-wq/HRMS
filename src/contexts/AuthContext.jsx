@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       // Fallback: If the database trigger failed and no profile exists, create it manually on first login
       if (!data) {
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
         
         if (email) {
           // Find their invitation
-          const { data: invitation } = await supabase.from('employee_invitations').select('*').eq('email', email).single();
+          const { data: invitation } = await supabase.from('employee_invitations').select('*').eq('email', email).maybeSingle();
           
           if (invitation) {
             // Create the profile now
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
               reporting_manager: invitation.raw_data?.manager,
               role: assignedRole,
               status: 'active'
-            }).select().single();
+            }).select().maybeSingle();
             
             if (!insertError && newProfile) {
               setProfile(newProfile);
@@ -178,7 +178,7 @@ export const AuthProvider = ({ children }) => {
           .from('employee_invitations')
           .select('id')
           .eq('email', email)
-          .single();
+          .maybeSingle();
 
         if (invError || !invitation) {
           return { 
