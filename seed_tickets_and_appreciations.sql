@@ -28,12 +28,32 @@ CREATE TABLE IF NOT EXISTS public.appreciations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Enable RLS and add public read/write access
+-- 3. Enable RLS and add public read/write access for all tables
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appreciations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.designations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all on tickets" ON public.tickets;
 CREATE POLICY "Allow all on tickets" ON public.tickets FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow all on appreciations" ON public.appreciations;
 CREATE POLICY "Allow all on appreciations" ON public.appreciations FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on departments" ON public.departments;
+CREATE POLICY "Allow all on departments" ON public.departments FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on designations" ON public.designations;
+CREATE POLICY "Allow all on designations" ON public.designations FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on announcements" ON public.announcements;
+CREATE POLICY "Allow all on announcements" ON public.announcements FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on holidays" ON public.holidays;
+CREATE POLICY "Allow all on holidays" ON public.holidays FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on tasks" ON public.tasks;
+CREATE POLICY "Allow all on tasks" ON public.tasks FOR ALL USING (true) WITH CHECK (true);

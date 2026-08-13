@@ -1,28 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import '../../../styles/admin/organization/designations.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
-
-const MOCK_DESIGNATIONS = [];
+import { getDesignations, createDesignation, deleteDesignation } from '../../../services/adminService';
 
 const Designations = () => {
-  const [designations, setDesignations] = useState(MOCK_DESIGNATIONS);
+  const [designations, setDesignations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
-  const onSubmit = (data) => {
-    const newDesig = {
-      id: `DS-${designations.length + 1}`,
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getDesignations();
+      setDesignations(data || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const onSubmit = async (data) => {
+    const { data: newDesig } = await createDesignation({
       title: data.title,
       level: data.level,
+      department: data.department,
       dept: data.department,
       count: 0
-    };
-    setDesignations([newDesig, ...designations]);
-    setIsModalOpen(false);
-    reset();
+    });
+    if (newDesig) {
+      setDesignations(prev => [newDesig, ...prev.filter(d => d.id !== newDesig.id)]);
+      setIsModalOpen(false);
+      reset();
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this designation?')) return;
+    await deleteDesignation(id);
+    setDesignations(prev => prev.filter(d => d.id !== id));
   };
 
   return (
@@ -69,7 +87,7 @@ const Designations = () => {
                     <ActionBtn variant="secondary" title="Edit">
                       <Edit size={14} /> Edit
                     </ActionBtn>
-                    <ActionBtn variant="danger" title="Delete">
+                    <ActionBtn variant="danger" title="Delete" onClick={() => handleDelete(desig.id)}>
                       <Trash2 size={14} /> Delete
                     </ActionBtn>
                   </div>

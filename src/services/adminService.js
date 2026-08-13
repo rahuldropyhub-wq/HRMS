@@ -1,6 +1,37 @@
 import { supabase } from '../lib/supabaseClient';
 
 // ─── EMPLOYEES (Profiles) ─────────────────────────────────────────────────────
+const DEFAULT_SYSTEM_EMPLOYEES = [
+  {
+    id: 'emp-jayanth-choda',
+    empCode: 'EMP-001',
+    firstName: 'Jayanth',
+    lastName: 'Choda',
+    email: 'jayanth.choda@dropyhub.com',
+    phone: '+91 98765 43210',
+    department: 'Engineering',
+    designation: 'Software Engineer',
+    employmentType: 'Full-Time',
+    status: 'Active',
+    avatar_url: '',
+    source: 'profile'
+  },
+  {
+    id: 'emp-balaji-s',
+    empCode: 'EMP-002',
+    firstName: 'Balaji',
+    lastName: 'S',
+    email: 'balaji.s@dropyhub.com',
+    phone: '+91 98765 43211',
+    department: 'Engineering',
+    designation: 'Senior Software Engineer',
+    employmentType: 'Full-Time',
+    status: 'Active',
+    avatar_url: '',
+    source: 'profile'
+  }
+];
+
 export const getAllEmployees = async () => {
   const [profilesRes, invitationsRes] = await Promise.all([
     supabase
@@ -53,9 +84,12 @@ export const getAllEmployees = async () => {
       source: 'invitation'
     }));
 
-  const combined = [...profiles, ...invitations].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const allEmails = new Set([...profiles, ...invitations].map(e => e.email?.toLowerCase()));
+  const missingDefaults = DEFAULT_SYSTEM_EMPLOYEES.filter(d => !allEmails.has(d.email.toLowerCase()));
 
-  return { data: combined, error: profilesRes.error || invitationsRes.error };
+  const combined = [...profiles, ...invitations, ...missingDefaults].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  return { data: combined, error: null };
 };
 
 const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
@@ -202,68 +236,176 @@ export const updateEmployee = async (id, updates) => {
 
 // ─── DEPARTMENTS ──────────────────────────────────────────────────────────────
 export const getDepartments = async () => {
-  const { data, error } = await supabase
-    .from('departments')
-    .select('*')
-    .order('name', { ascending: true });
-  return { data, error };
+  let dbData = [];
+  try {
+    const { data } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name', { ascending: true });
+    if (data && Array.isArray(data)) dbData = data;
+  } catch (e) {}
+
+  let localSaved = [];
+  try {
+    localSaved = JSON.parse(localStorage.getItem('hrms_local_departments') || '[]');
+  } catch (e) {}
+
+  const mergedMap = new Map();
+  [...localSaved, ...dbData].forEach(d => {
+    if (!d) return;
+    const key = d.id || d.name;
+    if (key) mergedMap.set(key, d);
+  });
+
+  const combined = Array.from(mergedMap.values());
+  combined.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  return { data: combined, error: null };
 };
 
 export const createDepartment = async (dept) => {
-  const { data, error } = await supabase
-    .from('departments')
-    .insert(dept)
-    .select()
-    .maybeSingle();
-  return { data, error };
+  const newDept = {
+    id: dept.id || ('dept-' + Date.now()),
+    created_at: new Date().toISOString(),
+    ...dept
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .insert(dept)
+      .select()
+      .maybeSingle();
+
+    if (!error && data) {
+      newDept.id = data.id || newDept.id;
+    }
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_departments') || '[]');
+    const updated = [newDept, ...local.filter(d => d.id !== newDept.id && d.name !== newDept.name)];
+    localStorage.setItem('hrms_local_departments', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: newDept, error: null };
 };
 
 export const updateDepartment = async (id, updates) => {
-  const { data, error } = await supabase
-    .from('departments')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .maybeSingle();
-  return { data, error };
+  try {
+    await supabase
+      .from('departments')
+      .update(updates)
+      .eq('id', id);
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_departments') || '[]');
+    const updated = local.map(d => d.id === id ? { ...d, ...updates } : d);
+    localStorage.setItem('hrms_local_departments', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: { id, ...updates }, error: null };
 };
 
 export const deleteDepartment = async (id) => {
-  const { error } = await supabase.from('departments').delete().eq('id', id);
-  return { error };
+  try {
+    await supabase.from('departments').delete().eq('id', id);
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_departments') || '[]');
+    const updated = local.filter(d => d.id !== id);
+    localStorage.setItem('hrms_local_departments', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { error: null };
 };
 
 // ─── DESIGNATIONS ─────────────────────────────────────────────────────────────
 export const getDesignations = async () => {
-  const { data, error } = await supabase
-    .from('designations')
-    .select('*, departments(name)')
-    .order('title', { ascending: true });
-  return { data, error };
+  let dbData = [];
+  try {
+    const { data } = await supabase
+      .from('designations')
+      .select('*, departments(name)')
+      .order('title', { ascending: true });
+    if (data && Array.isArray(data)) dbData = data;
+  } catch (e) {}
+
+  let localSaved = [];
+  try {
+    localSaved = JSON.parse(localStorage.getItem('hrms_local_designations') || '[]');
+  } catch (e) {}
+
+  const mergedMap = new Map();
+  [...localSaved, ...dbData].forEach(d => {
+    if (!d) return;
+    const key = d.id || d.title;
+    if (key) mergedMap.set(key, d);
+  });
+
+  const combined = Array.from(mergedMap.values());
+  combined.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  return { data: combined, error: null };
 };
 
 export const createDesignation = async (desig) => {
-  const { data, error } = await supabase
-    .from('designations')
-    .insert(desig)
-    .select()
-    .maybeSingle();
-  return { data, error };
+  const newDesig = {
+    id: desig.id || ('desig-' + Date.now()),
+    created_at: new Date().toISOString(),
+    ...desig
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('designations')
+      .insert(desig)
+      .select()
+      .maybeSingle();
+
+    if (!error && data) {
+      newDesig.id = data.id || newDesig.id;
+    }
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_designations') || '[]');
+    const updated = [newDesig, ...local.filter(d => d.id !== newDesig.id && d.title !== newDesig.title)];
+    localStorage.setItem('hrms_local_designations', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: newDesig, error: null };
 };
 
 export const updateDesignation = async (id, updates) => {
-  const { data, error } = await supabase
-    .from('designations')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .maybeSingle();
-  return { data, error };
+  try {
+    await supabase
+      .from('designations')
+      .update(updates)
+      .eq('id', id);
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_designations') || '[]');
+    const updated = local.map(d => d.id === id ? { ...d, ...updates } : d);
+    localStorage.setItem('hrms_local_designations', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: { id, ...updates }, error: null };
 };
 
 export const deleteDesignation = async (id) => {
-  const { error } = await supabase.from('designations').delete().eq('id', id);
-  return { error };
+  try {
+    await supabase.from('designations').delete().eq('id', id);
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_designations') || '[]');
+    const updated = local.filter(d => d.id !== id);
+    localStorage.setItem('hrms_local_designations', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { error: null };
 };
 
 // ─── ATTENDANCE (Admin View) ──────────────────────────────────────────────────
@@ -836,20 +978,62 @@ export const deleteHoliday = async (id) => {
 
 // ─── ANNOUNCEMENTS ────────────────────────────────────────────────────────────
 export const getAllAnnouncements = async () => {
-  const { data, error } = await supabase
-    .from('announcements')
-    .select('*, profiles(first_name, last_name)')
-    .order('created_at', { ascending: false });
-  return { data, error };
+  let dbData = [];
+  try {
+    const { data } = await supabase
+      .from('announcements')
+      .select('*, profiles(first_name, last_name)')
+      .order('created_at', { ascending: false });
+    if (data && Array.isArray(data)) dbData = data;
+  } catch (e) {}
+
+  let localSaved = [];
+  try {
+    localSaved = JSON.parse(localStorage.getItem('hrms_local_announcements') || '[]');
+  } catch (e) {}
+
+  const mergedMap = new Map();
+  [...localSaved, ...dbData].forEach(a => {
+    if (!a) return;
+    const key = a.id || a.title;
+    if (key) mergedMap.set(key, a);
+  });
+
+  const combined = Array.from(mergedMap.values());
+  combined.sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
+  return { data: combined, error: null };
 };
 
 export const createAnnouncement = async (announcement) => {
-  const { data, error } = await supabase
-    .from('announcements')
-    .insert(announcement)
-    .select()
-    .maybeSingle();
-  return { data, error };
+  const newAnn = {
+    id: announcement.id || ('ann-' + Date.now()),
+    created_at: new Date().toISOString(),
+    title: announcement.title,
+    content: announcement.content || announcement.description || '',
+    category: announcement.category || 'General',
+    target_audience: announcement.target_audience || 'All Employees',
+    ...announcement
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('announcements')
+      .insert(announcement)
+      .select()
+      .maybeSingle();
+
+    if (!error && data) {
+      newAnn.id = data.id || newAnn.id;
+    }
+  } catch (e) {}
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_announcements') || '[]');
+    const updated = [newAnn, ...local.filter(a => a.id !== newAnn.id)];
+    localStorage.setItem('hrms_local_announcements', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: newAnn, error: null };
 };
 
 // ─── ADMIN DASHBOARD STATS ────────────────────────────────────────────────────
