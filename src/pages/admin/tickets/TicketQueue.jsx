@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Eye, SearchX, Loader2 } from 'lucide-react';
+import { Search, Plus, Eye, SearchX, Loader2, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../../../styles/admin/tickets/ticket-queue.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
-import { getAllTickets, updateTicketStatus } from '../../../services/adminService';
+import { getAllTickets, updateTicketStatus, deleteTicket } from '../../../services/adminService';
 
 const TicketQueue = () => {
   const [tickets, setTickets] = useState([]);
@@ -40,6 +40,12 @@ const TicketQueue = () => {
   const handleStatusChange = async (ticketId, newStatus) => {
     await updateTicketStatus(ticketId, newStatus.toLowerCase());
     fetchTickets();
+  };
+
+  const handleDeleteTicket = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this ticket?')) return;
+    await deleteTicket(id);
+    setTickets(prev => prev.filter(t => t.id !== id));
   };
 
   const filteredTickets = tickets.filter(t => {
@@ -172,6 +178,14 @@ const TicketQueue = () => {
                     <Link to={`/admin/tickets/${ticket.id}`} className="action-btn ghost icon-only" title="View Details">
                       <Eye size={16} />
                     </Link>
+                    <button 
+                      className="action-btn danger icon-only" 
+                      title="Delete Ticket" 
+                      style={{ color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} 
+                      onClick={() => handleDeleteTicket(ticket.id)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </td>
               </tr>

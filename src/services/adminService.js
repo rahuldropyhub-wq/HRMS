@@ -608,6 +608,21 @@ export const updateTicketStatus = async (id, status) => {
   return { data: { id, status: normStatus }, error: null };
 };
 
+export const deleteTicket = async (id) => {
+  try {
+    await supabase.from('tickets').delete().eq('id', id);
+  } catch (e) {}
+
+  try {
+    const existing = JSON.parse(localStorage.getItem('hrms_local_tickets') || '[]');
+    const updated = existing.filter(t => t.id !== id);
+    localStorage.setItem('hrms_local_tickets', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { error: null };
+};
+
+
 
 // ─── ASSETS ───────────────────────────────────────────────────────────────────
 export const getAllAssets = async () => {

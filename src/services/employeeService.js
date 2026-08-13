@@ -459,6 +459,7 @@ export const raiseTicket = async (ticketData) => {
     createdAt: ticketData.createdAt || nowStr,
     created_at: ticketData.created_at || new Date().toISOString(),
     assignedTo: ticketData.assignedTo || 'Unassigned',
+    assigned_to: ticketData.assignedTo || 'Unassigned',
     conversation: ticketData.conversation || [
       {
         author: ticketData.authorName || 'Employee',
@@ -478,8 +479,24 @@ export const raiseTicket = async (ticketData) => {
     attachments: ticketData.attachments || []
   };
 
+  const dbPayload = {
+    id: formattedTicket.id,
+    subject: formattedTicket.subject,
+    department: formattedTicket.department,
+    priority: formattedTicket.priority,
+    description: formattedTicket.description,
+    status: formattedTicket.status,
+    assigned_to: formattedTicket.assignedTo,
+    conversation: formattedTicket.conversation,
+    timeline: formattedTicket.timeline,
+    attachments: formattedTicket.attachments
+  };
+
   try {
-    await supabase.from('tickets').insert(formattedTicket);
+    const { data: dbData } = await supabase.from('tickets').insert(dbPayload).select().single();
+    if (dbData) {
+      Object.assign(formattedTicket, dbData);
+    }
   } catch (e) {}
 
   try {
@@ -490,6 +507,21 @@ export const raiseTicket = async (ticketData) => {
 
   return { data: formattedTicket, error: null };
 };
+
+export const deleteTicket = async (ticketId) => {
+  try {
+    await supabase.from('tickets').delete().eq('id', ticketId);
+  } catch (e) {}
+
+  try {
+    const existing = JSON.parse(localStorage.getItem('hrms_local_tickets') || '[]');
+    const updated = existing.filter(t => t.id !== ticketId);
+    localStorage.setItem('hrms_local_tickets', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { error: null };
+};
+
 
 
 // ─── HOLIDAYS ─────────────────────────────────────────────────────────────────

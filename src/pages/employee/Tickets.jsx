@@ -8,7 +8,8 @@ import {
   ChevronLeft, ChevronRight, FileImage, FileText as FilePdf,
   Inbox, Shield, HelpCircle, PackageOpen, LifeBuoy, UploadCloud,
   Phone,
-  Monitor
+  Monitor,
+  Trash2
 } from 'lucide-react';
 import {
   EnterpriseModal,
@@ -26,7 +27,7 @@ import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/tickets.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMyTickets, raiseTicket } from '../../services/employeeService';
+import { getMyTickets, raiseTicket, deleteTicket } from '../../services/employeeService';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────
 const DEPARTMENTS = ['IT Support', 'HR', 'Admin', 'Finance', 'Payroll'];
@@ -172,6 +173,15 @@ export default function Tickets() {
 
   const handleCloseTicket = () => {
     setTickets(prev => prev.map(t => t.id === selectedId ? { ...t, status: 'closed' } : t));
+  };
+
+  const handleDeleteTicket = async (id) => {
+    const targetId = id || selectedId;
+    if (!targetId) return;
+    if (!window.confirm('Are you sure you want to delete this ticket?')) return;
+    await deleteTicket(targetId);
+    setTickets(prev => prev.filter(t => t.id !== targetId));
+    if (selectedId === targetId) setSelectedId(null);
   };
 
   // Tab counts
@@ -468,21 +478,28 @@ export default function Tickets() {
                 )}
 
                 {/* ── Actions ── */}
-                {selected.status !== 'closed' && (
-                  <div className="tkt-detail-card">
-                    <div className="tkt-section-title"><AlertTriangle size={14} /> Actions</div>
-                    <div className="tkt-action-bar">
+                <div className="tkt-detail-card">
+                  <div className="tkt-section-title"><AlertTriangle size={14} /> Actions</div>
+                  <div className="tkt-action-bar" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {selected.status !== 'closed' && (
                       <button className="tkt-action-btn close-tkt" onClick={handleCloseTicket}>
                         <X size={14} /> Close Ticket
                       </button>
-                      {selected.status === 'resolved' && (
-                        <button className="tkt-action-btn reopen-tkt">
-                          <RotateCcw size={14} /> Reopen
-                        </button>
-                      )}
-                    </div>
+                    )}
+                    {selected.status === 'resolved' && (
+                      <button className="tkt-action-btn reopen-tkt">
+                        <RotateCcw size={14} /> Reopen
+                      </button>
+                    )}
+                    <button 
+                      className="tkt-action-btn delete-tkt" 
+                      style={{ border: '1px solid #fecaca', background: '#fef2f2', color: '#ef4444', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      onClick={() => handleDeleteTicket(selected.id)}
+                    >
+                      <Trash2 size={14} /> Delete Ticket
+                    </button>
                   </div>
-                )}
+                </div>
 
               </div>
             )}
