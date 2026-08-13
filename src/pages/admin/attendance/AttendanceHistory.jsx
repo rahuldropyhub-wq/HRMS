@@ -64,6 +64,14 @@ function formatLocation(loc) {
         const empId = record.profiles?.emp_id || record.employee_id?.substring(0, 8) || 'DROPY-001';
         const dept = record.profiles?.departments?.name || record.profiles?.department || 'Engineering';
         
+        const recordBreaks = Array.isArray(record.breaks) ? record.breaks : [];
+        const calcSecs = recordBreaks.reduce((acc, b) => {
+          if (typeof b.duration === 'number' && !isNaN(b.duration) && b.duration > 0) return acc + b.duration;
+          return acc;
+        }, 0);
+        const breakHrsVal = record.total_break_hours ? parseFloat(record.total_break_hours) : (calcSecs / 3600);
+        const breakHrsDisplay = breakHrsVal > 0 ? (breakHrsVal >= 1 ? `${breakHrsVal.toFixed(2)} hrs` : `${Math.round(breakHrsVal * 60)} mins`) : '0 mins';
+
         return {
           id: record.id,
           empName,
@@ -74,7 +82,7 @@ function formatLocation(loc) {
           checkOut: record.check_out || '--:--',
           late: record.is_late || false,
           early: record.is_early_logout || false,
-          breakHrs: record.total_break_hours ? `${record.total_break_hours} hrs` : '0 mins',
+          breakHrs: breakHrsDisplay,
           workHrs: record.total_hours ? `${record.total_hours} hrs` : '--',
           mode: record.work_mode === 'wfh' || record.work_mode === 'home' ? 'WFH' : 'Office',
           status: record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'Present',

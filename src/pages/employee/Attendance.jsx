@@ -60,13 +60,19 @@ export default function Attendance() {
              if (record.check_in > '09:15') late = record.check_in;
           }
 
+          const recBreaks = Array.isArray(record.breaks) ? record.breaks : [];
+          const calcSecs = recBreaks.reduce((acc, b) => {
+            if (typeof b.duration === 'number' && !isNaN(b.duration) && b.duration > 0) return acc + b.duration;
+            return acc;
+          }, 0);
+          const brk = record.total_break_hours ? parseFloat(record.total_break_hours) : (calcSecs / 3600);
+          breakHrs = brk > 0 ? (brk >= 0.1 ? brk.toFixed(2) + 'h' : Math.round(brk * 60) + 'm') : '—';
+
           if (record.total_hours) {
              const net = parseFloat(record.total_hours);
-             const brk = parseFloat(record.total_break_hours || 0);
              const gross = net + brk;
              
              workHrs = gross.toFixed(2) + 'h';
-             breakHrs = brk > 0 ? brk.toFixed(2) + 'h' : '—';
              netHrs = net.toFixed(2) + 'h';
              
              if (net > 9) {

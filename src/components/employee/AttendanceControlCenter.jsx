@@ -233,7 +233,19 @@ export default function AttendanceControlCenter({ compact = false }) {
   useEffect(() => {
     if (!workStartTime) return;
 
-    const completedBreakSecs = breaks.reduce((acc, b) => acc + (b.duration || 0), 0);
+    const completedBreakSecs = breaks.reduce((acc, b) => {
+      if (typeof b.duration === 'number' && !isNaN(b.duration) && b.duration > 0) {
+        return acc + b.duration;
+      }
+      if (b.start && b.end) {
+        const s = new Date(b.start).getTime();
+        const e = new Date(b.end).getTime();
+        if (!isNaN(s) && !isNaN(e) && e > s) {
+          return acc + Math.floor((e - s) / 1000);
+        }
+      }
+      return acc;
+    }, 0);
 
     // If shift is completed or workEndTime is set, freeze the working timer at check-out time!
     if (status === 'completed' || workEndTime) {
@@ -246,11 +258,11 @@ export default function AttendanceControlCenter({ compact = false }) {
     }
 
     // Current break in progress
-    const currentBreakSecs = currentBreakStart
+    const currentBreakSecs = (status === 'onBreak' || currentBreakStart) && currentBreakStart
       ? Math.floor((now - currentBreakStart) / 1000)
       : 0;
 
-    const allBreakSecs = completedBreakSecs + currentBreakSecs;
+    const allBreakSecs = completedBreakSecs + (currentBreakSecs > 0 ? currentBreakSecs : 0);
     const elapsed = Math.floor((now - workStartTime) / 1000);
     const workSecs = elapsed - allBreakSecs;
 

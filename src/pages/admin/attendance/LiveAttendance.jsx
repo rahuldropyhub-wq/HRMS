@@ -231,13 +231,27 @@ const LiveAttendance = () => {
 
     if (data && data.length > 0) {
       const formatted = data.map(r => {
-        const totalBreakHrs = parseFloat(r.total_break_hours) || 0;
+        const breaks = Array.isArray(r.breaks) ? r.breaks : [];
+        const calculatedBreakSecs = breaks.reduce((sum, b) => {
+          if (typeof b.duration === 'number' && !isNaN(b.duration) && b.duration > 0) {
+            return sum + b.duration;
+          }
+          if (b.start && b.end) {
+            const sMins = diffMins(b.start, b.end);
+            return sum + (sMins * 60);
+          }
+          return sum;
+        }, 0);
+
+        const dbBreakSecs = Math.round((parseFloat(r.total_break_hours) || 0) * 3600);
+        const finalBreakSecs = Math.max(calculatedBreakSecs, dbBreakSecs);
+        const breakMins = Math.round(finalBreakSecs / 60);
+        const totalBreakHrs = parseFloat((finalBreakSecs / 3600).toFixed(2));
+
         const netMins = r.total_hours ? Math.round(parseFloat(r.total_hours) * 60) : computeNetMins(r.check_in, r.check_out, totalBreakHrs);
         const grossMins = diffMins(r.check_in, r.check_out || new Date().toTimeString().slice(0, 5));
-        const breakMins = Math.round(totalBreakHrs * 60);
 
         // Count active (ongoing) breaks
-        const breaks = Array.isArray(r.breaks) ? r.breaks : [];
         const onBreakNow = breaks.some(b => b.start && !b.end);
 
         // Override status if actively on break
