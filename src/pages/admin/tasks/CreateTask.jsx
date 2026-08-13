@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { UploadCloud, X, ArrowLeft, Plus, CheckCircle, Clock, User, ShieldCheck, Tag, FileText, Loader2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -46,9 +46,10 @@ const CreateTask = () => {
   const matchedProject = projectsList.find(p => p.name === selectedProjectName);
   const projectMembers = matchedProject?.members || [];
 
-  const filteredEmployees = useMemo ? projectMembers : projectMembers.length > 0
-    ? employees.filter(e => projectMembers.some(m => m.id === e.id || m.empCode === e.empCode || m.email === e.email))
-    : employees;
+  const filteredEmployees = useMemo(() => {
+    if (!projectMembers || projectMembers.length === 0) return employees;
+    return employees.filter(e => projectMembers.some(m => m.id === e.id || m.empCode === e.empCode || m.email === e.email));
+  }, [projectMembers, employees]);
 
   const activeEmployeeList = (projectMembers.length > 0 && filteredEmployees.length > 0)
     ? filteredEmployees
