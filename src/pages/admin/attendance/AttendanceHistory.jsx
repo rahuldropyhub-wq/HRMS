@@ -41,6 +41,21 @@ const AttendanceHistory = () => {
       setEmployeesList(empRes.data);
     }
 
+function formatLocation(loc) {
+  if (!loc) return 'Office HQ, Hyderabad';
+  if (typeof loc === 'string') return loc;
+  if (typeof loc === 'object') {
+    if (loc.address && typeof loc.address === 'string') return loc.address;
+    if (loc.lat || loc.lng) return `${loc.lat || '—'}, ${loc.lng || '—'}`;
+    try {
+      return JSON.stringify(loc);
+    } catch (e) {
+      return 'Office HQ, Hyderabad';
+    }
+  }
+  return String(loc);
+}
+
     if (attRes.data) {
       const mapped = attRes.data.map(record => {
         const empName = record.profiles 
@@ -63,7 +78,7 @@ const AttendanceHistory = () => {
           workHrs: record.total_hours ? `${record.total_hours} hrs` : '--',
           mode: record.work_mode === 'wfh' || record.work_mode === 'home' ? 'WFH' : 'Office',
           status: record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'Present',
-          location: record.gps_location || 'Office HQ, Hyderabad',
+          location: formatLocation(record.gps_location),
           device: record.device_info || 'Chrome on Windows 11',
           ip: record.ip_address || '192.168.1.45',
           notes: record.wfh_reason || record.notes || 'Normal working day'
@@ -294,7 +309,7 @@ const AttendanceHistory = () => {
                             <div className="expanded-details">
                               <div className="detail-group">
                                 <span className="detail-label">Location</span>
-                                <span className="detail-value"><MapPin size={16} color="#64748b" /> {record.location}</span>
+                                <span className="detail-value"><MapPin size={16} color="#64748b" /> {formatLocation(record.location)}</span>
                               </div>
                               <div className="detail-group">
                                 <span className="detail-label">Device & IP</span>

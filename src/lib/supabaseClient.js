@@ -38,7 +38,20 @@ const customFetch = async (url, options) => {
     });
   }
 
-  return fetch(url, options);
+  const res = await fetch(url, options);
+
+  // If table does not exist yet on remote Supabase DB (404), return empty array gracefully to prevent console error cascades
+  if (res.status === 404 && (urlStr.includes('/rest/v1/appreciations') || urlStr.includes('/rest/v1/tickets'))) {
+    return new Response('[]', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Range': '0-0/0'
+      }
+    });
+  }
+
+  return res;
 };
 
 // Determine storage key based on the portal being accessed

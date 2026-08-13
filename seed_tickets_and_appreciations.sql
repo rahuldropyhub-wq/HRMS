@@ -66,3 +66,16 @@ CREATE POLICY "Allow all on holidays" ON public.holidays FOR ALL USING (true) WI
 
 DROP POLICY IF EXISTS "Allow all on tasks" ON public.tasks;
 CREATE POLICY "Allow all on tasks" ON public.tasks FOR ALL USING (true) WITH CHECK (true);
+
+-- Explicitly Grant All Privileges to API roles (anon, authenticated, service_role)
+GRANT ALL ON TABLE public.tickets TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.appreciations TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.departments TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.designations TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.announcements TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.holidays TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.tasks TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+
+-- Force PostgREST to reload its schema cache immediately so REST endpoints return 200 OK
+NOTIFY pgrst, 'reload schema';

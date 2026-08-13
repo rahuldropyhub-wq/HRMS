@@ -28,6 +28,21 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function formatLoc(loc) {
+  if (!loc) return 'Remote Location';
+  if (typeof loc === 'string') return loc;
+  if (typeof loc === 'object') {
+    if (loc.address && typeof loc.address === 'string') return loc.address;
+    if (loc.lat || loc.lng) return `${loc.lat || '—'}, ${loc.lng || '—'}`;
+    try {
+      return JSON.stringify(loc);
+    } catch (e) {
+      return 'Remote Location';
+    }
+  }
+  return String(loc);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 const WFHTracking = () => {
   const [wfhList, setWfhList]         = useState([]);
@@ -55,10 +70,10 @@ const WFHTracking = () => {
           : '??',
         status:      (req.status || 'pending').toLowerCase(),
         reason:      req.reason || 'No reason provided',
-        location:    req.location || 'Remote Location',
-        coordinates: req.gps_location
+        location:    formatLoc(req.location || req.gps_location),
+        coordinates: (req.gps_location && typeof req.gps_location === 'object')
           ? `${req.gps_location.lat || '—'}, ${req.gps_location.lng || '—'}`
-          : '17.3850, 78.4867 (Verified)',
+          : (typeof req.gps_location === 'string' ? req.gps_location : '17.3850, 78.4867 (Verified)'),
         ip:          req.ip_address || '192.168.1.102',
         device:      req.device_info || 'Chrome on Windows 11',
         timeIn:      req.check_in_time
@@ -67,7 +82,7 @@ const WFHTracking = () => {
         fromDate:    formatDate(req.from_date || req.start_date || req.created_at),
         toDate:      formatDate(req.to_date || req.end_date || req.created_at),
         hours:       req.total_hours ? `${req.total_hours}h` : '--',
-        address:     req.address || req.location || 'Remote Location',
+        address:     formatLoc(req.address || req.location || req.gps_location),
         created_at:  req.created_at,
       }));
       setWfhList(mapped);

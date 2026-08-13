@@ -479,13 +479,25 @@ export const getWFHRequests = async () => {
             attWfhStatus = 'rejected';
           }
 
+          let locStr = 'Remote Location';
+          if (typeof item.address === 'string' && item.address) {
+            locStr = item.address;
+          } else if (item.gps_location) {
+            if (typeof item.gps_location === 'string') {
+              locStr = item.gps_location;
+            } else if (typeof item.gps_location === 'object') {
+              locStr = item.gps_location.address || (item.gps_location.lat ? `${item.gps_location.lat}, ${item.gps_location.lng}` : 'Remote Location');
+            }
+          }
+
           combined.push({
             id: item.id,
             employee_id: item.employee_id,
             profiles: item.profiles,
             status: attWfhStatus,
             reason: item.wfh_reason || 'Live Check-in: Work From Home',
-            location: item.address || 'Remote Location',
+            location: locStr,
+            address: locStr,
             gps_location: item.gps_location,
             check_in_time: item.check_in,
             from_date: item.date,

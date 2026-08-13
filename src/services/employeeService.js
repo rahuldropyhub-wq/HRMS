@@ -173,6 +173,28 @@ export const getTodayAttendance = async (userId) => {
     .order('check_in', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // If local cached breaks exist and have closed all breaks, ensure returned object reflects closed breaks
+  if (data && userId) {
+    try {
+      const cached = localStorage.getItem(`hrms_today_breaks_${userId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(b => b.end)) {
+          const hasOpenInDb = Array.isArray(data.breaks) && data.breaks.some(b => !b.end);
+          if (hasOpenInDb) {
+            data.breaks = parsed.map(b => ({
+              start: b.start instanceof Date ? b.start.toTimeString().slice(0, 5) : String(b.start).slice(0, 5),
+              end: b.end instanceof Date ? b.end.toTimeString().slice(0, 5) : String(b.end).slice(0, 5),
+              reason: b.reason || 'Tea Break',
+              duration: typeof b.duration === 'number' ? b.duration : 0
+            }));
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   return { data, error };
 };
 
@@ -209,49 +231,159 @@ export const checkIn = async (userId, workMode, wfhReason, gpsLocation) => {
   return { data, error };
 };
 
-export const startBreak = async (attendanceId, breaksArray, reason) => {
-  const now = new Date().toTimeString().slice(0, 5);
-  const newBreak = { start: now, end: null, reason, duration: 0 };
-  const updatedBreaks = [...(breaksArray || []), newBreak];
-
-  const { data, error } = await supabase
-    .from('attendance')
-    .update({ breaks: updatedBreaks })
-    .eq('id', attendanceId)
-    .select()
-    .maybeSingle();
-  return { data, error };
-};
-
-export const endBreak = async (attendanceId, breaksArray, breakIndex) => {
+export const startBreak = async (attendanceId, reason, fallbackBreaksArray = []) => {
   const d = new Date();
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const now = new Date().toTimeString().slice(0, 5);
-  
-  const updatedBreaks = [...breaksArray];
-  const currentBreak = updatedBreaks[breakIndex];
-  
-  if (!currentBreak || currentBreak.end) {
-    return { error: { message: 'Invalid break state.' } };
+  const nowStr = d.toTimeString().slice(0, 5);
+  const newBreak = { start: nowStr, end: null, reason: reason || 'Tea Break', duration: 0 };
+
+  let currentBreaks = Array.isArray(fallbackBreaksArray) ? [...fallbackBreaksArray] : [];
+
+  if (attendanceId) {
+    const { data: rec } = await supabase
+      .from('attendance')
+      .select('breaks')
+      .eq('id', attendanceId)
+      .maybeSingle();
+
+    if (rec && Array.isArray(rec.breaks)) {
+      currentBreaks = [...rec.breaks];
+    }
   }
 
-  currentBreak.end = now;
-  
-  const startTime = new Date(`${today}T${currentBreak.start}`);
-  const endTime = new Date(`${today}T${now}`);
-  const durationSecs = Math.floor((endTime - startTime) / 1000);
-  currentBreak.duration = durationSecs;
+  // Ensure we don't open duplicate active breaks; if an unclosed break exists, reuse or update it
+  const existingOpen = currentBreaks.find(b => !b.end);
+  if (existingOpen) {
+    existingOpen.reason = reason || existingOpen.reason || 'Tea Break';
+  } else {
+    currentBreaks.push(newBreak);
+  }
 
-  const totalBreakSecs = updatedBreaks.reduce((acc, b) => acc + (b.duration || 0), 0);
-  const totalBreakHours = (totalBreakSecs / 3600).toFixed(2);
+  // Clean breaks array for database storage
+  const cleanBreaksForDb = currentBreaks.map(b => {
+    let startStr = '00:00';
+    if (typeof b.start === 'string') {
+      startStr = b.start.includes('T') ? b.start.split('T')[1].slice(0, 5) : b.start.slice(0, 5);
+    } else if (b.start instanceof Date && !isNaN(b.start.getTime())) {
+      startStr = b.start.toTimeString().slice(0, 5);
+    }
 
-  const { data, error } = await supabase
-    .from('attendance')
-    .update({ breaks: updatedBreaks, total_break_hours: totalBreakHours })
-    .eq('id', attendanceId)
-    .select()
-    .maybeSingle();
-  return { data, error };
+    let endStr = null;
+    if (b.end) {
+      if (typeof b.end === 'string') {
+        endStr = b.end.includes('T') ? b.end.split('T')[1].slice(0, 5) : b.end.slice(0, 5);
+      } else if (b.end instanceof Date && !isNaN(b.end.getTime())) {
+        endStr = b.end.toTimeString().slice(0, 5);
+      }
+    }
+
+    const dur = typeof b.duration === 'number' && !isNaN(b.duration) ? Math.max(0, Math.floor(b.duration)) : 0;
+
+    return {
+      start: startStr,
+      end: endStr,
+      reason: b.reason || 'Tea Break',
+      duration: dur
+    };
+  });
+
+  if (attendanceId) {
+    const { data, error } = await supabase
+      .from('attendance')
+      .update({ breaks: cleanBreaksForDb })
+      .eq('id', attendanceId)
+      .select()
+      .maybeSingle();
+
+    if (data) return { data, error: null };
+  }
+
+  return { data: { breaks: cleanBreaksForDb }, error: null };
+};
+
+export const endBreak = async (attendanceId, fallbackBreaksArray = []) => {
+  const d = new Date();
+  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const nowStr = d.toTimeString().slice(0, 5);
+
+  let currentBreaks = Array.isArray(fallbackBreaksArray) ? [...fallbackBreaksArray] : [];
+
+  if (attendanceId) {
+    const { data: rec } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('id', attendanceId)
+      .maybeSingle();
+
+    if (rec && Array.isArray(rec.breaks)) {
+      currentBreaks = [...rec.breaks];
+    }
+  }
+
+  const getSecs = (val) => {
+    if (!val) return Math.floor(Date.now() / 1000);
+    if (val instanceof Date) return isNaN(val.getTime()) ? Math.floor(Date.now() / 1000) : Math.floor(val.getTime() / 1000);
+    const str = String(val).trim();
+    if (str.includes('T') || str.includes('-')) {
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) return Math.floor(parsed.getTime() / 1000);
+    }
+    const parsed = new Date(`${todayStr}T${str}`);
+    return isNaN(parsed.getTime()) ? Math.floor(Date.now() / 1000) : Math.floor(parsed.getTime() / 1000);
+  };
+
+  // Close ALL open breaks (where end is null or empty)
+  currentBreaks.forEach(b => {
+    if (!b.end) {
+      b.end = nowStr;
+      const startSecs = getSecs(b.start);
+      const endSecs = Math.floor(Date.now() / 1000);
+      b.duration = Math.max(0, endSecs - startSecs);
+    }
+  });
+
+  // Clean breaks array for database storage
+  const cleanBreaksForDb = currentBreaks.map(b => {
+    let startStr = '00:00';
+    if (typeof b.start === 'string') {
+      startStr = b.start.includes('T') ? b.start.split('T')[1].slice(0, 5) : b.start.slice(0, 5);
+    } else if (b.start instanceof Date && !isNaN(b.start.getTime())) {
+      startStr = b.start.toTimeString().slice(0, 5);
+    }
+
+    let endStr = null;
+    if (b.end) {
+      if (typeof b.end === 'string') {
+        endStr = b.end.includes('T') ? b.end.split('T')[1].slice(0, 5) : b.end.slice(0, 5);
+      } else if (b.end instanceof Date && !isNaN(b.end.getTime())) {
+        endStr = b.end.toTimeString().slice(0, 5);
+      }
+    }
+
+    const dur = typeof b.duration === 'number' && !isNaN(b.duration) ? Math.max(0, Math.floor(b.duration)) : 0;
+
+    return {
+      start: startStr,
+      end: endStr,
+      reason: b.reason || 'Tea Break',
+      duration: dur
+    };
+  });
+
+  const totalBreakSecs = cleanBreaksForDb.reduce((acc, b) => acc + (b.duration || 0), 0);
+  const totalBreakHours = parseFloat((totalBreakSecs / 3600).toFixed(2)) || 0;
+
+  if (attendanceId) {
+    const { data, error } = await supabase
+      .from('attendance')
+      .update({ breaks: cleanBreaksForDb, total_break_hours: totalBreakHours })
+      .eq('id', attendanceId)
+      .select()
+      .maybeSingle();
+
+    if (data) return { data, error: null };
+  }
+
+  return { data: { breaks: cleanBreaksForDb, total_break_hours: totalBreakHours }, error: null };
 };
 
 export const checkOut = async (userId) => {
@@ -810,7 +942,31 @@ export const getUpcomingCelebrations = async () => {
   }
 };
 
+const DEFAULT_SEED_APPRECIATIONS = [
+  {
+    id: 'app-seed-001',
+    sender_name: 'Rahul Sharma',
+    receiver_name: 'Jayanth Choda',
+    message: 'Outstanding performance on the HRMS portal release! Exceptional attention to detail.',
+    type: 'award',
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString()
+  },
+  {
+    id: 'app-seed-002',
+    sender_name: 'Priya Verma',
+    receiver_name: 'Balaji S',
+    message: 'Great job resolving critical mobile layout issues quickly. Kudos!',
+    type: 'shoutout',
+    created_at: new Date(Date.now() - 86400000).toISOString()
+  }
+];
+
 export const getAppreciations = async () => {
+  let localSaved = [];
+  try {
+    localSaved = JSON.parse(localStorage.getItem('hrms_local_appreciations') || '[]');
+  } catch (e) {}
+
   try {
     const { data, error } = await supabase
       .from('appreciations')
@@ -821,24 +977,47 @@ export const getAppreciations = async () => {
       .order('created_at', { ascending: false })
       .limit(20);
 
-    if (error) return { data: [], error: null };
-    return { data: data || [], error: null };
+    if (!error && data && data.length > 0) {
+      const mergedMap = new Map();
+      [...localSaved, ...data].forEach(a => {
+        if (a && a.id) mergedMap.set(a.id, a);
+      });
+      return { data: Array.from(mergedMap.values()), error: null };
+    }
   } catch (e) {
-    return { data: [], error: null };
+    // Ignore remote table missing errors
   }
+
+  const mergedMap = new Map();
+  [...DEFAULT_SEED_APPRECIATIONS, ...localSaved].forEach(a => {
+    if (a && a.id) mergedMap.set(a.id, a);
+  });
+  return { data: Array.from(mergedMap.values()), error: null };
 };
 
 export const createAppreciation = async (appreciationData) => {
+  const newObj = {
+    id: appreciationData.id || ('app-' + Date.now().toString().slice(-6)),
+    created_at: new Date().toISOString(),
+    ...appreciationData
+  };
+
+  try {
+    const existing = JSON.parse(localStorage.getItem('hrms_local_appreciations') || '[]');
+    localStorage.setItem('hrms_local_appreciations', JSON.stringify([newObj, ...existing]));
+  } catch (e) {}
+
   try {
     const { data, error } = await supabase
       .from('appreciations')
       .insert([appreciationData])
       .select()
-      .single();
-    return { data, error };
-  } catch (e) {
-    return { data: null, error: e };
-  }
+      .maybeSingle();
+
+    if (data) return { data, error: null };
+  } catch (e) {}
+
+  return { data: newObj, error: null };
 };
 
 

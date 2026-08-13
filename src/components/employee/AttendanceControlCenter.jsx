@@ -192,7 +192,7 @@ export default function AttendanceControlCenter({ compact = false }) {
         setAttendanceId(data.id);
         
         if (data.check_in) {
-          const todayStr = data.date;
+          const todayStr = data.date || new Date().toISOString().split('T')[0];
           const st = new Date(`${todayStr}T${data.check_in}`);
           setWorkStartTime(st);
           
@@ -200,22 +200,27 @@ export default function AttendanceControlCenter({ compact = false }) {
             setStatus('completed');
             setWorkEndTime(new Date(`${todayStr}T${data.check_out}`));
           } else {
-            setStatus('working');
+            const hasOngoingBreak = Array.isArray(data.breaks) && data.breaks.some(b => !b.end);
+            if (hasOngoingBreak) {
+              setStatus('onBreak');
+            } else {
+              setStatus('working');
+            }
           }
           
           if (data.breaks && Array.isArray(data.breaks)) {
             const parsedBreaks = data.breaks.map(b => ({
               ...b,
-              start: new Date(`${todayStr}T${b.start}`),
-              end: b.end ? new Date(`${todayStr}T${b.end}`) : null
+              start: typeof b.start === 'string' && b.start.length <= 8 ? new Date(`${todayStr}T${b.start}`) : new Date(b.start),
+              end: b.end ? (typeof b.end === 'string' && b.end.length <= 8 ? new Date(`${todayStr}T${b.end}`) : new Date(b.end)) : null
             }));
             setBreaks(parsedBreaks);
             
-            // Check if there is an ongoing break
             const ongoingBreak = parsedBreaks.find(b => !b.end);
-            if (ongoingBreak && status !== 'completed') {
-              setStatus('onBreak');
+            if (ongoingBreak) {
               setCurrentBreakStart(ongoingBreak.start);
+            } else {
+              setCurrentBreakStart(null);
             }
           }
         }
@@ -371,12 +376,27 @@ export default function AttendanceControlCenter({ compact = false }) {
       } catch (e) {}
     }
 
+    let updatedBreaksList = [...breaks];
+
     if (attendanceId) {
       try {
-        await startBreak(attendanceId, breaks, breakReason);
-      } catch (e) {}
+        const { data } = await startBreak(attendanceId, breakReason, breaks);
+        if (data && Array.isArray(data.breaks)) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          updatedBreaksList = data.breaks.map(b => ({
+            ...b,
+            start: typeof b.start === 'string' && b.start.length <= 8 ? new Date(`${todayStr}T${b.start}`) : new Date(b.start),
+            end: b.end ? (typeof b.end === 'string' && b.end.length <= 8 ? new Date(`${todayStr}T${b.end}`) : new Date(b.end)) : null
+          }));
+        }
+      } catch (e) {
+        console.error('startBreak error:', e);
+      }
+    } else {
+      updatedBreaksList.push({ start: t, end: null, reason: breakReason, duration: 0 });
     }
 
+    setBreaks(updatedBreaksList);
     setCurrentBreakStart(t);
     setStatus('onBreak');
     setShowBreakModal(false);
@@ -399,23 +419,28 @@ export default function AttendanceControlCenter({ compact = false }) {
     if (!breakStartToUse) breakStartToUse = t;
 
     const dur = Math.max(0, Math.floor((t - breakStartToUse) / 1000));
-    
-    if (attendanceId) {
-      try {
-        await endBreak(attendanceId, breaks, breaks.length); // Next break index
-      } catch (e) {}
-    }
+
+    // Optimistic Immediate Update: Switch status to working and clear break start synchronously!
+    setStatus('working');
+    setCurrentBreakStart(null);
+
+    const localClosedBreaks = breaks.map(b => {
+      if (!b.end) {
+        return { ...b, end: t, duration: dur };
+      }
+      return b;
+    });
+
+    setBreaks(localClosedBreaks);
 
     if (user?.id) {
       try {
         localStorage.removeItem(`hrms_break_start_${user.id}`);
         localStorage.removeItem(`hrms_break_reason_${user.id}`);
+        localStorage.setItem(`hrms_today_breaks_${user.id}`, JSON.stringify(localClosedBreaks));
       } catch (e) {}
     }
 
-    setBreaks(prev => [...prev, { start: breakStartToUse, end: t, reason: breakReason, duration: dur }]);
-    setCurrentBreakStart(null);
-    setStatus('working');
     setTimeline(prev => [...prev, {
       type: 'break-end',
       label: 'Break Ended',
@@ -423,6 +448,27 @@ export default function AttendanceControlCenter({ compact = false }) {
       time: formatTime(t),
       ts: t,
     }]);
+
+    // Persist to database in background
+    if (attendanceId) {
+      try {
+        const { data } = await endBreak(attendanceId, localClosedBreaks);
+        if (data && Array.isArray(data.breaks)) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const parsedBreaks = data.breaks.map(b => ({
+            ...b,
+            start: typeof b.start === 'string' && b.start.length <= 8 ? new Date(`${todayStr}T${b.start}`) : new Date(b.start),
+            end: b.end ? (typeof b.end === 'string' && b.end.length <= 8 ? new Date(`${todayStr}T${b.end}`) : new Date(b.end)) : null
+          }));
+          setBreaks(parsedBreaks);
+          if (user?.id) {
+            localStorage.setItem(`hrms_today_breaks_${user.id}`, JSON.stringify(parsedBreaks));
+          }
+        }
+      } catch (e) {
+        console.error('endBreak sync error:', e);
+      }
+    }
   }, [currentBreakStart, breakReason, attendanceId, breaks, user]);
 
   const handleClickEndWork = () => {
