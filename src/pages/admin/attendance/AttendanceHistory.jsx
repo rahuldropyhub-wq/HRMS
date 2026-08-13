@@ -140,16 +140,29 @@ const AttendanceHistory = () => {
     if (filteredHistory.length === 0) return alert('No records to export');
     const headers = ['Employee Name', 'Emp ID', 'Department', 'Date', 'Check In', 'Check Out', 'Break Hours', 'Work Hours', 'Mode', 'Status'];
     const rows = filteredHistory.map(r => [
-      `"${r.empName}"`, `"${r.empId}"`, `"${r.dept}"`, `"${r.date}"`, `"${r.checkIn}"`, `"${r.checkOut}"`, `"${r.breakHrs}"`, `"${r.workHrs}"`, `"${r.mode}"`, `"${r.status}"`
+      `"${r.empName || ''}"`,
+      `"${r.empId || ''}"`,
+      `"${r.dept || ''}"`,
+      `"${r.date || ''}"`,
+      `"${r.checkIn || ''}"`,
+      `"${r.checkOut || ''}"`,
+      `"${r.breakHrs || ''}"`,
+      `"${r.workHrs || ''}"`,
+      `"${r.mode || ''}"`,
+      `"${r.status || ''}"`
     ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+
+    const csvText = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `Attendance_Report_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Build dropdown options dynamically from real data

@@ -245,8 +245,13 @@ export const startBreak = async (attendanceId, reason, fallbackBreaksArray = [])
       .eq('id', attendanceId)
       .maybeSingle();
 
-    if (rec && Array.isArray(rec.breaks)) {
-      currentBreaks = [...rec.breaks];
+    if (rec && Array.isArray(rec.breaks) && rec.breaks.length > 0) {
+      const mergedMap = new Map();
+      [...fallbackBreaksArray, ...rec.breaks].forEach(b => {
+        const key = `${b.start}-${b.reason || ''}`;
+        mergedMap.set(key, b);
+      });
+      currentBreaks = Array.from(mergedMap.values());
     }
   }
 
@@ -314,8 +319,15 @@ export const endBreak = async (attendanceId, fallbackBreaksArray = []) => {
       .eq('id', attendanceId)
       .maybeSingle();
 
-    if (rec && Array.isArray(rec.breaks)) {
-      currentBreaks = [...rec.breaks];
+    if (rec && Array.isArray(rec.breaks) && rec.breaks.length > 0) {
+      const mergedMap = new Map();
+      [...fallbackBreaksArray, ...rec.breaks].forEach(b => {
+        const key = `${b.start}-${b.reason || ''}`;
+        if (!mergedMap.has(key) || (!b.end && mergedMap.get(key).end)) {
+          mergedMap.set(key, b);
+        }
+      });
+      currentBreaks = Array.from(mergedMap.values());
     }
   }
 
@@ -393,25 +405,44 @@ export const checkOut = async (userId) => {
 
   const { data: record } = await supabase
     .from('attendance')
-    .select('id, check_in, total_break_hours')
+    .select('id, check_in, total_break_hours, breaks')
     .eq('employee_id', userId)
     .eq('date', today)
     .maybeSingle();
 
   if (!record) return { error: { message: 'No check-in found for today.' } };
 
+  // Calculate total break hours dynamically from breaks array + total_break_hours
+  const recBreaks = Array.isArray(record.breaks) ? record.breaks : [];
+  const breakSecs = recBreaks.reduce((acc, b) => {
+    if (typeof b.duration === 'number' && !isNaN(b.duration) && b.duration > 0) return acc + b.duration;
+    if (b.start && b.end) {
+      const s = new Date(`${today}T${b.start}`).getTime();
+      const e = new Date(`${today}T${b.end}`).getTime();
+      if (!isNaN(s) && !isNaN(e) && e > s) return acc + Math.floor((e - s) / 1000);
+    }
+    return acc;
+  }, 0);
+
+  const breakHrs = record.total_break_hours ? parseFloat(record.total_break_hours) : (breakSecs / 3600);
+
   // Calculate total hours
   const checkInTime = new Date(`${today}T${record.check_in}`);
   const checkOutTime = new Date(`${today}T${now}`);
   const grossHours = (checkOutTime - checkInTime) / 3600000;
-  const netHours = Math.max(0, grossHours - (record.total_break_hours || 0)).toFixed(2);
+  const netHours = Math.max(0, grossHours - breakHrs).toFixed(2);
 
   const { data, error } = await supabase
     .from('attendance')
-    .update({ check_out: now, total_hours: netHours })
+    .update({ 
+      check_out: now, 
+      total_hours: netHours,
+      total_break_hours: parseFloat(breakHrs.toFixed(2))
+    })
     .eq('id', record.id)
     .select()
     .maybeSingle();
+
   return { data, error };
 };
 

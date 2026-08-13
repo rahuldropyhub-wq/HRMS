@@ -123,26 +123,29 @@ export default function Attendance() {
 
     const headers = ['Date', 'Day', 'Check In', 'Check Out', 'Work Hours', 'Break Hours', 'Net Hours', 'Overtime', 'Late', 'Status'];
     const rows = filtered.map(r => [
-      r.date,
-      r.day,
-      r.checkIn || '',
-      r.checkOut || '',
-      r.workHrs,
-      r.breakHrs,
-      r.netHrs,
-      r.overtime || '',
-      r.late || '',
-      r.status
+      `"${r.date || ''}"`,
+      `"${r.day || ''}"`,
+      `"${r.checkIn || ''}"`,
+      `"${r.checkOut || ''}"`,
+      `"${r.workHrs || ''}"`,
+      `"${r.breakHrs || ''}"`,
+      `"${r.netHrs || ''}"`,
+      `"${r.overtime || ''}"`,
+      `"${r.late || ''}"`,
+      `"${r.status || ''}"`
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvText = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `my_attendance_${MONTHS[selectedMonth]}_${selectedYear}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
