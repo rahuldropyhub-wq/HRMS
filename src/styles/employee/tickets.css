@@ -791,20 +791,40 @@
 }
 .icon-btn-sm:hover { color: #374151; background: #f3f4f6; }
 
+.mobile-detail-back-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b82f6;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .tickets-left { width: 100%; min-width: unset; }
   .tickets-right { display: none; }
   .tickets-right.mobile-open {
     display: flex;
-    position: fixed; inset: 0; z-index: 200;
+    flex-direction: column;
+    position: fixed; inset: 0; z-index: 2000;
     background: #f8fafc;
+    overflow-y: auto;
   }
+  .mobile-detail-back-bar { display: flex; }
   .tkt-detail-meta-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 640px) {
   .tkt-form-row { grid-template-columns: 1fr; }
-  .ticket-detail-scroll { padding: 16px; }
-  .tkt-detail-meta-grid { grid-template-columns: 1fr 1fr; }
+  .ticket-detail-scroll { padding: 12px; gap: 12px; }
+  .tkt-detail-card { padding: 14px 16px; }
+  .tkt-detail-meta-grid { grid-template-columns: 1fr; }
+  .tickets-filters { padding: 8px 12px; }
+  .tickets-left-header { padding: 16px 16px 0; }
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, Calendar, FileText, Settings,
   Bell, Search, MessageSquare, ChevronDown, LogOut, ListTodo,
-  User, Plus, SlidersHorizontal, ArrowUpDown, X, Send,
+  User, Plus, SlidersHorizontal, ArrowUpDown, X, Send, ArrowLeft,
   Paperclip, Clock, CheckCircle2, AlertCircle, Circle,
   MoreHorizontal, CalendarDays, Timer, Layers, Download,
   Trash2, Image, FileIcon, ChevronLeft, ChevronRight, MoreVertical,
@@ -444,7 +444,11 @@ export default function Tasks() {
               <p>Click any task on the left to view its details.</p>
             </div>
           ) : (
-            <div className="task-detail-scroll">
+            <>
+              <div className="mobile-detail-back-bar" onClick={() => setMobileDetailOpen(false)}>
+                <ArrowLeft size={18} /> Back to Tasks List
+              </div>
+              <div className="task-detail-scroll">
               {/* Detail Header */}
               <div className="task-detail-header-card">
                 <div className="task-detail-title-row">
@@ -693,6 +697,7 @@ export default function Tasks() {
                 </div>
               )}
             </div>
+            </>
           )}
         </div>
       </div>

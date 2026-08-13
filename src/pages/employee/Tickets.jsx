@@ -4,7 +4,7 @@ import {
   LayoutDashboard, CheckSquare, Calendar, FileText, Settings,
   Bell, User, Search, MessageSquare, ChevronDown, LogOut, ListTodo,
   Plus, X, Tag, Clock, Paperclip, Send, Download, Ticket,
-  ArrowRight, AlertTriangle, CheckCircle2, RotateCcw, Filter,
+  ArrowRight, ArrowLeft, AlertTriangle, CheckCircle2, RotateCcw, Filter,
   ChevronLeft, ChevronRight, FileImage, FileText as FilePdf,
   Inbox, Shield, HelpCircle, PackageOpen, LifeBuoy, UploadCloud,
   Phone,
@@ -72,6 +72,7 @@ export default function Tickets() {
   const [deptFilter, setDeptFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -269,7 +270,7 @@ export default function Tickets() {
                 <div
                   key={t.id}
                   className={`ticket-card ${selectedId === t.id ? 'active' : ''}`}
-                  onClick={() => setSelectedId(t.id)}
+                  onClick={() => { setSelectedId(t.id); setMobileDetailOpen(true); }}
                 >
                   <div className="ticket-card-top">
                     <div className="ticket-card-subject">{t.subject}</div>
@@ -304,7 +305,7 @@ export default function Tickets() {
           </div>
 
           {/* ── RIGHT PANEL ── */}
-          <div className="tickets-right">
+          <div className={`tickets-right ${mobileDetailOpen ? 'mobile-open' : ''}`}>
             {!selected ? (
               <div className="tickets-right-empty">
                 <Ticket size={48} strokeWidth={1.2} />
@@ -312,7 +313,11 @@ export default function Tickets() {
                 <p>Click any ticket from the list to open it here.</p>
               </div>
             ) : (
-              <div className="ticket-detail-scroll">
+              <>
+                <div className="mobile-detail-back-bar" onClick={() => setMobileDetailOpen(false)}>
+                  <ArrowLeft size={18} /> Back to Tickets List
+                </div>
+                <div className="ticket-detail-scroll">
 
                 {/* ── Overview Card ── */}
                 <div className="tkt-detail-card">
@@ -321,7 +326,7 @@ export default function Tickets() {
                       <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>{selected.id}</div>
                       <div className="tkt-detail-title">{selected.subject}</div>
                     </div>
-                    <button className="tkt-detail-close-btn" onClick={() => setSelectedId(null)}>
+                    <button className="tkt-detail-close-btn" onClick={() => { setSelectedId(null); setMobileDetailOpen(false); }}>
                       <X size={18} />
                     </button>
                   </div>
@@ -502,6 +507,7 @@ export default function Tickets() {
                 </div>
 
               </div>
+              </>
             )}
           </div>
         </div>
