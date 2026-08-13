@@ -132,13 +132,18 @@ const Projects = () => {
     }));
   };
 
+  const [isMemberSearchFocused, setIsMemberSearchFocused] = useState(false);
+
   const filteredAvailableEmployees = allEmployees.filter(e => {
     if (selectedMembers.some(m => m.id === e.id)) return false;
-    if (!memberSearch) return false;
+    if (!memberSearch && !isMemberSearchFocused) return false;
+    if (!memberSearch) return true;
     const term = memberSearch.toLowerCase();
     const name = `${e.firstName || e.first_name || ''} ${e.lastName || e.last_name || ''}`.toLowerCase();
-    return name.includes(term) || (e.empCode || e.emp_id || '').toLowerCase().includes(term)
-      || (e.department || '').toLowerCase().includes(term);
+    const email = (e.email || '').toLowerCase();
+    const code = (e.empCode || e.emp_id || '').toLowerCase();
+    const dept = (e.department || '').toLowerCase();
+    return name.includes(term) || email.includes(term) || code.includes(term) || dept.includes(term);
   });
 
   const addMember = (emp) => {
@@ -380,15 +385,22 @@ const Projects = () => {
                 </div>
                 <div className="form-field">
                   <label>Assign Team Members</label>
-                  <input type="text" className="member-search-input" placeholder="Search by name, code or department..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
-                  {memberSearch && filteredAvailableEmployees.length > 0 && (
+                  <input 
+                    type="text" 
+                    className="member-search-input" 
+                    placeholder="Click to view all employees or type name..." 
+                    value={memberSearch} 
+                    onChange={e => setMemberSearch(e.target.value)} 
+                    onFocus={() => setIsMemberSearchFocused(true)}
+                  />
+                  {filteredAvailableEmployees.length > 0 && (
                     <div className="member-suggestions">
-                      {filteredAvailableEmployees.slice(0, 8).map(emp => (
+                      {filteredAvailableEmployees.slice(0, 10).map(emp => (
                         <div key={emp.id} className="member-suggestion-item" onClick={() => addMember(emp)}>
                           <div className="emp-avatar-sm">{String(emp.firstName || emp.first_name || 'E')[0].toUpperCase()}</div>
                           <div>
-                            <div className="emp-name">{emp.firstName || emp.first_name} {emp.lastName || emp.last_name} ({emp.empCode || emp.emp_id})</div>
-                            <div className="emp-dept">{emp.department}</div>
+                            <div className="emp-name">{emp.firstName || emp.first_name} {emp.lastName || emp.last_name} ({emp.empCode || emp.emp_id || emp.email})</div>
+                            <div className="emp-dept">{emp.department || 'Employee'}</div>
                           </div>
                           <Plus size={16} className="add-icon" />
                         </div>
