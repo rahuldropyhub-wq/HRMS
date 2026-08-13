@@ -363,11 +363,20 @@ export default function AttendanceControlCenter({ compact = false }) {
   };
 
   const handleStartBreak = useCallback(async () => {
-    if (attendanceId) {
-      await startBreak(attendanceId, breaks, breakReason);
+    const t = new Date();
+    if (user?.id) {
+      try {
+        localStorage.setItem(`hrms_break_start_${user.id}`, t.toISOString());
+        localStorage.setItem(`hrms_break_reason_${user.id}`, breakReason);
+      } catch (e) {}
     }
 
-    const t = new Date();
+    if (attendanceId) {
+      try {
+        await startBreak(attendanceId, breaks, breakReason);
+      } catch (e) {}
+    }
+
     setCurrentBreakStart(t);
     setStatus('onBreak');
     setShowBreakModal(false);
@@ -378,17 +387,33 @@ export default function AttendanceControlCenter({ compact = false }) {
       time: formatTime(t),
       ts: t,
     }]);
-  }, [breakReason, attendanceId, breaks]);
+  }, [breakReason, attendanceId, breaks, user]);
 
   const handleResumeWork = useCallback(async () => {
     const t = new Date();
-    const dur = Math.floor((t - currentBreakStart) / 1000);
+    let breakStartToUse = currentBreakStart;
+    if (!breakStartToUse && user?.id) {
+      const savedStart = localStorage.getItem(`hrms_break_start_${user.id}`);
+      if (savedStart) breakStartToUse = new Date(savedStart);
+    }
+    if (!breakStartToUse) breakStartToUse = t;
+
+    const dur = Math.max(0, Math.floor((t - breakStartToUse) / 1000));
     
     if (attendanceId) {
-      await endBreak(attendanceId, breaks, breaks.length); // Next break index
+      try {
+        await endBreak(attendanceId, breaks, breaks.length); // Next break index
+      } catch (e) {}
     }
 
-    setBreaks(prev => [...prev, { start: currentBreakStart, end: t, reason: breakReason, duration: dur }]);
+    if (user?.id) {
+      try {
+        localStorage.removeItem(`hrms_break_start_${user.id}`);
+        localStorage.removeItem(`hrms_break_reason_${user.id}`);
+      } catch (e) {}
+    }
+
+    setBreaks(prev => [...prev, { start: breakStartToUse, end: t, reason: breakReason, duration: dur }]);
     setCurrentBreakStart(null);
     setStatus('working');
     setTimeline(prev => [...prev, {
@@ -398,7 +423,7 @@ export default function AttendanceControlCenter({ compact = false }) {
       time: formatTime(t),
       ts: t,
     }]);
-  }, [currentBreakStart, breakReason, attendanceId, breaks]);
+  }, [currentBreakStart, breakReason, attendanceId, breaks, user]);
 
   const handleClickEndWork = () => {
     if (status === 'onBreak') return; // must resume first

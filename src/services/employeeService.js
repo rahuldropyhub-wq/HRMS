@@ -461,6 +461,14 @@ export const deleteWorksheet = async (id) => {
 };
 
 // ─── TICKETS ──────────────────────────────────────────────────────────────────
+const MOCK_TICKET_TITLES = new Set([
+  'Laptop display flickering',
+  'VPN connectivity issues',
+  'Software License Request',
+  'Salary Slip Discrepancy',
+  'Shift Timing Change'
+]);
+
 export const getMyTickets = async (userId) => {
   let dbData = [];
   try {
@@ -479,9 +487,12 @@ export const getMyTickets = async (userId) => {
   const mergedMap = new Map();
   [...localSaved, ...dbData].forEach(t => {
     if (!t) return;
+    const subj = t.subject || t.title || '';
+    if (MOCK_TICKET_TITLES.has(subj)) return; // Purge mock tickets
+
     const isForUser = !userId || !t.employee_id || t.employee_id === userId || String(t.employee_id) === String(userId);
     if (isForUser) {
-      const key = t.id || `${t.subject}-${t.created_at}`;
+      const key = t.id || `${subj}-${t.created_at}`;
       if (key) mergedMap.set(key, t);
     }
   });
@@ -498,7 +509,7 @@ export const raiseTicket = async (ticketData) => {
 
   const formattedTicket = {
     id: newTicketId,
-    employee_id: ticketData.employee_id || 'MOCK-123',
+    employee_id: ticketData.employee_id || '',
     subject: ticketData.subject,
     department: ticketData.category || ticketData.department || 'IT Support',
     category: ticketData.category || ticketData.department || 'IT Support',

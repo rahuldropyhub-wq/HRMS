@@ -28,7 +28,16 @@ CREATE TABLE IF NOT EXISTS public.appreciations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Enable RLS and add public read/write access for all tables
+-- Option A: Disable RLS on all tables for full public access
+ALTER TABLE public.departments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.designations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.holidays DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tickets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appreciations DISABLE ROW LEVEL SECURITY;
+
+-- Option B: Or Enable RLS and add public read/write access for all tables
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appreciations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;

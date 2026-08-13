@@ -720,6 +720,14 @@ export const updateWorksheetStatus = async (id, status) => {
 };
 
 // ─── TICKETS (Admin Queue) ────────────────────────────────────────────────────
+const MOCK_TICKET_TITLES = new Set([
+  'Laptop display flickering',
+  'VPN connectivity issues',
+  'Software License Request',
+  'Salary Slip Discrepancy',
+  'Shift Timing Change'
+]);
+
 export const getAllTickets = async () => {
   let dbData = [];
   try {
@@ -738,12 +746,11 @@ export const getAllTickets = async () => {
   const mergedMap = new Map();
   [...localSaved, ...dbData].forEach(t => {
     if (!t) return;
-    const key = t.id || `${t.subject}-${t.created_at}`;
+    const subj = t.subject || t.title || '';
+    if (MOCK_TICKET_TITLES.has(subj)) return; // Purge mock tickets
+
+    const key = t.id || `${subj}-${t.created_at}`;
     if (key) {
-      // Ensure Jayanth's tickets show proper author name
-      if (!t.employee_name && (t.employee_id === 'emp-jayanth' || String(t.authorName || '').includes('Jayanth'))) {
-        t.employee_name = 'Jayanth Choda';
-      }
       mergedMap.set(key, t);
     }
   });
