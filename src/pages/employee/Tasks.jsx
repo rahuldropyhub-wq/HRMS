@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { compressAttachment } from '../../utils/imageCompressor';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, Calendar, FileText, Settings,
@@ -196,15 +197,14 @@ export default function Tasks() {
         alert(`File ${file.name} is too large. Max 10MB allowed.`);
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      compressAttachment(file).then(({ dataUrl }) => {
         const isImg = file.type.startsWith('image/');
         const newAttach = {
           id: `ATT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           name: file.name,
           size: (file.size / 1024).toFixed(1) + ' KB',
           type: isImg ? 'img' : (file.type.includes('pdf') ? 'pdf' : 'doc'),
-          url: reader.result
+          url: dataUrl
         };
 
         setTasks(prev => prev.map(t => {
@@ -230,8 +230,9 @@ export default function Tasks() {
 
           return updated;
         }));
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        alert(`Failed to process file: ${file.name}`);
+      });
     });
   }
 
@@ -247,19 +248,19 @@ export default function Tasks() {
         alert(`File ${file.name} is too large. Max 10MB allowed.`);
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      compressAttachment(file).then(({ dataUrl }) => {
         const isImg = file.type.startsWith('image/');
         const newAttach = {
           id: `ATT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           name: file.name,
           size: (file.size / 1024).toFixed(1) + ' KB',
           type: isImg ? 'img' : (file.type.includes('pdf') ? 'pdf' : 'doc'),
-          url: reader.result
+          url: dataUrl
         };
         setModalAttachments(prev => [...prev, newAttach]);
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        alert(`Failed to process file: ${file.name}`);
+      });
     });
   }
 

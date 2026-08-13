@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { compressAttachment } from '../../../utils/imageCompressor';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { UploadCloud, FileImage, X } from 'lucide-react';
@@ -21,18 +22,18 @@ const CreateTicket = () => {
         alert(`File ${file.name} is too large. Max 10MB allowed.`);
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      compressAttachment(file).then(({ dataUrl }) => {
         const isImg = file.type.startsWith('image/');
         const newAttachment = {
           name: file.name,
           size: (file.size / 1024).toFixed(1) + ' KB',
           type: isImg ? 'img' : (file.type.includes('pdf') ? 'pdf' : 'doc'),
-          url: reader.result
+          url: dataUrl
         };
         setAttachments(prev => [...prev, newAttachment]);
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        alert(`Failed to process file: ${file.name}`);
+      });
     });
   };
 

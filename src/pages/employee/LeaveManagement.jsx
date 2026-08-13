@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { compressAttachment } from '../../utils/imageCompressor';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -79,16 +80,16 @@ function LeaveManagement() {
       showToast('error', 'File size exceeds 10MB limit.');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    compressAttachment(file).then(({ dataUrl }) => {
       setAttachment({
         name: file.name,
         size: (file.size / 1024).toFixed(1) + ' KB',
         type: file.type.startsWith('image/') ? 'img' : 'doc',
-        url: reader.result
+        url: dataUrl
       });
-    };
-    reader.readAsDataURL(file);
+    }).catch(() => {
+      showToast('error', 'Failed to process file.');
+    });
   };
   const [leaveStats, setLeaveStats] = useState({
     monthlyUsed: 0,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { compressAvatar } from '../../utils/imageCompressor';
 import {
   User, Briefcase, CreditCard, FileText as FilePdf,
   CheckCircle2, Phone, Edit2, Mail, MapPin, Clock,
@@ -106,18 +107,18 @@ export default function Profile() {
       showNotification('Image size should be under 5MB', 'error');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Url = reader.result;
-      setProfile(prev => ({ ...prev, avatar_url: base64Url, avatarUrl: base64Url }));
-      const { error } = await updateProfile(user.id, { avatar_url: base64Url });
+
+    compressAvatar(file).then(async ({ dataUrl }) => {
+      setProfile(prev => ({ ...prev, avatar_url: dataUrl, avatarUrl: dataUrl }));
+      const { error } = await updateProfile(user.id, { avatar_url: dataUrl });
       if (error) {
         showNotification('Failed to update avatar photo.', 'error');
       } else {
         showNotification('Profile avatar updated successfully!');
       }
-    };
-    reader.readAsDataURL(file);
+    }).catch(() => {
+      showNotification('Failed to process image.', 'error');
+    });
   };
 
   const handleEditClick = () => {

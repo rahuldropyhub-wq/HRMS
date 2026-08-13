@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { compressAssetPhoto } from '../../../utils/imageCompressor';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Filter, Edit, Trash2, ShieldCheck, SearchX, Box, CheckCircle, Wrench, X, UserPlus, Loader2, PackageOpen, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -103,15 +104,15 @@ const AssetInventory = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
+      compressAssetPhoto(file).then(({ dataUrl }) => {
         setAssetForm(prev => ({
           ...prev,
           fileName: file.name,
-          fileData: ev.target.result
+          fileData: dataUrl
         }));
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        console.error('Failed to process asset image');
+      });
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { compressDocument } from '../../../utils/imageCompressor';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -110,15 +111,15 @@ const AddEmployee = () => {
         setSubmitError('File size exceeds 5MB limit. Please choose a smaller file.');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newDoc = { type: docType, name: file.name, url: reader.result, uploadDate: new Date().toISOString().split('T')[0] };
+      compressDocument(file).then(({ dataUrl }) => {
+        const newDoc = { type: docType, name: file.name, url: dataUrl, uploadDate: new Date().toISOString().split('T')[0] };
         setUploadedDocs(prev => {
           const filtered = prev.filter(d => d.type !== docType);
           return [...filtered, newDoc];
         });
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        setSubmitError('Failed to process the file. Please try again.');
+      });
     }
   };
 

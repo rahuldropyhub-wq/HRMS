@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { compressAttachment } from '../../utils/imageCompressor';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -237,15 +238,15 @@ function Worksheet() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
+      compressAttachment(file).then(({ dataUrl }) => {
         setFormState(prev => ({
           ...prev,
           fileName: file.name,
-          fileData: event.target.result
+          fileData: dataUrl
         }));
-      };
-      reader.readAsDataURL(file);
+      }).catch(() => {
+        triggerToast('Failed to process file.', 'error');
+      });
     }
   };
 
