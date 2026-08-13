@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,7 +19,7 @@ import '../../styles/admin/admin-layout.css';
 const NavSection = ({ title, defaultExpanded = false, isSidebarCollapsed, children }) => {
   const location = useLocation();
 
-  const hasActiveChild = React.useMemo(() => {
+  const hasActiveChild = useMemo(() => {
     let active = false;
     React.Children.forEach(children, child => {
       if (!child) return;

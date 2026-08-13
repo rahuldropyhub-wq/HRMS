@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -41,7 +41,7 @@ function Holidays() {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchHolidays = async () => {
       setLoading(true);
       const { data } = await getHolidays();

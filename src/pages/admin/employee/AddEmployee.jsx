@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { compressDocument } from '../../../utils/imageCompressor';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -19,13 +19,13 @@ const STEPS = [
 const AddEmployee = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const isEditMode = !!id;
+  const isEditMode = Boolean(id);
   const [currentStep, setCurrentStep] = useState(1);
   const { register, handleSubmit, formState: { errors }, trigger, getValues, setValue, reset } = useForm({
     defaultValues: isEditMode ? {} : JSON.parse(localStorage.getItem('employeeDraft') || '{}')
   });
   const [uploadedDocs, setUploadedDocs] = useState([]);
-  const uploadedDocsRef = React.useRef(uploadedDocs);
+  const uploadedDocsRef = useRef(uploadedDocs);
   React.useEffect(() => {
     uploadedDocsRef.current = uploadedDocs;
   }, [uploadedDocs]);
