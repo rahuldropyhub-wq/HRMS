@@ -64,12 +64,32 @@ function LeaveManagement() {
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
+  const [attachment, setAttachment] = useState(null);
   const [newLeave, setNewLeave] = useState({
     leave_type: 'Casual Leave',
     start_date: '',
     end_date: '',
     reason: ''
   });
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('error', 'File size exceeds 10MB limit.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachment({
+        name: file.name,
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        type: file.type.startsWith('image/') ? 'img' : 'doc',
+        url: reader.result
+      });
+    };
+    reader.readAsDataURL(file);
+  };
   const [leaveStats, setLeaveStats] = useState({
     monthlyUsed: 0,
     currentlyAvailable: 2,
@@ -174,7 +194,8 @@ function LeaveManagement() {
       start_date: newLeave.start_date,
       end_date: newLeave.end_date,
       reason: newLeave.reason,
-      status: 'pending'
+      status: 'pending',
+      attachments: attachment ? [attachment] : []
     });
 
     if (data) {
@@ -196,6 +217,7 @@ function LeaveManagement() {
       setLeaves([data, ...leaves]);
       setShowModal(false);
       setNewLeave({ leave_type: 'Casual Leave', start_date: '', end_date: '', reason: '' });
+      setAttachment(null);
       showToast('success', '🎉 Your request has been submitted successfully! It is now pending approval.');
     } else {
       showToast('error', 'Failed to submit request: ' + (error?.message || 'Unknown error. Please try again.'));
@@ -465,7 +487,17 @@ function LeaveManagement() {
               </FormField>
 
               <FormField label="Supporting Documents" fullWidth optional>
-                <FileUpload hint="Upload medical certificates or relevant docs (Max 5MB)" />
+                <FileUpload 
+                  hint="Upload medical certificates or relevant docs (PNG, JPG, PDF max 10MB)" 
+                  onChange={handleFileChange}
+                  fileName={attachment ? attachment.name : ''}
+                />
+                {attachment && (
+                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '8px 12px', borderRadius: '8px', fontSize: '13px' }}>
+                    <span style={{ color: '#1e40af', fontWeight: 600 }}>📁 {attachment.name} ({attachment.size})</span>
+                    <button type="button" onClick={() => setAttachment(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}>Remove</button>
+                  </div>
+                )}
               </FormField>
             </FormSection>
           </FormBody>
