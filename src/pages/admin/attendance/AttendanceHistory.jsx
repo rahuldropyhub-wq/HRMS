@@ -9,6 +9,21 @@ import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 import { getAllAttendanceRecords, getAllEmployees } from '../../../services/adminService';
 
+function formatLocation(loc) {
+  if (!loc) return 'Office HQ, Hyderabad';
+  if (typeof loc === 'string') return loc;
+  if (typeof loc === 'object') {
+    if (loc.address && typeof loc.address === 'string') return loc.address;
+    if (loc.lat || loc.lng) return `${loc.lat || '—'}, ${loc.lng || '—'}`;
+    try {
+      return JSON.stringify(loc);
+    } catch (e) {
+      return 'Office HQ, Hyderabad';
+    }
+  }
+  return String(loc);
+}
+
 const AttendanceHistory = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,21 +55,6 @@ const AttendanceHistory = () => {
     if (empRes.data) {
       setEmployeesList(empRes.data);
     }
-
-function formatLocation(loc) {
-  if (!loc) return 'Office HQ, Hyderabad';
-  if (typeof loc === 'string') return loc;
-  if (typeof loc === 'object') {
-    if (loc.address && typeof loc.address === 'string') return loc.address;
-    if (loc.lat || loc.lng) return `${loc.lat || '—'}, ${loc.lng || '—'}`;
-    try {
-      return JSON.stringify(loc);
-    } catch (e) {
-      return 'Office HQ, Hyderabad';
-    }
-  }
-  return String(loc);
-}
 
     if (attRes.data) {
       const mapped = attRes.data.map(record => {
