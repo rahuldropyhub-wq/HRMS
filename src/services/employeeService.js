@@ -530,8 +530,10 @@ export const raiseTicket = async (ticketData) => {
 
   const dbPayload = {
     id: formattedTicket.id,
+    employee_id: ticketData.employee_id || formattedTicket.employee_id,
     subject: formattedTicket.subject,
     department: formattedTicket.department,
+    category: formattedTicket.category,
     priority: formattedTicket.priority,
     description: formattedTicket.description,
     status: formattedTicket.status,
