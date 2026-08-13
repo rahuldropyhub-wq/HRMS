@@ -118,6 +118,35 @@ const LeaveRequests = () => {
     setSubmitting(false);
   };
 
+  const handleExportCSV = () => {
+    if (requests.length === 0) {
+      alert('No leave requests available to export.');
+      return;
+    }
+
+    const headers = ['ID', 'Employee Name', 'Department', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Status', 'Reason'];
+    const rows = filteredRequests.map(r => [
+      r.id || '',
+      `"${r.empName}"`,
+      `"${r.dept}"`,
+      r.type,
+      r.from,
+      r.to,
+      r.days,
+      r.status,
+      `"${(r.reason || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `leave_requests_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <motion.div 
       className="leave-requests-container"
@@ -131,7 +160,7 @@ const LeaveRequests = () => {
           <p>Review and manage employee leave applications</p>
         </div>
         <div className="header-actions">
-          <button className="btn-export"><Download size={16} /> Export</button>
+          <button className="btn-export" onClick={handleExportCSV}><Download size={16} /> Export</button>
         </div>
       </div>
 

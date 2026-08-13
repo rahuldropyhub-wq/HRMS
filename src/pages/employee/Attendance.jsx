@@ -109,6 +109,36 @@ export default function Attendance() {
     return d.status === statusFilter;
   });
 
+  const handleExportCSV = () => {
+    if (attendanceData.length === 0) {
+      alert('No attendance records available to export.');
+      return;
+    }
+
+    const headers = ['Date', 'Day', 'Check In', 'Check Out', 'Work Hours', 'Break Hours', 'Net Hours', 'Overtime', 'Late', 'Status'];
+    const rows = filtered.map(r => [
+      r.date,
+      r.day,
+      r.checkIn || '',
+      r.checkOut || '',
+      r.workHrs,
+      r.breakHrs,
+      r.netHrs,
+      r.overtime || '',
+      r.late || '',
+      r.status
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `my_attendance_${MONTHS[selectedMonth]}_${selectedYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <DashboardLayout>
 
@@ -158,7 +188,7 @@ export default function Attendance() {
                   <option value="early">Early Out</option>
                   <option value="holiday">Holiday</option>
                 </select>
-                <button className="ar-export-btn">
+                <button className="ar-export-btn" onClick={handleExportCSV}>
                   <Download size={14} /> Export
                 </button>
               </div>

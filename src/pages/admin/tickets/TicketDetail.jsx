@@ -1,55 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Paperclip, Send } from 'lucide-react';
+import { ArrowLeft, Paperclip, Send, Loader2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { getAllTickets, updateTicketStatus } from '../../../services/adminService';
 import '../../../styles/admin/tickets/ticket-detail.css';
 
 const TicketDetail = () => {
   const { id } = useParams();
-  
-  // Local state for interactive thread
-  const [replyText, setReplyText] = useState('');
-  const [thread, setThread] = useState([
-    { 
-      id: 1, 
-      sender: 'Rahul Sharma', 
-      role: 'Engineering', 
-      avatar: 'RS', 
-      time: '04 Aug 2026, 14:30', 
-      content: 'My laptop screen is flickering after the Windows update. Please check ASAP.', 
-      attachment: 'screenshot.png' 
-    },
-    { 
-      id: 2, 
-      sender: 'IT Support', 
-      role: 'Admin', 
-      avatar: 'IT', 
-      time: '05 Aug 2026, 10:00', 
-      content: "We'll send someone to check your laptop today at your desk.", 
-      attachment: null 
-    }
-  ]);
 
-  const [status, setStatus] = useState('In Progress');
-  const [priority, setPriority] = useState('High');
-  const [assignee, setAssignee] = useState('IT Support');
+  const [ticket, setTicket] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const [replyText, setReplyText] = useState('');
+  const [thread, setThread] = useState([]);
+  const [status, setStatus] = useState('Open');
+  const [priority, setPriority] = useState('Medium');
+  const [assignee, setAssignee] = useState('Unassigned');
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data } = await getAllTickets();
+      if (data && Array.isArray(data)) {
+        const found = data.find(t => String(t.id).toLowerCase() === String(id).toLowerCase());
+        if (found) {
+          setTicket(found);
+          setStatus(found.status ? (found.status.charAt(0).toUpperCase() + found.status.slice(1)) : 'Open');
+          setPriority(found.priority ? (found.priority.charAt(0).toUpperCase() + found.priority.slice(1)) : 'Medium');
+          setAssignee(found.assigned_to || found.assignedTo || 'Unassigned');
+
+          // Parse conversation
+          const conv = found.conversation && Array.isArray(found.conversation) && found.conversation.length > 0
+            ? found.conversation.map((c, i) => ({
+                id: i + 1,
+                sender: c.author || c.sender || found.employee_name || 'Requester',
+                role: c.role || found.department || 'User',
+                avatar: (c.author || found.employee_name || 'U').substring(0, 2).toUpperCase(),
+                time: c.time || (found.created_at ? new Date(found.created_at).toLocaleString() : 'Recently'),
+                content: c.text || c.content || '',
+                attachment: c.attachment || null
+              }))
+            : [
+                {
+                  id: 1,
+                  sender: found.employee_name || found.authorName || 'Requester',
+                  role: found.department || 'Engineering',
+                  avatar: (found.employee_name || 'RE').substring(0, 2).toUpperCase(),
+                  time: found.created_at ? new Date(found.created_at).toLocaleString() : 'Recently',
+                  content: found.description || 'No description provided.',
+                  attachment: null
+                }
+              ];
+          setThread(conv);
+        }
+      }
+      setLoading(false);
+    };
+    load();
+  }, [id]);
+
+  const handleStatusChange = async (newStatus) => {
+    setStatus(newStatus);
+    if (id) {
+      await updateTicketStatus(id, newStatus.toLowerCase());
+    }
+  };
 
   const handleSend = () => {
     if (!replyText.trim()) return;
-    
+
     const newMessage = {
       id: Date.now(),
-      sender: 'You',
-      role: 'Admin',
-      avatar: 'ME',
-      time: '05 Aug 2026, Just now',
+      sender: 'Admin Support',
+      role: 'System Administrator',
+      avatar: 'AD',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       content: replyText,
       attachment: null
     };
-    
-    setThread([...thread, newMessage]);
+
+    const updatedThread = [...thread, newMessage];
+    setThread(updatedThread);
     setReplyText('');
+
+    // Persist conversation update in localStorage
+    try {
+      const local = JSON.parse(localStorage.getItem('hrms_local_tickets') || '[]');
+      const updatedLocal = local.map(t => {
+        if (String(t.id) === String(id)) {
+          return {
+            ...t,
+            conversation: updatedThread.map(m => ({ author: m.sender, role: m.role, text: m.content, time: m.time }))
+          };
+        }
+        return t;
+      });
+      localStorage.setItem('hrms_local_tickets', JSON.stringify(updatedLocal));
+    } catch (e) {}
   };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '60px', textAlign: 'center', color: '#64748b' }}>
+        <Loader2 size={32} className="spin" style={{ margin: '0 auto 12px', color: '#2563eb' }} />
+        <p>Loading ticket details...</p>
+      </div>
+    );
+  }
+
+  const raisedByName = ticket?.employee_name || ticket?.profiles ? `${ticket.profiles.first_name || ''} ${ticket.profiles.last_name || ''}`.trim() : 'Employee';
+  const raisedByDept = ticket?.department || ticket?.profiles?.departments?.name || 'Department';
 
   return (
     <motion.div 
@@ -65,7 +125,7 @@ const TicketDetail = () => {
       <div className="page-header" style={{ marginBottom: '16px' }}>
         <div className="page-title">
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {id || 'TKT-001'} <span style={{ color: 'var(--text-tertiary)', fontSize: '18px', fontWeight: '400' }}>Laptop not working</span>
+            {id || 'TKT-001'} <span style={{ color: 'var(--text-tertiary)', fontSize: '18px', fontWeight: '400' }}>{ticket?.subject || 'Support Request'}</span>
           </h1>
         </div>
       </div>
@@ -102,11 +162,8 @@ const TicketDetail = () => {
               onChange={e => setReplyText(e.target.value)}
             ></textarea>
             <div className="reply-actions">
-              <button className="btn-attach">
-                <Paperclip size={18} /> Attach File
-              </button>
-              <button className="btn-send" onClick={handleSend}>
-                Send Reply
+              <button className="btn-send" onClick={handleSend} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <Send size={16} /> Send Reply
               </button>
             </div>
           </div>
@@ -117,7 +174,7 @@ const TicketDetail = () => {
           <div className="info-card">
             <div className="info-row">
               <span className="info-label">Status</span>
-              <select className="info-select" value={status} onChange={e => setStatus(e.target.value)}>
+              <select className="info-select" value={status} onChange={e => handleStatusChange(e.target.value)}>
                 <option value="Open">Open</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Resolved">Resolved</option>
@@ -135,7 +192,7 @@ const TicketDetail = () => {
             </div>
             <div className="info-row">
               <span className="info-label">Department</span>
-              <div className="info-value">IT</div>
+              <div className="info-value">{raisedByDept}</div>
             </div>
             <div className="info-row">
               <span className="info-label">Assigned To</span>
@@ -151,10 +208,12 @@ const TicketDetail = () => {
           <div className="info-card">
             <span className="info-label">Raised By</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>RS</div>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                {raisedByName.substring(0, 2).toUpperCase()}
+              </div>
               <div>
-                <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>Rahul Sharma</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Engineering • EMP-001</div>
+                <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{raisedByName}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{raisedByDept}</div>
               </div>
             </div>
           </div>
@@ -163,16 +222,8 @@ const TicketDetail = () => {
             <span className="info-label">Timeline</span>
             <div className="timeline">
               <div className="timeline-item">
-                <div style={{ fontWeight: '500' }}>Reply sent</div>
-                <div className="timeline-date">Aug 05, 10:00 AM</div>
-              </div>
-              <div className="timeline-item">
-                <div style={{ fontWeight: '500' }}>Assigned to IT Support</div>
-                <div className="timeline-date">Aug 04, 02:45 PM</div>
-              </div>
-              <div className="timeline-item">
                 <div style={{ fontWeight: '500' }}>Ticket Created</div>
-                <div className="timeline-date">Aug 04, 02:30 PM</div>
+                <div className="timeline-date">{ticket?.created_at ? new Date(ticket.created_at).toLocaleString() : 'Recently'}</div>
               </div>
             </div>
           </div>

@@ -133,6 +133,34 @@ const WorksheetReview = () => {
     closeDrawer();
   };
 
+  const handleExportCSV = () => {
+    if (worksheets.length === 0) {
+      alert('No worksheets available to export.');
+      return;
+    }
+
+    const headers = ['ID', 'Employee Name', 'Date', 'Project', 'Total Hours', 'Submitted At', 'Status', 'Tasks Summary'];
+    const rows = filteredSheets.map(w => [
+      w.id || '',
+      `"${w.empName}"`,
+      w.date,
+      `"${w.project}"`,
+      w.totalHrs,
+      w.submittedAt,
+      w.status,
+      `"${(w.tasks[0]?.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `worksheets_review_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <motion.div 
       className="worksheet-review-container"
@@ -140,11 +168,14 @@ const WorksheetReview = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="page-title">
           <h1>Worksheet Review</h1>
           <p>Review and approve daily work reports submitted by employees</p>
         </div>
+        <button className="btn-secondary" onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, color: '#334155' }}>
+          <Download size={16} /> Export CSV
+        </button>
       </div>
 
       <div className="tabs-bar">

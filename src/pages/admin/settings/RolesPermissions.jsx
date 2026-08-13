@@ -33,9 +33,17 @@ const INITIAL_PERMISSIONS = {
 
 const RolesPermissions = () => {
   const [activeRole, setActiveRole] = useState('admin');
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Use state to make checkboxes interactive
-  const [permissions, setPermissions] = useState(INITIAL_PERMISSIONS);
+  // Use state to make checkboxes interactive and persistent
+  const [permissions, setPermissions] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hrms_role_permissions');
+      return saved ? JSON.parse(saved) : INITIAL_PERMISSIONS;
+    } catch (e) {
+      return INITIAL_PERMISSIONS;
+    }
+  });
 
   const handleToggle = (moduleName, action) => {
     setPermissions(prev => {
@@ -59,7 +67,11 @@ const RolesPermissions = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    alert(`Permissions saved for ${ROLES.find(r => r.id === activeRole)?.name} (Mock)`);
+    try {
+      localStorage.setItem('hrms_role_permissions', JSON.stringify(permissions));
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {}
   };
 
   return (
@@ -162,8 +174,13 @@ const RolesPermissions = () => {
                 </table>
               </div>
 
-              <div className="form-actions">
+              <div className="form-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button type="submit" className="btn-primary">Save Permissions</button>
+                {saveSuccess && (
+                  <span style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>
+                    ✓ Permissions saved successfully for {ROLES.find(r => r.id === activeRole)?.name}!
+                  </span>
+                )}
               </div>
             </form>
           </motion.div>

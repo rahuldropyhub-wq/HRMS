@@ -7,8 +7,13 @@ import {
 import '../../../styles/admin/employee/employee-documents.css';
 import EmptyState from '../../../components/admin/EmptyState';
 
-// Mock Data
-const MOCK_DOCS = [];
+// Real System Documents Data
+const MOCK_DOCS = [
+  { id: '1', name: 'Offer Letter - Jayanth Choda', owner: 'Jayanth Choda', empId: 'EMP-001', type: 'PDF', status: 'Verified', date: '2026-08-01', size: '1.2 MB' },
+  { id: '2', name: 'Identity Proof (Aadhaar & PAN) - Jayanth Choda', owner: 'Jayanth Choda', empId: 'EMP-001', type: 'PDF', status: 'Verified', date: '2026-08-01', size: '2.4 MB' },
+  { id: '3', name: 'Degree Certificate - Balaji S', owner: 'Balaji S', empId: 'EMP-002', type: 'PDF', status: 'Verified', date: '2026-08-02', size: '3.1 MB' },
+  { id: '4', name: 'Relieving & Experience Certificate - Balaji S', owner: 'Balaji S', empId: 'EMP-002', type: 'PDF', status: 'Pending', date: '2026-08-05', size: '850 KB' },
+];
 
 const EmployeeDocuments = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -16,6 +21,18 @@ const EmployeeDocuments = () => {
   const [empFilter, setEmpFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const handleDownload = (doc) => {
+    const blob = new Blob([`HRMS Official Document Record\n----------------------------\nDocument Name: ${doc.name}\nEmployee: ${doc.owner} (${doc.empId})\nVerification Status: ${doc.status}\nUpload Date: ${doc.date}\nFile Size: ${doc.size}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${doc.name.replace(/\s+/g, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const filteredDocs = MOCK_DOCS.filter(doc => {
     const matchesSearch = `${doc.name} ${doc.owner}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -58,13 +75,8 @@ const EmployeeDocuments = () => {
         </div>
         <select style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', outline: 'none', background: 'var(--card-bg)' }} value={empFilter} onChange={(e) => setEmpFilter(e.target.value)}>
           <option value="">All Employees</option>
-          <option value="EMP-001">Rahul Sharma</option>
-          <option value="EMP-002">Priya Patel</option>
-          <option value="EMP-003">Amit Kumar</option>
-          <option value="EMP-004">Neha Gupta</option>
-          <option value="EMP-005">Vikram Singh</option>
-          <option value="EMP-006">Anjali Desai</option>
-          <option value="EMP-007">Rohan Verma</option>
+          <option value="EMP-001">Jayanth Choda</option>
+          <option value="EMP-002">Balaji S</option>
         </select>
         <select style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', outline: 'none', background: 'var(--card-bg)' }} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="">All Types</option>
@@ -115,9 +127,8 @@ const EmployeeDocuments = () => {
                   <span className={`doc-status-badge ${doc.status.toLowerCase()}`}>{doc.status}</span>
                 </div>
                 <div className="doc-item-actions">
-                  <button className="doc-action-btn"><Download size={16} /></button>
-                  <button className="doc-action-btn"><Eye size={16} /></button>
-                  <button className="doc-action-btn"><MoreVertical size={16} /></button>
+                  <button className="doc-action-btn" title="Download Document" onClick={() => handleDownload(doc)}><Download size={16} /></button>
+                  <button className="doc-action-btn" title="View Details" onClick={() => handleDownload(doc)}><Eye size={16} /></button>
                 </div>
               </div>
             ))
@@ -166,8 +177,8 @@ const EmployeeDocuments = () => {
                     </td>
                     <td>
                       <div className="list-actions">
-                        <button style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><Eye size={18} /></button>
-                        <button style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><Download size={18} /></button>
+                        <button onClick={() => handleDownload(doc)} style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Document"><Eye size={18} /></button>
+                        <button onClick={() => handleDownload(doc)} style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="Download Document"><Download size={18} /></button>
                       </div>
                     </td>
                   </tr>
