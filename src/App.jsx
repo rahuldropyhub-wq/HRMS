@@ -7,6 +7,7 @@ import LeaveManagement from './pages/employee/LeaveManagement';
 import Worksheet from './pages/employee/Worksheet';
 import Settings from './pages/employee/Settings';
 import Tasks from './pages/employee/Tasks';
+import EmployeeProjects from './pages/employee/Projects';
 import Tickets from './pages/employee/Tickets';
 import Assets from './pages/employee/Assets';
 import Profile from './pages/employee/Profile';
@@ -24,6 +25,7 @@ import WFHTracking from './pages/admin/attendance/WFHTracking';
 import LeaveRequests from './pages/admin/leave/LeaveRequests';
 import LeaveCalendar from './pages/admin/leave/LeaveCalendar';
 import LeavePolicies from './pages/admin/leave/LeavePolicies';
+import AdminProjects from './pages/admin/tasks/Projects';
 import TaskDashboard from './pages/admin/tasks/TaskDashboard';
 import CreateTask from './pages/admin/tasks/CreateTask';
 import TaskReview from './pages/admin/tasks/TaskReview';
@@ -61,6 +63,7 @@ function App() {
           <Route path="/leave-management" element={<LeaveManagement />} />
           <Route path="/worksheet" element={<Worksheet />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/projects" element={<EmployeeProjects />} />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/profile" element={<Profile />} />
@@ -87,6 +90,7 @@ function App() {
           <Route path="leave/calendar" element={<LeaveCalendar />} />
           <Route path="leave/policies" element={<LeavePolicies />} />
           
+          <Route path="projects" element={<AdminProjects />} />
           <Route path="tasks" element={<TaskDashboard />} />
           <Route path="tasks/create" element={<CreateTask />} />
           <Route path="tasks/review" element={<TaskReview />} />

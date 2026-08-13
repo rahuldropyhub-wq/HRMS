@@ -304,22 +304,74 @@ export const applyLeave = async (leaveData) => {
 
 // ─── TASKS ────────────────────────────────────────────────────────────────────
 export const getMyTasks = async (userId) => {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*, profiles!tasks_assigned_by_fkey(first_name, last_name)')
-    .eq('assigned_to', userId)
-    .order('created_at', { ascending: false });
-  return { data, error };
+  try {
+    const { data: prof } = await getProfile(userId);
+    const fullName = `${prof?.first_name || ''} ${prof?.last_name || ''}`.trim();
+    const empCode = prof?.emp_id || prof?.empCode;
+    const userEmail = prof?.email;
+
+    const { data: allTasks } = await supabase.from('tasks').select('*');
+
+    let myTasks = [];
+    if (allTasks && Array.isArray(allTasks)) {
+      myTasks = allTasks.filter(t => {
+        const assigned = String(t.assigned_to || t.assignedTo || '').toLowerCase();
+        if (!assigned) return false;
+        return (
+          assigned.includes(userId?.toLowerCase()) ||
+          (fullName && assigned.includes(fullName.toLowerCase())) ||
+          (empCode && assigned.includes(String(empCode).toLowerCase())) ||
+          (userEmail && assigned.includes(userEmail.toLowerCase()))
+        );
+      });
+    }
+
+    let localSaved = [];
+    try {
+      localSaved = JSON.parse(localStorage.getItem('hrms_local_tasks') || '[]');
+    } catch (e) {}
+
+    localSaved.forEach(t => {
+      const assigned = String(t.assignedTo || t.assigned_to || '').toLowerCase();
+      if (assigned) {
+        if (
+          assigned.includes(userId?.toLowerCase()) ||
+          (fullName && assigned.includes(fullName.toLowerCase())) ||
+          (empCode && assigned.includes(String(empCode).toLowerCase())) ||
+          (userEmail && assigned.includes(userEmail.toLowerCase()))
+        ) {
+          myTasks.push(t);
+        }
+      }
+    });
+
+    const uniqueMap = new Map();
+    myTasks.forEach(t => {
+      const key = t.id || `${t.title}-${t.due_date}`;
+      if (key) uniqueMap.set(key, t);
+    });
+
+    return { data: Array.from(uniqueMap.values()), error: null };
+  } catch (err) {
+    console.error('getMyTasks error:', err);
+    return { data: [], error: err };
+  }
 };
 
 export const updateTaskStatus = async (taskId, status) => {
   const { data, error } = await supabase
     .from('tasks')
-    .update({ status })
+    .update({ status: status.toLowerCase() })
     .eq('id', taskId)
-    .select()
-    .single();
-  return { data, error };
+    .select();
+
+  try {
+    const local = JSON.parse(localStorage.getItem('hrms_local_tasks') || '[]');
+    const updated = local.map(t => t.id === taskId ? { ...t, status: status.toLowerCase() } : t);
+    localStorage.setItem('hrms_local_tasks', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: data ? data[0] : null, error };
 };
 
 // ─── WORKSHEETS ───────────────────────────────────────────────────────────────
@@ -632,3 +684,58 @@ export const createAppreciation = async (appreciationData) => {
     return { data: null, error: e };
   }
 };
+
+
+// ─── PROJECTS (Employee-facing) ────────────────────────────────────────────────
+
+// Get all projects the logged-in employee is a member of
+export const getMyProjects = async (userId) => {
+  if (!userId) return { data: [], error: 'No user ID' };
+  try {
+    const { data, error } = await supabase
+      .from('project_members')
+      .select(`
+        id, role,
+        projects(
+          id, name, description, status, priority, start_date, end_date, tags,
+          project_departments(department),
+          project_members(id)
+        )
+      `)
+      .eq('employee_id', userId);
+
+    if (error) throw error;
+
+    const projects = (data || []).map(m => ({
+      memberId: m.id,
+      myRole: m.role,
+      ...(m.projects || {}),
+      departments: (m.projects?.project_departments || []).map(d => d.department),
+      memberCount: (m.projects?.project_members || []).length,
+    }));
+
+    return { data: projects, error: null };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+};
+
+// Get all active project names for dropdowns
+export const getCompanyProjects = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, name, status')
+      .neq('status', 'cancelled')
+      .order('name');
+
+    if (error) throw error;
+
+    const names = (data || []).map(p => p.name);
+    return { data: names.length > 0 ? names : ['General Project'], error: null };
+  } catch (err) {
+    // Fallback
+    return { data: ['General Project'], error: null };
+  }
+};
+

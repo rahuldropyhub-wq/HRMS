@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -51,11 +51,13 @@ import {
   updateWorksheet,
   deleteWorksheet,
   getTodayAttendance,
-  getMyTasks
+  getMyTasks,
+  checkOut
 } from '../../services/employeeService';
 import { Edit, Trash2, Download, Eye, Paperclip } from 'lucide-react';
 
 function Worksheet() {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -333,6 +335,16 @@ function Worksheet() {
         }
         setShowModal(false);
         triggerToast('Work entry submitted successfully!', 'success');
+
+        // Check if automatic checkout was requested during checkout flow
+        if (sessionStorage.getItem('pending_auto_checkout') === 'true') {
+          sessionStorage.removeItem('pending_auto_checkout');
+          if (user?.id) {
+            await checkOut(user.id).catch(() => {});
+          }
+          triggerToast('Worksheet submitted & Shift checked out automatically!', 'success');
+          setTimeout(() => navigate('/attendance'), 800);
+        }
       } else {
         triggerToast('Error submitting worksheet: ' + error?.message, 'error');
       }

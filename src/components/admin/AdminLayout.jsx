@@ -9,7 +9,8 @@ import {
   RefreshCw, UserCircle, ShieldCheck, Building2, Briefcase,
   CalendarClock, BarChart3, LineChart, Megaphone, Bell,
   Settings, Sliders, Mail, Lock, Database, LogOut, Search,
-  Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon, Sun
+  Menu, X, ChevronLeft, ChevronRight, ChevronDown, Plus, Moon, Sun,
+  FolderKanban
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
@@ -271,6 +272,7 @@ const AdminLayout = () => {
           </NavSection>
 
           <NavSection title="Task & Worksheet" defaultExpanded={false} isSidebarCollapsed={isSidebarCollapsed}>
+            {renderNavItem(FolderKanban, 'Projects', '/admin/projects')}
             {renderNavItem(ListTodo, 'Task Dashboard', '/admin/tasks')}
             {renderNavItem(ClipboardCheck, 'Worksheets (Pending)', '/admin/worksheets', pendingWorksheetCount > 0 ? String(pendingWorksheetCount) : null)}
           </NavSection>

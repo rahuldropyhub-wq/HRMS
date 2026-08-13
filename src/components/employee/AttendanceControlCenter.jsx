@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import '../../styles/employee/attendance-control.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getTodayAttendance, checkIn, startBreak, endBreak, checkOut, getIdleHistory } from '../../services/employeeService';
+import { getTodayAttendance, checkIn, startBreak, endBreak, checkOut, getIdleHistory, submitWorksheet, getMyWorksheets, getCompanyProjects } from '../../services/employeeService';
 import { supabase } from '../../lib/supabaseClient';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -164,6 +164,18 @@ export default function AttendanceControlCenter({ compact = false }) {
   const [showWorksheetModal, setShowWorksheetModal] = useState(false);
   const [worksheetSubmitted, setWorksheetSubmitted] = useState(false);
 
+  // Quick Worksheet checkout form state
+  const [wsProject, setWsProject] = useState('General Project');
+  const [wsDescription, setWsDescription] = useState('');
+  const [companyProjects, setCompanyProjects] = useState([]);
+  const [submittingWs, setSubmittingWs] = useState(false);
+
+  useEffect(() => {
+    getCompanyProjects().then(({ data }) => {
+      if (data && Array.isArray(data)) setCompanyProjects(data);
+    });
+  }, []);
+
   // Live clock
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -216,8 +228,17 @@ export default function AttendanceControlCenter({ compact = false }) {
   useEffect(() => {
     if (!workStartTime) return;
 
-    // Total break seconds (completed breaks)
     const completedBreakSecs = breaks.reduce((acc, b) => acc + (b.duration || 0), 0);
+
+    // If shift is completed or workEndTime is set, freeze the working timer at check-out time!
+    if (status === 'completed' || workEndTime) {
+      const endTimeToUse = workEndTime || now;
+      const elapsed = Math.floor((endTimeToUse - workStartTime) / 1000);
+      const workSecs = elapsed - completedBreakSecs;
+      setTotalWorkSecs(workSecs > 0 ? workSecs : 0);
+      setTotalBreakSecs(completedBreakSecs);
+      return;
+    }
 
     // Current break in progress
     const currentBreakSecs = currentBreakStart
@@ -230,7 +251,7 @@ export default function AttendanceControlCenter({ compact = false }) {
 
     setTotalWorkSecs(workSecs > 0 ? workSecs : 0);
     setTotalBreakSecs(allBreakSecs);
-  }, [now, workStartTime, breaks, currentBreakStart]);
+  }, [now, workStartTime, workEndTime, status, breaks, currentBreakStart]);
 
   // Extension Module 7: Poll Idle History
   useEffect(() => {
@@ -381,16 +402,49 @@ export default function AttendanceControlCenter({ compact = false }) {
 
   const handleClickEndWork = () => {
     if (status === 'onBreak') return; // must resume first
-    if (!worksheetSubmitted) {
-      setShowWorksheetModal(true);
+    if (worksheetSubmitted) {
+      confirmEndWork();
       return;
     }
-    confirmEndWork();
+    // Instantly open modal without blocking async calls
+    setShowWorksheetModal(true);
+  };
+
+  const handleSubmitWorksheetAndCheckout = async (e) => {
+    if (e) e.preventDefault();
+    if (!wsDescription.trim()) {
+      alert('Please enter a summary of tasks completed today.');
+      return;
+    }
+    setSubmittingWs(true);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const hoursStr = (totalWorkSecs > 0 ? (totalWorkSecs / 3600) : 8.0).toFixed(1);
+
+    try {
+      await submitWorksheet({
+        employee_id: user?.id,
+        project: wsProject || 'General Project',
+        description: wsDescription.trim(),
+        hours: hoursStr,
+        date: todayStr,
+        status: 'submitted'
+      });
+    } catch (err) {
+      console.warn('Worksheet submit notice:', err);
+    }
+
+    setWorksheetSubmitted(true);
+    setSubmittingWs(false);
+    await confirmEndWork();
   };
 
   const confirmEndWork = async () => {
-    if (user?.id) {
-      await checkOut(user.id);
+    try {
+      if (user?.id) {
+        await checkOut(user.id);
+      }
+    } catch (err) {
+      console.warn('Checkout DB notice:', err);
     }
     
     const t = new Date();
@@ -597,34 +651,96 @@ export default function AttendanceControlCenter({ compact = false }) {
         </div>
       )}
 
-      {/* ── WORKSHEET VALIDATION MODAL ── */}
+      {/* ── WORKSHEET VALIDATION & QUICK SUBMIT CHECKOUT MODAL ── */}
       {showWorksheetModal && (
         <div className="acc-modal-overlay">
-          <div className="acc-modal-box">
-            <div className="acc-modal-icon warn"><AlertTriangle size={26} /></div>
-            <div className="acc-modal-title">Worksheet Not Submitted</div>
-            <p className="acc-modal-desc">
-              You have not submitted today's worksheet yet.<br /><br />
-              <strong>Please complete and submit your daily worksheet</strong> before ending your work session. Your attendance will be incomplete without it.
+          <div className="acc-modal-box" style={{ maxWidth: '480px', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Submit Worksheet & Check Out</h3>
+              </div>
+              <button onClick={() => setShowWorksheetModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            <p className="acc-modal-desc" style={{ marginBottom: 16, fontSize: 13, color: '#64748b', textAlign: 'left' }}>
+              Briefly describe your tasks completed today to submit your daily worksheet and automatically check out your shift!
             </p>
-            <div className="acc-modal-actions">
-              <button className="acc-modal-btn secondary" onClick={() => setShowWorksheetModal(false)}>Cancel</button>
-              <button className="acc-modal-btn primary" onClick={() => {
-                setWorksheetSubmitted(true);
-                setShowWorksheetModal(false);
-                navigate('/worksheet');
-              }}>
-                Go to Worksheet
-              </button>
-            </div>
-            <div style={{ marginTop: 14, textAlign: 'center' }}>
-              <button
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#9ca3af', textDecoration: 'underline' }}
-                onClick={() => { setWorksheetSubmitted(true); setShowWorksheetModal(false); setTimeout(confirmEndWork, 100); }}
-              >
-                I have already submitted — End Work anyway
-              </button>
-            </div>
+
+            <form onSubmit={handleSubmitWorksheetAndCheckout} style={{ textAlign: 'left' }}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                  Select Project <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <select 
+                  value={wsProject} 
+                  onChange={e => setWsProject(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, background: '#fff' }}
+                >
+                  {companyProjects.length > 0 ? (
+                    companyProjects.map(p => <option key={p} value={p}>{p}</option>)
+                  ) : (
+                    <>
+                      <option value="General Project">General Project</option>
+                      <option value="HRMS Portal Upgrade">HRMS Portal Upgrade</option>
+                      <option value="Mobile App Development">Mobile App Development</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                  Daily Work Summary <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="e.g., Completed API integration, fixed mobile layout bugs, updated task module..."
+                  value={wsDescription}
+                  onChange={e => setWsDescription(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, boxSizing: 'border-box', outline: 'none' }}
+                />
+              </div>
+
+              <div className="acc-modal-actions" style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+                <button 
+                  type="button" 
+                  className="acc-modal-btn secondary" 
+                  onClick={() => {
+                    sessionStorage.setItem('pending_auto_checkout', 'true');
+                    setWorksheetSubmitted(true);
+                    setShowWorksheetModal(false);
+                    navigate('/worksheet');
+                  }}
+                  style={{ fontSize: 13 }}
+                >
+                  Full Page...
+                </button>
+
+                <button 
+                  type="submit" 
+                  disabled={submittingWs}
+                  className="acc-modal-btn primary" 
+                  style={{ flex: 1, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}
+                >
+                  <CheckCircle size={16} /> {submittingWs ? 'Checking Out...' : 'Submit & Automatic Check Out'}
+                </button>
+              </div>
+
+              <div style={{ marginTop: 12, textAlign: 'center' }}>
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#9ca3af', textDecoration: 'underline' }}
+                  onClick={() => { setWorksheetSubmitted(true); setShowWorksheetModal(false); setTimeout(confirmEndWork, 100); }}
+                >
+                  Already submitted today — Check Out anyway
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

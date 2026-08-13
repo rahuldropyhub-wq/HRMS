@@ -478,30 +478,68 @@ export const updateLeaveStatus = async (id, status, approvedBy) => {
 
 // ─── TASKS (Admin) ────────────────────────────────────────────────────────────
 export const getAllTasks = async () => {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('tasks')
-    .select('*, profiles!tasks_assigned_to_fkey(first_name, last_name), profiles!tasks_assigned_by_fkey(first_name, last_name)')
-    .order('created_at', { ascending: false });
-  return { data, error };
+    .select('*');
+
+  if (error) {
+    console.warn('getAllTasks query notice:', error?.message);
+  }
+
+  if (data && Array.isArray(data)) {
+    data.sort((a, b) => new Date(b.created_at || b.due_date || 0) - new Date(a.created_at || a.due_date || 0));
+  }
+  return { data: data || [], error };
 };
 
 export const createTask = async (taskData) => {
-  const { data, error } = await supabase
+  const payload = {
+    title: taskData.title || taskData.name,
+    description: taskData.description || '',
+    assigned_to: taskData.assigned_to || taskData.assignedTo || '',
+    project_name: taskData.project_name || taskData.project || 'General Project',
+    department: taskData.department || 'Engineering',
+    priority: (taskData.priority || 'medium').toLowerCase(),
+    status: (taskData.status || 'todo').toLowerCase(),
+    due_date: taskData.due_date || taskData.dueDate || new Date().toISOString().split('T')[0],
+    estimated_hours: taskData.estimated_hours || taskData.estimatedHours || 0
+  };
+
+  let res = await supabase
     .from('tasks')
-    .insert(taskData)
-    .select()
-    .single();
-  return { data, error };
+    .insert(payload)
+    .select();
+
+  if (res.error) {
+    console.warn('createTask primary payload notice:', res.error?.message);
+
+    res = await supabase
+      .from('tasks')
+      .insert({
+        title: taskData.title || taskData.name,
+        assigned_to: taskData.assigned_to || taskData.assignedTo || '',
+        priority: (taskData.priority || 'medium').toLowerCase(),
+        status: (taskData.status || 'todo').toLowerCase()
+      })
+      .select();
+  }
+
+  return { data: res.data ? res.data[0] : null, error: res.error };
 };
 
 export const updateTask = async (id, updates) => {
-  const { data, error } = await supabase
+  let res = await supabase
     .from('tasks')
     .update(updates)
     .eq('id', id)
-    .select()
-    .single();
-  return { data, error };
+    .select();
+
+  return { data: res.data ? res.data[0] : null, error: res.error };
+};
+
+export const deleteTask = async (id) => {
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  return { error };
 };
 
 // ─── WORKSHEETS (Admin Review) ────────────────────────────────────────────────
@@ -742,3 +780,240 @@ export const getDashboardStats = async () => {
     lateToday: 0
   };
 };
+
+
+// ─── PROJECTS ─────────────────────────────────────────────────────────────────
+// Supabase = single source of truth. localStorage is read-cache only.
+
+const CACHE_KEY = 'hrms_projects_cache';
+
+const setCache = (data) => {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+};
+
+const getCache = () => {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; }
+};
+
+const invalidateCache = () => {
+  try { localStorage.removeItem(CACHE_KEY); } catch (e) {}
+};
+
+// Get all projects (with departments and member count)
+export const getProjects = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        project_departments(department),
+        project_members(id, role, profiles(id, first_name, last_name, emp_id, email, department))
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const normalized = (data || []).map(p => ({
+      ...p,
+      departments: (p.project_departments || []).map(d => d.department),
+      members: (p.project_members || []).map(m => ({
+        memberId: m.id,
+        role: m.role,
+        id: m.profiles?.id,
+        firstName: m.profiles?.first_name,
+        lastName: m.profiles?.last_name,
+        empCode: m.profiles?.emp_id,
+        email: m.profiles?.email,
+        department: m.profiles?.department,
+      })),
+      memberCount: (p.project_members || []).length,
+    }));
+
+    setCache(normalized);
+    return { data: normalized, error: null };
+  } catch (err) {
+    // Fallback to cache
+    const cached = getCache();
+    if (cached) return { data: cached, error: null };
+    return { data: [], error: err.message };
+  }
+};
+
+// Get a single project by ID
+export const getProjectById = async (projectId) => {
+  const { data: all, error } = await getProjects();
+  if (error) return { data: null, error };
+  const project = all.find(p => p.id === projectId) || null;
+  return { data: project, error: null };
+};
+
+// Create a new project
+export const createProject = async ({ name, description, status, priority, start_date, end_date, tags, departments, created_by }) => {
+  try {
+    // 1. Insert project
+    const { data: project, error: projErr } = await supabase
+      .from('projects')
+      .insert({ name, description, status: status || 'planning', priority: priority || 'medium', start_date, end_date, tags: tags || [], created_by })
+      .select()
+      .single();
+
+    if (projErr) throw projErr;
+
+    // 2. Insert departments
+    if (departments && departments.length > 0) {
+      const deptRows = departments.map(dept => ({ project_id: project.id, department: dept }));
+      await supabase.from('project_departments').insert(deptRows);
+    }
+
+    invalidateCache();
+    return { data: project, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+};
+
+// Update an existing project
+export const updateProject = async (projectId, { name, description, status, priority, start_date, end_date, tags, departments }) => {
+  try {
+    const { error: projErr } = await supabase
+      .from('projects')
+      .update({ name, description, status, priority, start_date, end_date, tags, updated_at: new Date().toISOString() })
+      .eq('id', projectId);
+
+    if (projErr) throw projErr;
+
+    // Replace departments
+    if (departments) {
+      await supabase.from('project_departments').delete().eq('project_id', projectId);
+      if (departments.length > 0) {
+        const deptRows = departments.map(dept => ({ project_id: projectId, department: dept }));
+        await supabase.from('project_departments').insert(deptRows);
+      }
+    }
+
+    invalidateCache();
+    return { error: null };
+  } catch (err) {
+    return { error: err.message };
+  }
+};
+
+// Delete (soft-delete via status) a project
+export const deleteProject = async (projectId) => {
+  try {
+    const { error } = await supabase
+      .from('projects')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', projectId);
+    if (error) throw error;
+    invalidateCache();
+    return { error: null };
+  } catch (err) {
+    return { error: err.message };
+  }
+};
+
+// ─── PROJECT MEMBERS ──────────────────────────────────────────────────────────
+
+const VALID_MEMBER_ROLES = ['project_manager', 'developer', 'ui_ux_designer', 'tester', 'devops', 'member'];
+
+// Get members for a specific project
+export const getProjectMembers = async (projectId) => {
+  try {
+    const { data, error } = await supabase
+      .from('project_members')
+      .select('id, role, profiles(id, first_name, last_name, emp_id, email, department)')
+      .eq('project_id', projectId);
+
+    if (error) throw error;
+
+    const members = (data || []).map(m => ({
+      memberId: m.id,
+      role: m.role,
+      id: m.profiles?.id,
+      firstName: m.profiles?.first_name,
+      lastName: m.profiles?.last_name,
+      empCode: m.profiles?.emp_id,
+      email: m.profiles?.email,
+      department: m.profiles?.department,
+      displayLabel: `${m.profiles?.first_name || ''} ${m.profiles?.last_name || ''}`.trim()
+        + ` (${m.profiles?.emp_id || 'EMP'})`,
+    }));
+
+    return { data: members, error: null };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+};
+
+// Add a member to a project
+export const addProjectMember = async (projectId, employeeProfileId, role = 'member') => {
+  const safeRole = VALID_MEMBER_ROLES.includes(role) ? role : 'member';
+  try {
+    const { error } = await supabase
+      .from('project_members')
+      .upsert({ project_id: projectId, employee_id: employeeProfileId, role: safeRole }, { onConflict: 'project_id,employee_id' });
+    if (error) throw error;
+    invalidateCache();
+    return { error: null };
+  } catch (err) {
+    return { error: err.message };
+  }
+};
+
+// Remove a member from a project
+export const removeProjectMember = async (projectId, employeeProfileId) => {
+  try {
+    const { error } = await supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('employee_id', employeeProfileId);
+    if (error) throw error;
+    invalidateCache();
+    return { error: null };
+  } catch (err) {
+    return { error: err.message };
+  }
+};
+
+// ─── MEMBERSHIP VALIDATION ────────────────────────────────────────────────────
+// Returns true if the employee is a member of the project.
+// Called before task creation to enforce backend constraint.
+export const validateProjectMembership = async (projectId, employeeProfileId) => {
+  if (!projectId || !employeeProfileId) return false;
+  try {
+    const { data, error } = await supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('employee_id', employeeProfileId)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
+};
+
+// ─── COMPANY PROJECT NAMES LIST (legacy helper for dropdowns) ─────────────────
+export const getCompanyProjects = async () => {
+  try {
+    const { data } = await getProjects();
+    const names = (data || [])
+      .filter(p => p.status !== 'cancelled')
+      .map(p => p.name);
+    return { data: names.length > 0 ? names : ['General Project'], error: null };
+  } catch (e) {
+    return { data: ['General Project'], error: null };
+  }
+};
+
+// Keep backward compat — createCompanyProject is superseded by createProject
+export const createCompanyProject = async (projectName) => {
+  if (!projectName) return { success: false };
+  await supabase.from('projects').insert({ name: projectName, status: 'active' }).catch(() => {});
+  invalidateCache();
+  return { success: true };
+};
+
