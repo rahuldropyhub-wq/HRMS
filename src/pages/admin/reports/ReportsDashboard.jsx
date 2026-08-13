@@ -23,35 +23,35 @@ const REPORTS = [
   },
   {
     id: 'employee',
-    title: 'Employee Report',
-    description: 'Headcount metrics, demographics, and attrition rates.',
+    title: 'Employee Directory & Stats',
+    description: 'Headcount metrics, department breakdown, and employee directory.',
     icon: <Users size={24} />,
-    active: false,
-    link: '#'
+    active: true,
+    link: '/admin/employees'
   },
   {
     id: 'task',
-    title: 'Task Report',
-    description: 'Task completion rates, worksheet analytics, and productivity.',
+    title: 'Task & Worksheet Report',
+    description: 'Task completion rates, worksheet analytics, and team productivity.',
     icon: <CheckSquare size={24} />,
-    active: false,
-    link: '#'
+    active: true,
+    link: '/admin/tasks'
   },
   {
     id: 'asset',
-    title: 'Asset Report',
-    description: 'Hardware inventory, assignment history, and repair costs.',
+    title: 'Asset Inventory Report',
+    description: 'Hardware inventory, assignment history, and device statuses.',
     icon: <Package size={24} />,
-    active: false,
-    link: '#'
+    active: true,
+    link: '/admin/assets'
   },
   {
     id: 'ticket',
-    title: 'Ticket Report',
-    description: 'IT support resolution times, volume trends, and SLA breaches.',
+    title: 'Ticket Queue Report',
+    description: 'IT support resolution times, volume trends, and SLA status.',
     icon: <Ticket size={24} />,
-    active: false,
-    link: '#'
+    active: true,
+    link: '/admin/tickets'
   }
 ];
 

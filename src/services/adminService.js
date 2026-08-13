@@ -1,37 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
 
-// ─── EMPLOYEES (Profiles) ─────────────────────────────────────────────────────
-const DEFAULT_SYSTEM_EMPLOYEES = [
-  {
-    id: 'emp-jayanth-choda',
-    empCode: 'EMP-001',
-    firstName: 'Jayanth',
-    lastName: 'Choda',
-    email: 'jayanth.choda@dropyhub.com',
-    phone: '+91 98765 43210',
-    department: 'Engineering',
-    designation: 'Software Engineer',
-    employmentType: 'Full-Time',
-    status: 'Active',
-    avatar_url: '',
-    source: 'profile'
-  },
-  {
-    id: 'emp-balaji-s',
-    empCode: 'EMP-002',
-    firstName: 'Balaji',
-    lastName: 'S',
-    email: 'balaji.s@dropyhub.com',
-    phone: '+91 98765 43211',
-    department: 'Engineering',
-    designation: 'Senior Software Engineer',
-    employmentType: 'Full-Time',
-    status: 'Active',
-    avatar_url: '',
-    source: 'profile'
-  }
-];
-
 export const getAllEmployees = async () => {
   const [profilesRes, invitationsRes] = await Promise.all([
     supabase
@@ -84,10 +52,7 @@ export const getAllEmployees = async () => {
       source: 'invitation'
     }));
 
-  const allEmails = new Set([...profiles, ...invitations].map(e => e.email?.toLowerCase()));
-  const missingDefaults = DEFAULT_SYSTEM_EMPLOYEES.filter(d => !allEmails.has(d.email.toLowerCase()));
-
-  const combined = [...profiles, ...invitations, ...missingDefaults].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const combined = [...profiles, ...invitations].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   return { data: combined, error: null };
 };
