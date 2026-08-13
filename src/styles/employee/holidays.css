@@ -1,0 +1,205 @@
+.holidays-wrapper {
+  padding: 30px;
+  background-color: var(--bg-light);
+  min-height: calc(100vh - 80px);
+}
+
+.holidays-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 30px;
+}
+
+.holidays-title h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.holidays-title p {
+  font-size: 14px;
+  color: var(--text-gray);
+}
+
+.holidays-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.holiday-stat-card {
+  background: var(--white);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 240px;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon.primary {
+  background: rgba(29, 94, 242, 0.1);
+  color: var(--primary);
+}
+
+.stat-icon.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.stat-info p {
+  font-size: 13px;
+  color: var(--text-gray);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.stat-info h3 {
+  font-size: 20px;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.holidays-list-container {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  padding: 24px;
+}
+
+.month-section {
+  margin-bottom: 32px;
+}
+
+.month-section:last-child {
+  margin-bottom: 0;
+}
+
+.month-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.holiday-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.holiday-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.holiday-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transform: translateY(-2px);
+}
+
+.holiday-date-box {
+  background: var(--bg-light);
+  border-radius: 8px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.holiday-date-box .h-month {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.holiday-date-box .h-day {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
+.holiday-details {
+  flex: 1;
+}
+
+.holiday-details h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.holiday-details p {
+  font-size: 13px;
+  color: var(--text-gray);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.holiday-type {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.holiday-type.mandatory {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.holiday-type.optional {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+/* Passed holidays */
+.holiday-card.passed {
+  opacity: 0.6;
+}
+.holiday-card.passed .holiday-date-box .h-month {
+  color: var(--text-gray);
+}
+
+@media (max-width: 768px) {
+  .holidays-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .holidays-stats {
+    flex-direction: column;
+    width: 100%;
+  }
+  .holiday-stat-card {
+    width: 100%;
+  }
+}

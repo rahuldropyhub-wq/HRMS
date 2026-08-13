@@ -1,0 +1,222 @@
+.ticket-detail-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.back-link:hover { color: var(--text-primary); }
+
+.ticket-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.thread-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.message-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  padding: 20px;
+  box-shadow: 0 1px 2px var(--card-shadow);
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.sender-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.sender-info h3 {
+  margin: 0 0 2px 0;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.sender-info span {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.message-body {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.message-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.reply-box {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  padding: 20px;
+  box-shadow: 0 1px 2px var(--card-shadow);
+}
+
+.reply-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  margin-bottom: 16px;
+  outline: none;
+}
+
+.reply-textarea:focus { border-color: #3b82f6; }
+
+.reply-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-attach {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-send {
+  background: var(--brand-primary);
+  color: var(--card-bg);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-send:hover { background: #1d4ed8; }
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.info-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  padding: 20px;
+  box-shadow: 0 1px 2px var(--card-shadow);
+}
+
+.info-row {
+  margin-bottom: 16px;
+}
+.info-row:last-child { margin-bottom: 0; }
+
+.info-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.info-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.info-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 16px;
+  margin-top: 12px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-primary);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-secondary);
+  border: 2px solid var(--card-bg);
+}
+
+.timeline-date { color: var(--text-tertiary); font-size: 11px; margin-top: 2px; }
+
+@media (max-width: 1024px) {
+  .ticket-layout { grid-template-columns: 1fr; }
+}
