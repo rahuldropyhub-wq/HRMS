@@ -276,3 +276,10 @@
 .logout-btn:hover {
   background-color: #f3f4f6;
 }
+
+@media (max-width: 1024px) {
+  .attendance-content {
+    padding: 16px;
+    padding-bottom: 95px !important;
+  }
+}

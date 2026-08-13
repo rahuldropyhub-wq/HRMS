@@ -1177,10 +1177,12 @@
   /* Adjust Main Content padding */
   .dashboard-main {
     padding: 0;
+    padding-bottom: 95px !important;
   }
 
   .dashboard-content {
     padding: 16px;
+    padding-bottom: 95px !important;
   }
 
   .middle-row,

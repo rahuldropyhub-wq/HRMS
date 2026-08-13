@@ -478,9 +478,10 @@
 }
 
 /* Responsive Layout */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .worksheet-content {
     padding: 16px;
+    padding-bottom: 95px !important;
   }
   .worksheet-top-bar {
     flex-direction: column;

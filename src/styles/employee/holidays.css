@@ -189,7 +189,11 @@
   color: var(--text-gray);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .holidays-wrapper {
+    padding: 16px;
+    padding-bottom: 95px !important;
+  }
   .holidays-header {
     flex-direction: column;
     align-items: flex-start;

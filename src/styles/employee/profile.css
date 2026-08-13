@@ -953,9 +953,9 @@
 }
 
 /* ── Tablet & Mobile (≤768px) ── */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .profile-page-wrapper {
-    padding: 12px 10px 40px 10px;
+    padding: 12px 10px 95px 10px !important;
     gap: 16px;
   }
 

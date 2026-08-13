@@ -150,7 +150,7 @@ const EmployeeAssets = () => {
             />
           </div>
 
-          <div style={{ width: '180px' }}>
+          <div className="emp-assets-select-wrap" style={{ width: '180px' }}>
             <CustomDropdown 
               value={categoryFilter}
               onChange={val => setCategoryFilter(val)}
@@ -167,7 +167,7 @@ const EmployeeAssets = () => {
             />
           </div>
 
-          <div style={{ width: '180px' }}>
+          <div className="emp-assets-select-wrap" style={{ width: '180px' }}>
             <CustomDropdown 
               value={statusFilter}
               onChange={val => setStatusFilter(val)}
@@ -271,7 +271,7 @@ const EmployeeAssets = () => {
             ))}
           </div>
         ) : (
-          <div className="table-container" style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div className="table-container" style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflowX: 'auto', WebkitOverflowScrolling: 'touch', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>

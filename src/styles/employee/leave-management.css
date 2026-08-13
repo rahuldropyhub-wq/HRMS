@@ -354,9 +354,10 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .leave-content {
     padding: 16px;
+    padding-bottom: 95px !important;
   }
   
   .page-header-row {
