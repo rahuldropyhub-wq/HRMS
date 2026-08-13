@@ -205,8 +205,8 @@ function AdminLogin() {
               </button>
 
               <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setOtpSent(false)}
                   style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '14px', cursor: 'pointer', fontWeight: 500 }}
                 >

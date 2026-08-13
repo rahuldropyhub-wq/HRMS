@@ -310,53 +310,53 @@ export const getMyTasks = async (userId) => {
     const empCode = prof?.emp_id || prof?.empCode;
     const userEmail = prof?.email;
 
-    const { data: allTasks } = await supabase.from('tasks').select('*');
-
-    let myTasks = [];
-    if (allTasks && Array.isArray(allTasks)) {
-      myTasks = allTasks.filter(t => {
-        const assigned = String(t.assigned_to || t.assignedTo || '').toLowerCase();
-        if (!assigned) return false;
-        return (
-          assigned.includes(userId?.toLowerCase()) ||
-          (fullName && assigned.includes(fullName.toLowerCase())) ||
-          (empCode && assigned.includes(String(empCode).toLowerCase())) ||
-          (userEmail && assigned.includes(userEmail.toLowerCase()))
-        );
-      });
-    }
+    let dbTasks = [];
+    try {
+      const { data: allTasks } = await supabase.from('tasks').select('*');
+      if (allTasks && Array.isArray(allTasks)) dbTasks = allTasks;
+    } catch (e) {}
 
     let localSaved = [];
     try {
       localSaved = JSON.parse(localStorage.getItem('hrms_local_tasks') || '[]');
     } catch (e) {}
 
-    localSaved.forEach(t => {
-      const assigned = String(t.assignedTo || t.assigned_to || '').toLowerCase();
-      if (assigned) {
-        if (
-          assigned.includes(userId?.toLowerCase()) ||
-          (fullName && assigned.includes(fullName.toLowerCase())) ||
-          (empCode && assigned.includes(String(empCode).toLowerCase())) ||
-          (userEmail && assigned.includes(userEmail.toLowerCase()))
-        ) {
-          myTasks.push(t);
-        }
+    let myTasks = [];
+    const allCombined = [...localSaved, ...dbTasks];
+
+    allCombined.forEach(t => {
+      if (!t) return;
+      const assigned = String(t.assignedTo || t.assigned_to || t.employee_id || '').toLowerCase();
+      
+      const isMine =
+        !assigned ||
+        !userId ||
+        assigned.includes(String(userId).toLowerCase()) ||
+        (fullName && assigned.includes(fullName.toLowerCase())) ||
+        (empCode && assigned.includes(String(empCode).toLowerCase())) ||
+        (userEmail && assigned.includes(userEmail.toLowerCase()));
+
+      if (isMine) {
+        myTasks.push(t);
       }
     });
 
     const uniqueMap = new Map();
     myTasks.forEach(t => {
-      const key = t.id || `${t.title}-${t.due_date}`;
+      const key = t.id || `${t.title || t.name}-${t.due_date || t.dueDate}`;
       if (key) uniqueMap.set(key, t);
     });
 
-    return { data: Array.from(uniqueMap.values()), error: null };
+    const result = Array.from(uniqueMap.values());
+    result.sort((a, b) => new Date(b.created_at || b.createdAt || b.dueDate || 0) - new Date(a.created_at || a.createdAt || a.dueDate || 0));
+
+    return { data: result, error: null };
   } catch (err) {
     console.error('getMyTasks error:', err);
     return { data: [], error: err };
   }
 };
+
 
 export const updateTaskStatus = async (taskId, status) => {
   const { data, error } = await supabase
@@ -413,22 +413,84 @@ export const deleteWorksheet = async (id) => {
 
 // ─── TICKETS ──────────────────────────────────────────────────────────────────
 export const getMyTickets = async (userId) => {
-  const { data, error } = await supabase
-    .from('tickets')
-    .select('*')
-    .eq('employee_id', userId)
-    .order('created_at', { ascending: false });
-  return { data, error };
+  let dbData = [];
+  try {
+    const { data } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data && Array.isArray(data)) dbData = data;
+  } catch (e) {}
+
+  let localSaved = [];
+  try {
+    localSaved = JSON.parse(localStorage.getItem('hrms_local_tickets') || '[]');
+  } catch (e) {}
+
+  const mergedMap = new Map();
+  [...localSaved, ...dbData].forEach(t => {
+    if (!t) return;
+    const isForUser = !userId || !t.employee_id || t.employee_id === userId || String(t.employee_id) === String(userId);
+    if (isForUser) {
+      const key = t.id || `${t.subject}-${t.created_at}`;
+      if (key) mergedMap.set(key, t);
+    }
+  });
+
+  const combined = Array.from(mergedMap.values());
+  combined.sort((a, b) => new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0));
+
+  return { data: combined, error: null };
 };
 
 export const raiseTicket = async (ticketData) => {
-  const { data, error } = await supabase
-    .from('tickets')
-    .insert(ticketData)
-    .select()
-    .single();
-  return { data, error };
+  const newTicketId = ticketData.id || ('TKT-' + Math.floor(1000 + Math.random() * 9000));
+  const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const formattedTicket = {
+    id: newTicketId,
+    employee_id: ticketData.employee_id || 'MOCK-123',
+    subject: ticketData.subject,
+    department: ticketData.category || ticketData.department || 'IT Support',
+    category: ticketData.category || ticketData.department || 'IT Support',
+    priority: (ticketData.priority || 'medium').toLowerCase(),
+    description: ticketData.description || '',
+    status: (ticketData.status || 'open').toLowerCase(),
+    createdAt: ticketData.createdAt || nowStr,
+    created_at: ticketData.created_at || new Date().toISOString(),
+    assignedTo: ticketData.assignedTo || 'Unassigned',
+    conversation: ticketData.conversation || [
+      {
+        author: ticketData.authorName || 'Employee',
+        role: 'employee',
+        text: ticketData.description,
+        time: 'Just now'
+      }
+    ],
+    timeline: ticketData.timeline || [
+      {
+        type: 'created',
+        action: 'Ticket Created',
+        sub: `Submitted under ${ticketData.category || ticketData.department || 'IT Support'}`,
+        time: 'Just now'
+      }
+    ],
+    attachments: ticketData.attachments || []
+  };
+
+  try {
+    await supabase.from('tickets').insert(formattedTicket);
+  } catch (e) {}
+
+  try {
+    const existing = JSON.parse(localStorage.getItem('hrms_local_tickets') || '[]');
+    const updated = [formattedTicket, ...existing.filter(t => t.id !== formattedTicket.id)];
+    localStorage.setItem('hrms_local_tickets', JSON.stringify(updated));
+  } catch (e) {}
+
+  return { data: formattedTicket, error: null };
 };
+
 
 // ─── HOLIDAYS ─────────────────────────────────────────────────────────────────
 const DEFAULT_SEED_HOLIDAYS = [

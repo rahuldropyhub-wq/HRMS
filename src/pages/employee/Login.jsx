@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  CalendarDays, 
-  ClipboardCheck, 
-  FileText, 
-  Lock, 
-  Mail, 
-  ArrowRight, 
+import {
+  Users,
+  CalendarDays,
+  ClipboardCheck,
+  FileText,
+  Lock,
+  Mail,
+  ArrowRight,
   ShieldCheck,
   Shield
 } from 'lucide-react';
@@ -76,10 +76,10 @@ function Login() {
       return;
     }
     setLoading(true);
-    
+
 
     const { error } = await verifyOtp(email, token);
-    
+
     if (error) {
       setError(error.message || 'Invalid OTP. Please try again.');
     } else {
@@ -161,10 +161,10 @@ function Login() {
           <div className="auth-lock-icon">
             <Lock size={32} />
           </div>
-          
+
           <h3>Login to Your Account</h3>
           <p>Enter your work email and we'll send you a secure magic link (OTP) to log in.</p>
-          
+
           {error && <div style={{ color: 'red', marginBottom: '16px', fontSize: '14px', padding: '10px', backgroundColor: '#fee2e2', borderRadius: '4px' }}>{error}</div>}
           {success && <div style={{ color: 'green', marginBottom: '16px', fontSize: '14px', padding: '10px', backgroundColor: '#dcfce7', borderRadius: '4px' }}>{success}</div>}
 
@@ -210,12 +210,12 @@ function Login() {
                 {loading ? 'Verifying...' : 'Verify & Log In'}
                 {!loading && <ArrowRight size={18} />}
               </button>
-              
+
               <div style={{ textAlign: 'center', marginTop: '15px' }}>
                 <span style={{ fontSize: '14px', color: '#6b7280' }}>Didn't receive code? </span>
-                <button 
-                  type="button" 
-                  onClick={handleSendOtp} 
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
                   disabled={loading}
                   style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: '500', cursor: 'pointer', fontSize: '14px', padding: 0 }}
                 >

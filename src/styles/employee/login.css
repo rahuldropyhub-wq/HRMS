@@ -26,10 +26,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=crop') center center / cover no-repeat;
-  opacity: 0.15;
-  mask-image: linear-gradient(to bottom, transparent 20%, black 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 20%, black 100%);
+  background: radial-gradient(circle at 30% 20%, rgba(37, 99, 235, 0.12) 0%, rgba(224, 235, 249, 0) 70%);
   pointer-events: none;
   z-index: 1;
 }

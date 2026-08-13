@@ -6,7 +6,7 @@ import {
   Plus, X, Tag, Clock, Paperclip, Send, Download, Ticket,
   ArrowRight, AlertTriangle, CheckCircle2, RotateCcw, Filter,
   ChevronLeft, ChevronRight, FileImage, FileText as FilePdf,
-  Inbox, Shield, HelpCircle, PackageOpen, LifeBuoy,
+  Inbox, Shield, HelpCircle, PackageOpen, LifeBuoy, UploadCloud,
   Phone,
   Monitor
 } from 'lucide-react';
@@ -90,34 +90,71 @@ export default function Tickets() {
 
   // Form state
   const [form, setForm] = useState({ dept: 'IT Support', priority: 'medium', subject: '', description: '' });
+  const [attachments, setAttachments] = useState([]);
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const isImg = file.type.startsWith('image/');
+        const newAttachment = {
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          type: isImg ? 'img' : (file.type.includes('pdf') ? 'pdf' : 'doc'),
+          url: reader.result
+        };
+        setAttachments(prev => [...prev, newAttachment]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   const filtered = tickets.filter(t => {
     const tabOk = TAB_FILTERS[activeTab](t);
     const searchOk = !search || t.subject.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase());
-    const deptOk = deptFilter === 'all' || t.category === deptFilter;
+    const deptOk = deptFilter === 'all' || (t.category || t.department) === deptFilter;
     const priorOk = priorityFilter === 'all' || t.priority === priorityFilter;
     return tabOk && searchOk && deptOk && priorOk;
   });
 
   const selected = tickets.find(t => t.id === selectedId);
 
-  const handleCreateTicket = async () => {
-    if (!form.subject.trim() || !form.description.trim()) return;
+  const handleCreateTicket = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!form.subject.trim() || !form.description.trim()) {
+      alert('Please fill out the subject and description.');
+      return;
+    }
     const { data, error } = await raiseTicket({
-      employee_id: user.id,
+      employee_id: user?.id || 'MOCK-123',
+      authorName: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Employee',
       subject: form.subject,
       category: form.dept,
+      department: form.dept,
       priority: form.priority,
       description: form.description,
-      status: 'open'
+      status: 'open',
+      attachments: attachments
     });
     if (data) {
-      setTickets(prev => [data, ...prev]);
+      setTickets(prev => [data, ...prev.filter(t => t.id !== data.id)]);
       setSelectedId(data.id);
       setShowCreateModal(false);
       setForm({ dept: 'IT Support', priority: 'medium', subject: '', description: '' });
+      setAttachments([]);
     } else {
-      alert('Error: ' + error?.message);
+      alert('Error creating ticket: ' + (error?.message || 'Unknown error'));
     }
   };
 
@@ -397,17 +434,33 @@ export default function Tickets() {
                     </div>
                     <div className="tkt-attach-grid">
                       {selected.attachments.map((a, i) => (
-                        <div key={i} className="tkt-attach-row">
-                          <div className={`tkt-attach-icon ${a.type}`}>
-                            {a.type === 'img' && <FileImage size={18} />}
-                            {a.type === 'pdf' && <FilePdf size={18} />}
-                            {(a.type === 'doc' || a.type === 'other') && <FileText size={18} />}
+                        <div key={i} className="tkt-attach-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                            <div className={`tkt-attach-icon ${a.type}`}>
+                              {a.type === 'img' && <FileImage size={18} />}
+                              {a.type === 'pdf' && <FilePdf size={18} />}
+                              {(a.type === 'doc' || a.type === 'other') && <FileText size={18} />}
+                            </div>
+                            <div className="tkt-attach-info" style={{ flex: 1 }}>
+                              <div className="tkt-attach-name">{a.name}</div>
+                              <div className="tkt-attach-size">{a.size}</div>
+                            </div>
+                            {a.url && (
+                              <a href={a.url} download={a.name} target="_blank" rel="noreferrer" className="tkt-attach-dl" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Download size={13} />
+                              </a>
+                            )}
                           </div>
-                          <div className="tkt-attach-info">
-                            <div className="tkt-attach-name">{a.name}</div>
-                            <div className="tkt-attach-size">{a.size}</div>
-                          </div>
-                          <button className="tkt-attach-dl"><Download size={13} /></button>
+                          {a.type === 'img' && a.url && (
+                            <div style={{ marginTop: '4px', width: '100%' }}>
+                              <img 
+                                src={a.url} 
+                                alt={a.name} 
+                                style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', border: '1px solid #e2e8f0', objectFit: 'contain', cursor: 'pointer' }}
+                                onClick={() => window.open(a.url, '_blank')}
+                              />
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -513,7 +566,47 @@ export default function Tickets() {
               </FormField>
               
               <FormField label="Attachments & Screenshots" fullWidth>
-                <FileUpload hint="Supports: Images, PDF, Word, Excel, ZIP - Max 10 MB" />
+                <div style={{ border: '2px dashed #cbd5e1', borderRadius: '12px', padding: '20px', textAlign: 'center', backgroundColor: '#f8fafc' }}>
+                  <UploadCloud size={32} style={{ margin: '0 auto 8px', color: '#64748b' }} />
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                    Click to select or upload images & attachments
+                  </p>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Supports: JPG, PNG, GIF, WEBP, PDF, ZIP (Max 10MB)</span>
+                  <div style={{ marginTop: '12px' }}>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.zip,.doc,.docx"
+                      multiple
+                      onChange={handleImageUpload}
+                      style={{ cursor: 'pointer', fontSize: '14px' }}
+                    />
+                  </div>
+                </div>
+
+                {attachments.length > 0 && (
+                  <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {attachments.map((att, idx) => (
+                      <div key={idx} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', background: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {att.type === 'img' && att.url ? (
+                          <img src={att.url} alt={att.name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px' }} />
+                        ) : (
+                          <FileImage size={24} color="#3b82f6" />
+                        )}
+                        <div style={{ fontSize: '12px' }}>
+                          <div style={{ fontWeight: '600', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</div>
+                          <div style={{ color: '#64748b' }}>{att.size}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(idx)}
+                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', marginLeft: '4px' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </FormField>
             </FormSection>
           </FormBody>

@@ -186,6 +186,87 @@ export default function Tasks() {
     }));
   }
 
+  // File upload for task detail work submission
+  function handleTaskDetailFileUpload(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !selectedTask) return;
+
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const isImg = file.type.startsWith('image/');
+        const newAttach = {
+          id: `ATT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          type: isImg ? 'img' : (file.type.includes('pdf') ? 'pdf' : 'doc'),
+          url: reader.result
+        };
+
+        setTasks(prev => prev.map(t => {
+          if (t.id !== selectedTask.id) return t;
+          const existingAtts = Array.isArray(t.attachments) ? t.attachments : [];
+          const updatedAtts = [...existingAtts, newAttach];
+          const updated = {
+            ...t,
+            attachments: updatedAtts,
+            attachmentsCount: updatedAtts.length,
+            activity: [
+              ...(t.activity || []),
+              { id: Date.now(), actor: 'You', actorColor: 'blue', action: `Uploaded attachment: ${file.name}`, time: 'Just now' }
+            ]
+          };
+          if (selectedTask?.id === t.id) setSelectedTask(updated);
+
+          try {
+            const localTasks = JSON.parse(localStorage.getItem('hrms_local_tasks') || '[]');
+            const updatedLocal = localTasks.map(lt => (lt.id === t.id ? updated : lt));
+            localStorage.setItem('hrms_local_tasks', JSON.stringify(updatedLocal));
+          } catch (err) {}
+
+          return updated;
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Modal attachment state & handler
+  const [modalAttachments, setModalAttachments] = useState([]);
+
+  function handleModalFileUpload(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const isImg = file.type.startsWith('image/');
+        const newAttach = {
+          id: `ATT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          type: isImg ? 'img' : (file.type.includes('pdf') ? 'pdf' : 'doc'),
+          url: reader.result
+        };
+        setModalAttachments(prev => [...prev, newAttach]);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function removeModalAttachment(index) {
+    setModalAttachments(prev => prev.filter((_, i) => i !== index));
+  }
+
   // Create task
   function handleCreateTask(e) {
     e.preventDefault();
@@ -196,16 +277,31 @@ export default function Tasks() {
       project: newTask.project || 'General',
       department: newTask.department || 'General',
       assignedBy: newTask.assignedBy || 'Manager',
-      priority: newTask.priority, status: newTask.status, dueDate: newTask.dueDate,
+      assignedTo: user?.email || user?.id || 'Employee',
+      assigned_to: user?.email || user?.id || 'Employee',
+      employee_id: user?.id || 'MOCK-123',
+      priority: newTask.priority, status: newTask.status, dueDate: newTask.dueDate || new Date().toISOString().split('T')[0],
       estimatedHours: newTask.estimatedHours, progress: 0,
       description: newTask.description, requirements: '', acceptanceCriteria: '',
       checklist: (newTask.checklistInput || []).filter(Boolean).map((text, i) => ({ id: i + 1, text, done: false })),
-      comments: [], attachments: [], activity: [{ id: 1, actor: 'BK', actorColor: 'blue', action: 'Task created', time: 'Just now' }],
-      attachmentsCount: 0, commentsCount: 0, startTime: '', endTime: '', breakTime: '',
+      comments: [],
+      attachments: modalAttachments,
+      attachmentsCount: modalAttachments.length,
+      activity: [{ id: 1, actor: 'You', actorColor: 'blue', action: 'Task created', time: 'Just now' }],
+      commentsCount: 0, startTime: '', endTime: '', breakTime: '',
     };
     setTasks(prev => [task, ...prev]);
+    setSelectedTask(task);
+
+    try {
+      const localTasks = JSON.parse(localStorage.getItem('hrms_local_tasks') || '[]');
+      const filteredLocal = localTasks.filter(t => t.id !== task.id);
+      localStorage.setItem('hrms_local_tasks', JSON.stringify([task, ...filteredLocal]));
+    } catch (err) {}
+
     setShowModal(false);
     setNewTask({ name: '', project: '', department: '', assignedBy: '', priority: 'medium', status: 'not-started', dueDate: '', estimatedHours: '', description: '', checklistInput: [''] });
+    setModalAttachments([]);
   }
 
   const checklistDone = (selectedTask && Array.isArray(selectedTask.checklist)) ? selectedTask.checklist.filter(c => c.done).length : 0;
@@ -489,35 +585,65 @@ export default function Tasks() {
                 </div>
               </div>
 
-              {/* Attachments */}
+              {/* Attachments & Deliverable Proofs */}
               <div className="task-section-card">
                 <div className="task-section-title">
-                  <Paperclip size={16} color="#6b7280" /> Attachments
+                  <Paperclip size={16} color="#6b7280" /> Attachments & Deliverables
                   <span className="section-count">{selectedTask.attachments?.length || 0}</span>
                 </div>
                 {selectedTask.attachments?.length > 0 && (
                   <div className="attachments-grid">
                     {selectedTask.attachments.map(file => (
-                      <div key={file.id} className="attachment-row">
-                        <div className={`attachment-icon-box ${file.type}`}>
-                          {file.type === 'img' ? <Image size={16} /> : file.type === 'pdf' ? <AlertCircle size={16} /> : <FileIcon size={16} />}
+                      <div key={file.id} className="attachment-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                          <div className={`attachment-icon-box ${file.type}`}>
+                            {file.type === 'img' ? <Image size={16} /> : file.type === 'pdf' ? <AlertCircle size={16} /> : <FileIcon size={16} />}
+                          </div>
+                          <div className="attachment-info" style={{ flex: 1 }}>
+                            <div className="attachment-name">{file.name}</div>
+                            <div className="attachment-size">{file.size}</div>
+                          </div>
+                          <div className="attachment-actions">
+                            {file.url && (
+                              <a href={file.url} download={file.name} target="_blank" rel="noreferrer" className="attach-action-btn" title="Download" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Download size={13} />
+                              </a>
+                            )}
+                            <button className="attach-action-btn red" title="Delete" onClick={() => removeAttachment(selectedTask.id, file.id)}><Trash2 size={13} /></button>
+                          </div>
                         </div>
-                        <div className="attachment-info">
-                          <div className="attachment-name">{file.name}</div>
-                          <div className="attachment-size">{file.size}</div>
-                        </div>
-                        <div className="attachment-actions">
-                          <button className="attach-action-btn" title="Download"><Download size={13} /></button>
-                          <button className="attach-action-btn red" title="Delete" onClick={() => removeAttachment(selectedTask.id, file.id)}><Trash2 size={13} /></button>
-                        </div>
+                        {file.type === 'img' && file.url && (
+                          <div style={{ width: '100%', marginTop: '4px' }}>
+                            <img
+                              src={file.url}
+                              alt={file.name}
+                              style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #e2e8f0', objectFit: 'contain', cursor: 'pointer' }}
+                              onClick={() => window.open(file.url, '_blank')}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="upload-drop-zone">
-                  <Paperclip size={24} color="#9ca3af" />
-                  <p>Drag & drop files here or <span>click to upload</span></p>
-                  <p style={{ fontSize: 11, marginTop: 4 }}>Max file size: 10MB — PNG, JPG, PDF, DOCX, ZIP, XLS, PPT, Video, Audio</p>
+                <div 
+                  className="upload-drop-zone" 
+                  onClick={() => document.getElementById('task-detail-file-input').click()}
+                  style={{ cursor: 'pointer', textAlign: 'center', padding: '20px', border: '2px dashed #cbd5e1', borderRadius: '12px', background: '#f8fafc', marginTop: '12px' }}
+                >
+                  <input
+                    type="file"
+                    id="task-detail-file-input"
+                    style={{ display: 'none' }}
+                    accept="image/*,.pdf,.doc,.docx,.zip,.xls,.xlsx"
+                    multiple
+                    onChange={handleTaskDetailFileUpload}
+                  />
+                  <Paperclip size={24} color="#3b82f6" style={{ margin: '0 auto 6px' }} />
+                  <p style={{ margin: 0, fontWeight: 600, color: '#334155', fontSize: '14px' }}>
+                    Click to select or upload images & task submission deliverables
+                  </p>
+                  <p style={{ fontSize: 11, marginTop: 4, color: '#64748b' }}>Supports: PNG, JPG, JPEG, WEBP, GIF, PDF, DOCX, ZIP (Max 10MB)</p>
                 </div>
               </div>
 
@@ -689,8 +815,48 @@ export default function Tasks() {
                 </div>
               </FormField>
 
-              <FormField label="Attachments" fullWidth>
-                <FileUpload hint="Upload requirements, mockups, or specs (Max 10MB)" />
+              <FormField label="Attachments & Deliverable Specifications" fullWidth>
+                <div style={{ border: '2px dashed #cbd5e1', borderRadius: '12px', padding: '20px', textAlign: 'center', backgroundColor: '#f8fafc' }}>
+                  <Paperclip size={28} style={{ margin: '0 auto 8px', color: '#3b82f6' }} />
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                    Click to select or upload task images & specifications
+                  </p>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Supports: JPG, PNG, GIF, WEBP, PDF, DOCX, ZIP (Max 10MB)</span>
+                  <div style={{ marginTop: '12px' }}>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.zip,.doc,.docx"
+                      multiple
+                      onChange={handleModalFileUpload}
+                      style={{ cursor: 'pointer', fontSize: '14px' }}
+                    />
+                  </div>
+                </div>
+
+                {modalAttachments.length > 0 && (
+                  <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {modalAttachments.map((att, idx) => (
+                      <div key={idx} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', background: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {att.type === 'img' && att.url ? (
+                          <img src={att.url} alt={att.name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px' }} />
+                        ) : (
+                          <Image size={24} color="#3b82f6" />
+                        )}
+                        <div style={{ fontSize: '12px' }}>
+                          <div style={{ fontWeight: '600', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</div>
+                          <div style={{ color: '#64748b' }}>{att.size}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeModalAttachment(idx)}
+                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', marginLeft: '4px' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </FormField>
             </FormSection>
           </FormBody>
