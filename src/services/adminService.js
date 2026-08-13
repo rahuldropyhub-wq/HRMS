@@ -15,7 +15,7 @@ export const getAllEmployees = async () => {
   ]);
 
   const profiles = (profilesRes.data || []).map(p => ({
-    id: p.emp_id || p.id,
+    id: p.id,
     empCode: p.emp_id || p.raw_data?.empId || p.raw_data?.emp_id || p.raw_data?.empCode || p.id,
     firstName: p.first_name || p.raw_data?.firstName,
     lastName: p.last_name || p.raw_data?.lastName,
@@ -37,7 +37,7 @@ export const getAllEmployees = async () => {
   const invitations = (invitationsRes.data || [])
     .filter(inv => !profileEmails.has(inv.email?.toLowerCase())) // ← Skip if already has a profile
     .map(inv => ({
-      id: inv.raw_data?.empId || inv.id,
+      id: inv.id,
       empCode: inv.raw_data?.empId || inv.raw_data?.emp_id || inv.raw_data?.empCode || inv.id,
       firstName: inv.first_name || inv.raw_data?.firstName,
       lastName: inv.last_name || inv.raw_data?.lastName,
@@ -1035,19 +1035,47 @@ export const getProjectMembers = async (projectId) => {
 };
 
 // Add a member to a project
-export const addProjectMember = async (projectId, employeeProfileId, role = 'member') => {
+export const addProjectMember = async (projectId, employeeIdOrCode, role = 'member') => {
   const safeRole = VALID_MEMBER_ROLES.includes(role) ? role : 'member';
   try {
+    let targetProfileId = employeeIdOrCode;
+
+    // Resolve non-UUID strings (e.g. 'DROPY-001') to true profile UUID
+    if (!isUuid(targetProfileId)) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('emp_id', targetProfileId)
+        .maybeSingle();
+
+      if (prof?.id && isUuid(prof.id)) {
+        targetProfileId = prof.id;
+      } else {
+        const { data: inv } = await supabase
+          .from('employee_invitations')
+          .select('id')
+          .or(`id.eq.${targetProfileId},raw_data->>empId.eq.${targetProfileId}`)
+          .maybeSingle();
+
+        if (inv?.id && isUuid(inv.id)) {
+          targetProfileId = inv.id;
+        } else {
+          console.warn('[addProjectMember] Unable to resolve UUID for:', employeeIdOrCode);
+          return { error: 'Employee UUID not found' };
+        }
+      }
+    }
+
     let { error } = await supabase
       .from('project_members')
-      .upsert({ project_id: projectId, employee_id: employeeProfileId, role: safeRole }, { onConflict: 'project_id,employee_id' });
+      .upsert({ project_id: projectId, employee_id: targetProfileId, role: safeRole }, { onConflict: 'project_id,employee_id' });
 
     if (error) {
       const { data: existing } = await supabase
         .from('project_members')
         .select('id')
         .eq('project_id', projectId)
-        .eq('employee_id', employeeProfileId)
+        .eq('employee_id', targetProfileId)
         .maybeSingle();
 
       if (existing) {
@@ -1059,7 +1087,7 @@ export const addProjectMember = async (projectId, employeeProfileId, role = 'mem
       } else {
         const { error: insErr } = await supabase
           .from('project_members')
-          .insert({ project_id: projectId, employee_id: employeeProfileId, role: safeRole });
+          .insert({ project_id: projectId, employee_id: targetProfileId, role: safeRole });
         error = insErr;
       }
     }
@@ -1073,13 +1101,26 @@ export const addProjectMember = async (projectId, employeeProfileId, role = 'mem
 };
 
 // Remove a member from a project
-export const removeProjectMember = async (projectId, employeeProfileId) => {
+export const removeProjectMember = async (projectId, employeeIdOrCode) => {
   try {
+    let targetProfileId = employeeIdOrCode;
+
+    if (!isUuid(targetProfileId)) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('emp_id', targetProfileId)
+        .maybeSingle();
+      if (prof?.id && isUuid(prof.id)) {
+        targetProfileId = prof.id;
+      }
+    }
+
     const { error } = await supabase
       .from('project_members')
       .delete()
       .eq('project_id', projectId)
-      .eq('employee_id', employeeProfileId);
+      .eq('employee_id', targetProfileId);
     if (error) throw error;
     invalidateCache();
     return { error: null };

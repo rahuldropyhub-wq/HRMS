@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
         };
 
         try {
-          const { data: newProfile } = await supabase.from('profiles').insert(fallbackProfile).select().maybeSingle();
+          const { data: newProfile } = await supabase.from('profiles').upsert(fallbackProfile, { onConflict: 'id' }).select().maybeSingle();
           if (newProfile) data = newProfile;
           else data = fallbackProfile;
         } catch {
