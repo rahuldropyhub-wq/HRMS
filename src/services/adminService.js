@@ -1360,3 +1360,104 @@ export const createCompanyProject = async (projectName) => {
   return { success: true };
 };
 
+// ─── ADMIN LOGIN AUDIT LOGGING ────────────────────────────────────────────────
+let lastRecordedSessionTime = 0;
+let lastRecordedEmail = '';
+
+export const recordAdminLoginLog = async ({ adminEmail, adminName, role = 'admin' }) => {
+  const now = new Date();
+  const cleanEmail = (adminEmail || '').trim().toLowerCase();
+
+  // Deduplication: Avoid recording duplicate entries on page reloads within 15 minutes for the same admin session
+  const nowMs = now.getTime();
+  if (lastRecordedEmail === cleanEmail && (nowMs - lastRecordedSessionTime < 15 * 60 * 1000)) {
+    return null;
+  }
+  lastRecordedSessionTime = nowMs;
+  lastRecordedEmail = cleanEmail;
+
+  const userAgent = navigator.userAgent || '';
+  let browser = 'Chrome';
+  if (userAgent.includes('Firefox')) browser = 'Firefox';
+  else if (userAgent.includes('Edg')) browser = 'Edge';
+  else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Safari';
+
+  let os = 'Windows 11';
+  if (userAgent.includes('Mac')) os = 'macOS';
+  else if (userAgent.includes('Linux')) os = 'Linux';
+  else if (userAgent.includes('Android')) os = 'Android';
+  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
+
+  // Fetch real client public IP with fast 1.2s timeout fallback
+  let clientIp = '127.0.0.1 (Gateway)';
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+    const ipRes = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (ipRes.ok) {
+      const ipData = await ipRes.json();
+      if (ipData?.ip) clientIp = ipData.ip;
+    }
+  } catch (e) {
+    // Fallback to local gateway if offline/blocked
+  }
+
+  const logEntry = {
+    id: 'adm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+    admin_email: cleanEmail,
+    admin_name: adminName || (cleanEmail ? cleanEmail.split('@')[0] : 'Administrator'),
+    login_timestamp: now.toISOString(),
+    login_date: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+    login_time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+    ip_address: clientIp,
+    device_info: `${browser} • ${os}`,
+    auth_method: 'Passcode OTP',
+    status: 'Active Session'
+  };
+
+  // 1. Write to Supabase table
+  try {
+    await supabase.from('admin_audit_logs').insert([logEntry]);
+  } catch (err) {
+    console.debug('Supabase audit log insert notice:', err);
+  }
+
+  // 2. Persist in localStorage for instant fallback
+  try {
+    const existing = JSON.parse(localStorage.getItem('dropyhub_admin_login_logs') || '[]');
+    const updated = [logEntry, ...existing.filter(item => item.id !== logEntry.id)].slice(0, 50);
+    localStorage.setItem('dropyhub_admin_login_logs', JSON.stringify(updated));
+  } catch (e) {}
+
+  return logEntry;
+};
+
+export const getAdminLoginLogs = async () => {
+  let logs = [];
+  try {
+    const { data, error } = await supabase
+      .from('admin_audit_logs')
+      .select('*')
+      .order('login_timestamp', { ascending: false })
+      .limit(30);
+
+    if (data && data.length > 0) {
+      logs = data;
+    }
+  } catch (err) {
+    console.debug('Supabase getAdminLoginLogs notice:', err);
+  }
+
+  if (logs.length === 0) {
+    try {
+      const local = JSON.parse(localStorage.getItem('dropyhub_admin_login_logs') || '[]');
+      if (local.length > 0) {
+        logs = local;
+      }
+    } catch (e) {}
+  }
+
+  return { data: logs, error: null };
+};
+

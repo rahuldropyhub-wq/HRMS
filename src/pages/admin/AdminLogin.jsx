@@ -19,6 +19,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import '../../styles/admin/admin-login.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { recordAdminLoginLog } from '../../services/adminService';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -102,6 +103,14 @@ export default function AdminLogin() {
       if (verifyError) {
         setError(verifyError.message || 'Invalid or expired authorization passcode.');
       } else {
+        const cleanEmail = email.trim().toLowerCase();
+        const adminName = cleanEmail.includes('manjula') ? 'Manjula K (Super Admin)' : 'Test Administrator';
+        recordAdminLoginLog({
+          adminEmail: cleanEmail,
+          adminName: adminName,
+          role: 'admin'
+        });
+
         setSuccess('Security clearance verified! Opening Admin Command Center...');
         setTimeout(() => {
           navigate('/admin/dashboard');

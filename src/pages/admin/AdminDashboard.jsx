@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import '../../styles/admin/admin-dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { getDashboardStats, getAllAttendanceToday } from '../../services/adminService';
+import { getDashboardStats, getAllAttendanceToday, recordAdminLoginLog } from '../../services/adminService';
 import CelebrationsWidget from '../../components/shared/CelebrationsWidget';
+import AdminLoginAuditTrail from '../../components/admin/AdminLoginAuditTrail';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -286,6 +287,11 @@ const AdminDashboard = () => {
 
         </div>
       </div>
+
+      {/* SECTION: Admin Login & Security Audit Trail */}
+      <section className="admin-audit-section">
+        <AdminLoginAuditTrail />
+      </section>
 
       {/* SECTION 10: Footer */}
       <footer className="admin-footer">
