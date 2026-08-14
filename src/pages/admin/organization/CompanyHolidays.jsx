@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePopup } from '../../../contexts/PopupContext';
 import { Calendar as CalendarIcon, List, Plus, Edit, Trash2, X, CalendarDays, Loader2, PartyPopper } from 'lucide-react';
 import '../../../styles/admin/organization/company-holidays.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
@@ -29,9 +30,10 @@ const DEFAULT_SEED_HOLIDAYS = [
   { id: 'HOL-2026-08', name: 'Christmas Day', date: '2026-12-25', type: 'National', description: 'Christmas Day Celebration', applicableTo: 'All Departments' }
 ];
 
-const CompanyHolidays = () => {
+export default function CompanyHolidays() {
   const [view, setView] = useState('calendar');
   const [holidays, setHolidays] = useState([]);
+  const { showAlert, showConfirm } = usePopup();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState(null);
@@ -110,7 +112,7 @@ const CompanyHolidays = () => {
   const handleSubmitHoliday = async (e) => {
     e.preventDefault();
     if (!form.name || !form.date) {
-      alert('Please enter holiday name and date');
+      showAlert('Please enter holiday name and date', 'warning');
       return;
     }
 
@@ -153,18 +155,17 @@ const CompanyHolidays = () => {
     setEditingHoliday(null);
   };
 
-  const handleDeleteHoliday = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this holiday?')) return;
-
-    // Update local storage
-    const stored = getStoredLocalHolidays();
-    saveLocalHolidays(stored.filter(h => h.id !== id));
-
-    // Update state
-    setHolidays(prev => prev.filter(h => h.id !== id));
-
-    // Delete in Supabase
-    deleteHoliday(id).catch(err => console.warn('Delete holiday DB notice:', err));
+  const handleDeleteHoliday = (id) => {
+    showConfirm('Are you sure you want to delete this holiday?', async () => {
+      // Update local storage
+      const stored = getStoredLocalHolidays();
+      saveLocalHolidays(stored.filter(h => h.id !== id));
+      // Update state
+      setHolidays(prev => prev.filter(h => h.id !== id));
+      // Delete in Supabase
+      deleteHoliday(id).catch(err => console.warn('Delete holiday DB notice:', err));
+      showAlert('Holiday deleted', 'success');
+    });
   };
 
   const getDayName = (dateStr) => {
@@ -402,6 +403,4 @@ const CompanyHolidays = () => {
       </EnterpriseModal>
     </motion.div>
   );
-};
-
-export default CompanyHolidays;
+}

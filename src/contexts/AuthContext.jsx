@@ -7,6 +7,8 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
+const HARDCODED_ADMINS = ['test@dropyhub.com', 'manjula.k@dropyhub.com'];
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -25,7 +27,7 @@ export const AuthProvider = ({ children }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user.email);
         }
       } catch (err) {
         console.warn('Supabase getSession failed, using local auth mode.');
@@ -41,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user.email);
         } else {
           setProfile(null);
         }
@@ -54,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, sessionEmail = '') => {
     if (!isSupabaseConfigured) return;
     try {
       let { data, error } = await supabase
@@ -62,18 +64,17 @@ export const AuthProvider = ({ children }) => {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
-      const { data: userData } = await supabase.auth.getUser();
-      const email = data?.email || userData?.user?.email || '';
+
+      const email = data?.email || sessionEmail || '';
 
       // Fallback: If no profile exists, create/generate it
       if (!data && email) {
         const lowerEmail = email.toLowerCase();
-        const assignedRole = lowerEmail === 'test@dropyhub.com' ? 'admin' : 'employee';
+        const assignedRole = HARDCODED_ADMINS.includes(lowerEmail) ? 'admin' : 'employee';
 
         // Check invitation first
         const { data: invitation } = await supabase.from('employee_invitations').select('*').eq('email', email).maybeSingle();
-        
+
         const fallbackProfile = {
           id: userId,
           emp_id: invitation?.raw_data?.empId || (assignedRole === 'admin' ? 'ADM-001' : 'EMP-001'),
@@ -98,10 +99,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data) {
-        const userEmail = data.email || (await supabase.auth.getUser())?.data?.user?.email || '';
+        const userEmail = data.email || sessionEmail || '';
         const lowerEmail = userEmail.toLowerCase();
 
-        if (lowerEmail === 'test@dropyhub.com') {
+        if (HARDCODED_ADMINS.includes(lowerEmail)) {
           data.role = 'admin';
         }
 
@@ -131,7 +132,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithOtp = async (email) => {
     const lowerEmail = email ? email.toLowerCase() : '';
-    const isDesignatedUser = ['test@dropyhub.com'].includes(lowerEmail);
+    const isDesignatedUser = HARDCODED_ADMINS.includes(lowerEmail);
 
     if (!isSupabaseConfigured) {
       return { data: { user: null }, error: null };
@@ -146,10 +147,10 @@ export const AuthProvider = ({ children }) => {
           .maybeSingle();
 
         if (invError || !invitation) {
-          return { 
-            error: { 
-              message: 'This email is not registered. Please ask your administrator to add you first.' 
-            } 
+          return {
+            error: {
+              message: 'This email is not registered. Please ask your administrator to add you first.'
+            }
           };
         }
       } catch (err) {
@@ -167,6 +168,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginAdminWithOtp = async (email) => {
+    const lowerEmail = email ? email.toLowerCase() : '';
+    if (!HARDCODED_ADMINS.includes(lowerEmail)) {
+      return { 
+        data: { user: null }, 
+        error: { message: 'Unauthorized. This email does not have admin privileges.' } 
+      };
+    }
+
     if (!isSupabaseConfigured) {
       return { data: { user: null }, error: null };
     }
@@ -201,7 +210,7 @@ export const AuthProvider = ({ children }) => {
   const performLocalLogin = (email) => {
     const lowerEmail = email ? email.toLowerCase() : '';
     let role = 'employee';
-    if (lowerEmail === 'test@dropyhub.com' || window.location.pathname.startsWith('/admin')) {
+    if (HARDCODED_ADMINS.includes(lowerEmail) || window.location.pathname.startsWith('/admin')) {
       role = 'admin';
     }
 
@@ -232,9 +241,9 @@ export const AuthProvider = ({ children }) => {
     if (isSupabaseConfigured) {
       try {
         await supabase.auth.signOut();
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     // Clear local state
     setUser(null);
     setProfile(null);
@@ -248,12 +257,12 @@ export const AuthProvider = ({ children }) => {
       email = role === 'admin' ? 'test@dropyhub.com' : 'employee@dropyhub.com';
     }
     const mockUser = { id: 'MOCK-123', email };
-    const mockProfile = { 
-      id: 'MOCK-123', 
+    const mockProfile = {
+      id: 'MOCK-123',
       email,
-      first_name: email.split('@')[0], 
-      last_name: role === 'admin' ? 'Admin' : 'Employee', 
-      role: role 
+      first_name: email.split('@')[0],
+      last_name: role === 'admin' ? 'Admin' : 'Employee',
+      role: role
     };
     setUser(mockUser);
     setProfile(mockProfile);

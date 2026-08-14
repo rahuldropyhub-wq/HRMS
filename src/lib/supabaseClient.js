@@ -6,7 +6,12 @@ const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabaseUrl = rawUrl.trim().replace(/[\r\n\t ]+/g, '');
 const supabaseAnonKey = rawKey.trim().replace(/[\r\n\t ]+/g, '');
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder'));
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && 
+  supabaseAnonKey && 
+  !supabaseUrl.includes('placeholder') &&
+  supabaseAnonKey.startsWith('eyJ')
+);
 
 if (!isSupabaseConfigured) {
   console.info('ℹ️ Running in Local Standalone Mode (using simulated local authentication).');

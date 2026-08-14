@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePopup } from '../../../contexts/PopupContext';
 import { Search, Download, CheckCircle, XCircle, Eye, RefreshCw, X, Paperclip, SearchX, Check, Undo2 } from 'lucide-react';
 import '../../../styles/admin/leave/leave-requests.css';
 import EmptyState from '../../../components/admin/EmptyState';
@@ -10,7 +11,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 // Mock Data
 const MOCK_REQUESTS = [];
 
-const LeaveRequests = () => {
+export default function LeaveRequests() {
+  const { showAlert } = usePopup();
   const [activeTab, setActiveTab] = useState('Pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
@@ -109,7 +111,7 @@ const LeaveRequests = () => {
     if (data) {
       setRequests(prev => prev.map(r => r.id === selectedRequest.id ? { ...r, status: newStatus } : r));
     } else {
-      alert('Error: ' + error?.message);
+      showAlert('Error: ' + error?.message, 'error');
     }
     setIsConfirmModalOpen(false);
     setIsDrawerOpen(false);
@@ -119,8 +121,8 @@ const LeaveRequests = () => {
   };
 
   const handleExportCSV = () => {
-    if (requests.length === 0) {
-      alert('No leave requests available to export.');
+    if (filteredRequests.length === 0) {
+      showAlert('No leave requests available to export.', 'warning');
       return;
     }
 
@@ -474,6 +476,4 @@ const LeaveRequests = () => {
       </AnimatePresence>
     </motion.div>
   );
-};
-
-export default LeaveRequests;
+}

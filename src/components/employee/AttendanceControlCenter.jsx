@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import '../../styles/employee/attendance-control.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { EnterpriseModal, FormBody, FormSection, FormField, TextArea, FormFooter, FormHeader } from './EnterpriseForm';
+import { usePopup } from '../../contexts/PopupContext';
 import { getTodayAttendance, checkIn, startBreak, endBreak, checkOut, getIdleHistory, submitWorksheet, getMyWorksheets, getCompanyProjects } from '../../services/employeeService';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -127,6 +129,7 @@ function CircularTimer({ seconds, color, backgroundRingColor }) {
 export default function AttendanceControlCenter({ compact = false }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showAlert } = usePopup();
 
   // Live clock
   const [now, setNow] = useState(new Date());
@@ -495,10 +498,10 @@ export default function AttendanceControlCenter({ compact = false }) {
 
   const handleSubmitWorksheetAndCheckout = async (e) => {
     if (e) e.preventDefault();
-    if (!wsDescription.trim()) {
-      alert('Please enter a summary of tasks completed today.');
-      return;
-    }
+      if (!wsDescription.trim()) {
+        showAlert('Please enter a summary of tasks completed today.', 'warning');
+        return;
+      }
     setSubmittingWs(true);
     const todayStr = new Date().toISOString().split('T')[0];
     const hoursStr = (totalWorkSecs > 0 ? (totalWorkSecs / 3600) : 8.0).toFixed(1);

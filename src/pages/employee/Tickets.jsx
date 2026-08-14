@@ -28,6 +28,7 @@ import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/tickets.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePopup } from '../../contexts/PopupContext';
 import { getMyTickets, raiseTicket, deleteTicket } from '../../services/employeeService';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ export default function Tickets() {
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState('');
   const { user, profile } = useAuth();
+  const { showAlert, showConfirm } = usePopup();
 
   useEffect(() => {
     if (!user) return;
@@ -101,7 +103,7 @@ export default function Tickets() {
 
     files.forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        showAlert(`File ${file.name} is too large. Max 10MB allowed.`, 'error');
         return;
       }
       compressAttachment(file).then(({ dataUrl }) => {
@@ -114,7 +116,7 @@ export default function Tickets() {
         };
         setAttachments(prev => [...prev, newAttachment]);
       }).catch(() => {
-        alert(`Failed to process file: ${file.name}`);
+        showAlert(`Failed to process file: ${file.name}`, 'error');
       });
     });
   };
@@ -136,7 +138,7 @@ export default function Tickets() {
   const handleCreateTicket = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!form.subject.trim() || !form.description.trim()) {
-      alert('Please fill out the subject and description.');
+      showAlert('Please fill out the subject and description.', 'warning');
       return;
     }
     const { data, error } = await raiseTicket({
@@ -156,8 +158,9 @@ export default function Tickets() {
       setShowCreateModal(false);
       setForm({ dept: 'IT Support', priority: 'medium', subject: '', description: '' });
       setAttachments([]);
+      showAlert('Ticket created successfully!', 'success');
     } else {
-      alert('Error creating ticket: ' + (error?.message || 'Unknown error'));
+      showAlert('Error creating ticket: ' + (error?.message || 'Unknown error'), 'error');
     }
   };
 
@@ -180,10 +183,12 @@ export default function Tickets() {
   const handleDeleteTicket = async (id) => {
     const targetId = id || selectedId;
     if (!targetId) return;
-    if (!window.confirm('Are you sure you want to delete this ticket?')) return;
-    await deleteTicket(targetId);
-    setTickets(prev => prev.filter(t => t.id !== targetId));
-    if (selectedId === targetId) setSelectedId(null);
+    showConfirm('Are you sure you want to delete this ticket?', async () => {
+      await deleteTicket(targetId);
+      setTickets(prev => prev.filter(t => t.id !== targetId));
+      if (selectedId === targetId) setSelectedId(null);
+      showAlert('Ticket deleted successfully.', 'success');
+    });
   };
 
   // Tab counts

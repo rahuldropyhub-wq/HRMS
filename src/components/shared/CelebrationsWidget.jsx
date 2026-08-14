@@ -4,16 +4,19 @@ import { Gift, Award, Star, Plus, Send, X, Calendar, PartyPopper } from 'lucide-
 import confetti from 'canvas-confetti';
 import { getUpcomingCelebrations, getAppreciations, createAppreciation } from '../../services/employeeService';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePopup } from '../../contexts/PopupContext';
 import '../../styles/shared/celebrations.css';
 
 const CelebrationsWidget = ({ isAdmin = false }) => {
   const { profile } = useAuth();
+  const { showAlert } = usePopup();
   const [activeTab, setActiveTab] = useState('celebrations'); // 'celebrations' or 'appreciations'
   const [celebrations, setCelebrations] = useState([]);
   const [appreciations, setAppreciations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [wishInputs, setWishInputs] = useState({});
+  const [wishesSent, setWishesSent] = useState({});
   const [formData, setFormData] = useState({
     receiver_name: '',
     receiver_id: null,
@@ -93,7 +96,8 @@ const CelebrationsWidget = ({ isAdmin = false }) => {
 
     await createAppreciation(newAppreciation);
     setWishInputs(prev => ({...prev, [celebration.id]: ''}));
-    alert(`Wish sent to ${celebration.employee.name}!`);
+    setWishesSent(prev => ({ ...prev, [celebration.id]: true }));
+    showAlert(`Wish sent to ${celebration.employee.name}!`, 'success');
     loadData();
   };
 

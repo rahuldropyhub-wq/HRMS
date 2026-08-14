@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { usePopup } from '../../../contexts/PopupContext';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Box, User, CheckCircle, Wrench } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ const AssetAssign = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [assigned, setAssigned] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const { showAlert } = usePopup();
 
   useEffect(() => {
     getAllEmployees().then(({ data }) => {
@@ -32,7 +34,7 @@ const AssetAssign = () => {
   const onSubmit = (data) => {
     setAssigned(true);
     setTimeout(() => {
-      alert('Asset Assigned Successfully!');
+      showAlert('Asset Assigned Successfully!', 'success');
       navigate('/admin/assets');
     }, 500);
   };

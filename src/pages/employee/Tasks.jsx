@@ -27,6 +27,7 @@ import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/tasks.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePopup } from '../../contexts/PopupContext';
 import { getMyTasks, updateTaskStatus, getCompanyProjects } from '../../services/employeeService';
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ function PriorityBadge({ priority }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function Tasks() {
+  const { showAlert } = usePopup();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('My Tasks');
@@ -194,7 +196,7 @@ export default function Tasks() {
 
     files.forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        showAlert(`File ${file.name} is too large. Max 10MB allowed.`, 'error');
         return;
       }
       compressAttachment(file).then(({ dataUrl }) => {
@@ -231,7 +233,7 @@ export default function Tasks() {
           return updated;
         }));
       }).catch(() => {
-        alert(`Failed to process file: ${file.name}`);
+        showAlert(`Failed to process file: ${file.name}`, 'error');
       });
     });
   }
@@ -245,7 +247,7 @@ export default function Tasks() {
 
     files.forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        showAlert(`File ${file.name} is too large. Max 10MB allowed.`, 'error');
         return;
       }
       compressAttachment(file).then(({ dataUrl }) => {
@@ -259,7 +261,7 @@ export default function Tasks() {
         };
         setModalAttachments(prev => [...prev, newAttach]);
       }).catch(() => {
-        alert(`Failed to process file: ${file.name}`);
+        showAlert(`Failed to process file: ${file.name}`, 'error');
       });
     });
   }

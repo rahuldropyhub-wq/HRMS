@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePopup } from '../../../contexts/PopupContext';
 import { getAllAttendanceRecords, getAllEmployees, getDepartments } from '../../../services/adminService';
 import '../../../styles/admin/reports/attendance-report.css';
 
@@ -10,6 +11,7 @@ const AttendanceReport = () => {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { showAlert } = usePopup();
 
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedDept, setSelectedDept] = useState('all');
@@ -184,7 +186,7 @@ const AttendanceReport = () => {
   // Export CSV
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
-      alert('No attendance data available to export.');
+      showAlert('No attendance data available to export.', 'warning');
       return;
     }
 

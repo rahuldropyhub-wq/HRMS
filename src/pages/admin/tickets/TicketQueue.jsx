@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Plus, Eye, SearchX, Loader2, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePopup } from '../../../contexts/PopupContext';
 import '../../../styles/admin/tickets/ticket-queue.css';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
@@ -14,6 +15,7 @@ const TicketQueue = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const { showConfirm, showAlert } = usePopup();
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -42,10 +44,12 @@ const TicketQueue = () => {
     fetchTickets();
   };
 
-  const handleDeleteTicket = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this ticket?')) return;
-    await deleteTicket(id);
-    setTickets(prev => prev.filter(t => t.id !== id));
+  const handleDelete = async (id) => {
+    showConfirm('Are you sure you want to delete this ticket?', async () => {
+      await deleteTicket(id);
+      setTickets(prev => prev.filter(t => t.id !== id));
+      showAlert('Ticket deleted successfully.', 'success');
+    });
   };
 
   const filteredTickets = tickets.filter(t => {

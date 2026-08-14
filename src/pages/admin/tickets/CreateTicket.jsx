@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { compressAttachment } from '../../../utils/imageCompressor';
+import { usePopup } from '../../../contexts/PopupContext';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { UploadCloud, FileImage, X } from 'lucide-react';
@@ -10,6 +11,7 @@ import { raiseTicket } from '../../../services/employeeService';
 const CreateTicket = () => {
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const { showAlert } = usePopup();
   const [attachments, setAttachments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,7 +21,7 @@ const CreateTicket = () => {
 
     files.forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Max 10MB allowed.`);
+        showAlert(`File ${file.name} is too large. Max 10MB allowed.`, 'error');
         return;
       }
       compressAttachment(file).then(({ dataUrl }) => {
@@ -32,7 +34,7 @@ const CreateTicket = () => {
         };
         setAttachments(prev => [...prev, newAttachment]);
       }).catch(() => {
-        alert(`Failed to process file: ${file.name}`);
+        showAlert(`Failed to process file: ${file.name}`, 'error');
       });
     });
   };

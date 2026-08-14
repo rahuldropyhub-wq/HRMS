@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, LayoutGrid, List, MessageSquare, Calendar, Edit, Trash2, CheckCircle, Clock, User, AlertCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../../../styles/admin/tasks/task-dashboard.css';
+import { usePopup } from '../../../contexts/PopupContext';
 import { getAllTasks, createTask, updateTask, deleteTask, getAllEmployees, getCompanyProjects, createCompanyProject } from '../../../services/adminService';
 import {
   EnterpriseModal,
@@ -69,11 +70,11 @@ const TaskDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [projectList, setProjectList] = useState([]);
-  const [isCustomProject, setIsCustomProject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const { showAlert, showConfirm } = usePopup();
 
   const initialForm = {
     title: '',
@@ -177,7 +178,7 @@ const TaskDashboard = () => {
   const handleSubmitTask = async (e) => {
     e.preventDefault();
     if (!form.title) {
-      alert('Please enter task title');
+      showAlert('Please enter task title', 'warning');
       return;
     }
 
@@ -199,7 +200,6 @@ const TaskDashboard = () => {
       description: form.description
     };
 
-    // Instant local storage persistence
     const stored = getStoredLocalTasks();
     const updatedLocal = editingTask
       ? stored.map(t => t.id === editingTask.id ? newTaskItem : t)
@@ -212,7 +212,6 @@ const TaskDashboard = () => {
       return [newTaskItem, ...filtered];
     });
 
-    // Supabase DB sync
     if (editingTask) {
       updateTask(editingTask.id, {
         title: form.title,
@@ -241,13 +240,13 @@ const TaskDashboard = () => {
   };
 
   const handleDeleteTask = async (id) => {
-    if (!window.confirm('Delete this task?')) return;
-
-    const stored = getStoredLocalTasks();
-    saveLocalTasks(stored.filter(t => t.id !== id));
-
-    setTasks(prev => prev.filter(t => t.id !== id));
-    deleteTask(id).catch(err => console.warn('Delete task DB notice:', err));
+    showConfirm('Delete this task?', async () => {
+      const stored = getStoredLocalTasks();
+      saveLocalTasks(stored.filter(t => t.id !== id));
+      setTasks(prev => prev.filter(t => t.id !== id));
+      deleteTask(id).catch(err => console.warn('Delete task DB notice:', err));
+      showAlert('Task deleted successfully', 'success');
+    });
   };
 
   const columns = [

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, CheckCircle, XCircle, Eye, Clock, X, SearchX, Calendar, Undo2, Loader2, Download } from 'lucide-react';
 import '../../../styles/admin/worksheet/worksheet-review.css';
+import { usePopup } from '../../../contexts/PopupContext';
 import EmptyState from '../../../components/admin/EmptyState';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 import { getAllWorksheets, updateWorksheetStatus } from '../../../services/adminService';
@@ -44,6 +45,7 @@ const decodeWorksheetData = (w) => {
 
 const WorksheetReview = () => {
   const [activeTab, setActiveTab] = useState('Pending');
+  const { showAlert } = usePopup();
   const [dateFilter, setDateFilter] = useState('');
   const [empFilter, setEmpFilter] = useState('');
   const [projFilter, setProjFilter] = useState('');
@@ -134,8 +136,8 @@ const WorksheetReview = () => {
   };
 
   const handleExportCSV = () => {
-    if (worksheets.length === 0) {
-      alert('No worksheets available to export.');
+    if (filteredSheets.length === 0) {
+      showAlert('No worksheets available to export.', 'warning');
       return;
     }
 

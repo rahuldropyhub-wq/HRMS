@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { usePopup } from '../../../contexts/PopupContext';
 import '../../../styles/admin/organization/designations.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
 import { getDesignations, createDesignation, deleteDesignation } from '../../../services/adminService';
 
 const Designations = () => {
   const [designations, setDesignations] = useState([]);
+  const { showConfirm, showAlert } = usePopup();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
@@ -38,9 +40,11 @@ const Designations = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this designation?')) return;
-    await deleteDesignation(id);
-    setDesignations(prev => prev.filter(d => d.id !== id));
+    showConfirm('Delete this designation?', async () => {
+      await deleteDesignation(id);
+      setDesignations(prev => prev.filter(d => d.id !== id));
+      showAlert('Designation deleted', 'success');
+    });
   };
 
   return (

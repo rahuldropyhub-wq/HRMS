@@ -5,6 +5,7 @@ import {
   Mail, Phone, MapPin, Calendar, Briefcase, 
   UserCircle, Edit, UserX, Download, Eye, FileText
 } from 'lucide-react';
+import { usePopup } from '../../../contexts/PopupContext';
 import '../../../styles/admin/employee/employee-profile.css';
 import { getEmployeeById, updateEmployee } from '../../../services/adminService';
 
@@ -14,6 +15,7 @@ const TABS = ['Personal', 'Company', 'Bank', 'Emergency', 'Documents', 'Activity
 const EmployeeProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = usePopup();
   const [activeTab, setActiveTab] = useState('Personal');
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ const EmployeeProfile = () => {
       window.open(blobUrl, '_blank');
     } catch (e) {
       console.error("Error displaying document:", e);
-      alert("Unable to open document. It may be corrupted.");
+      showAlert("Unable to open document. It may be corrupted.", 'error');
     }
   };
 
@@ -65,14 +67,16 @@ const EmployeeProfile = () => {
   const handleToggleStatus = async () => {
     const isCurrentlyInactive = emp.status === 'Inactive';
     const newStatus = isCurrentlyInactive ? (emp.raw_data?.status || 'Active') : 'Inactive';
-    if(window.confirm(`Are you sure you want to ${isCurrentlyInactive ? 'activate' : 'deactivate'} this employee?`)) {
+    
+    showConfirm(`Are you sure you want to ${isCurrentlyInactive ? 'activate' : 'deactivate'} this employee?`, async () => {
        const { error } = await updateEmployee(id, { status: newStatus });
        if (!error) {
          setEmp(prev => ({ ...prev, status: newStatus }));
+         showAlert(`Employee ${isCurrentlyInactive ? 'activated' : 'deactivated'} successfully`, 'success');
        } else {
-         alert('Failed to update status');
+         showAlert('Failed to update status', 'error');
        }
-    }
+    });
   };
 
   if (loading) {

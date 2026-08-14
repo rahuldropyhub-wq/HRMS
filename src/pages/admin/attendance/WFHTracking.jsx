@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Globe, Monitor, Shield, Clock, RefreshCw, Check, X } from 'lucide-react';
+import { usePopup } from '../../../contexts/PopupContext';
 import '../../../styles/admin/attendance/wfh-tracking.css';
 import { getWFHRequests, updateWFHStatus } from '../../../services/adminService';
 
@@ -44,7 +45,8 @@ function formatLoc(loc) {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-const WFHTracking = () => {
+export default function WFHTracking() {
+  const { showAlert } = usePopup();
   const [wfhList, setWfhList]         = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [loading, setLoading]         = useState(true);
@@ -102,14 +104,18 @@ const WFHTracking = () => {
     if (!emp) return;
     const id = emp.id;
     setUpdatingId(id);
-    const { data, error } = await updateWFHStatus(id, newStatus, emp.sourceTable);
-    if (!error) {
-      setWfhList(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
-      if (selectedEmp?.id === id) {
-        setSelectedEmp(prev => ({ ...prev, status: newStatus }));
+    try {
+      const { data, error } = await updateWFHStatus(id, newStatus, emp.sourceTable);
+      if (!error) {
+        setWfhList(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+        if (selectedEmp?.id === id) {
+          setSelectedEmp(prev => ({ ...prev, status: newStatus }));
+        }
+      } else {
+        showAlert('Error updating status: ' + (error?.message || 'Failed'), 'error');
       }
-    } else {
-      alert('Error updating status: ' + (error?.message || 'Failed'));
+    } catch (e) {
+      showAlert('Error updating status', 'error');
     }
     setUpdatingId(null);
   };
@@ -327,6 +333,4 @@ const WFHTracking = () => {
       )}
     </motion.div>
   );
-};
-
-export default WFHTracking;
+}

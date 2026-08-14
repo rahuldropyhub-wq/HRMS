@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, Briefcase, MapPin, Mail, Edit, Eye, X, Building } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { usePopup } from '../../../contexts/PopupContext';
 import '../../../styles/admin/organization/departments.css';
 import ActionBtn from '../../../components/admin/ActionBtn';
 import { getDepartments, createDepartment, deleteDepartment } from '../../../services/adminService';
@@ -10,6 +11,7 @@ const MOCK_DEPTS = [];
 
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
+  const { showAlert, showConfirm } = usePopup();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
@@ -36,14 +38,16 @@ const Departments = () => {
       setIsModalOpen(false);
       reset();
     } else {
-      alert('Error: ' + error?.message);
+      showAlert('Error: ' + error?.message, 'error');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this department?')) return;
-    const { error } = await deleteDepartment(id);
-    if (!error) setDepartments(prev => prev.filter(d => d.id !== id));
+    showConfirm('Delete this department?', async () => {
+      await deleteDepartment(id);
+      setDepartments(prev => prev.filter(d => d.id !== id));
+      showAlert('Department deleted successfully', 'success');
+    });
   };
 
   return (

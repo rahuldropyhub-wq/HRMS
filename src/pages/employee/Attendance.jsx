@@ -12,6 +12,7 @@ import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/attendance-report.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePopup } from '../../contexts/PopupContext';
 import { getMyAttendance } from '../../services/employeeService';
 
 // ─── Mock Attendance Data ──────────────────────────────────────────────────
@@ -39,6 +40,7 @@ export default function Attendance() {
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { showAlert } = usePopup();
 
   useEffect(() => {
     if (!user) return;
@@ -117,7 +119,7 @@ export default function Attendance() {
 
   const handleExportCSV = () => {
     if (attendanceData.length === 0) {
-      alert('No attendance records available to export.');
+      showAlert('No attendance records available to export.', 'warning');
       return;
     }
 

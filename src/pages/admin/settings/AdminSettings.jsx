@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building, Clock, Calendar, Bell, Link as LinkIcon, Hash, MessageSquare } from 'lucide-react';
+import { usePopup } from '../../../contexts/PopupContext';
 import '../../../styles/admin/settings/admin-settings.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('general');
+  const { showAlert } = usePopup();
   const [settings, setSettings] = useState({
     wfhAllowed: true,
     sandwichRule: true,
@@ -20,8 +22,7 @@ const AdminSettings = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    // Simulate save
-    alert('Settings saved successfully (Mock)');
+    showAlert('Settings saved successfully (Mock)', 'success');
   };
 
   return (

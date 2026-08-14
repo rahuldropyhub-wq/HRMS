@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { PopupProvider } from './contexts/PopupContext';
 import Login from './pages/employee/Login';
 import Dashboard from './pages/employee/Dashboard';
 import Attendance from './pages/employee/Attendance';
@@ -50,8 +51,9 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <PopupProvider>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -118,6 +120,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </PopupProvider>
   );
 }
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { usePopup } from '../../../contexts/PopupContext';
 import { ChevronDown, ChevronUp, SearchX, Download, FileText, Loader2 } from 'lucide-react';
 import { getAllEmployees, getAllLeaveRequests, getDepartments, getAllTickets } from '../../../services/adminService';
 import '../../../styles/admin/audit/audit-logs.css';
 import EmptyState from '../../../components/admin/EmptyState';
 
 const AuditLogs = () => {
+  const { showAlert } = usePopup();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -126,7 +128,7 @@ const AuditLogs = () => {
   // CSV Export Functionality
   const handleExportCSV = () => {
     if (filteredLogs.length === 0) {
-      alert('No audit logs available to export.');
+      showAlert('No audit logs available to export.', 'warning');
       return;
     }
 

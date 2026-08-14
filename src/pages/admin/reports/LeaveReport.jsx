@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePopup } from '../../../contexts/PopupContext';
 import { getAllLeaveRequests, getAllEmployees, getDepartments } from '../../../services/adminService';
 import '../../../styles/admin/reports/leave-report.css';
 
 const LeaveReport = () => {
+  const { showAlert } = usePopup();
   const [leaveData, setLeaveData] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -135,7 +137,7 @@ const LeaveReport = () => {
   // Export CSV
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
-      alert('No leave request data available to export.');
+      showAlert('No leave request data available to export.', 'warning');
       return;
     }
 

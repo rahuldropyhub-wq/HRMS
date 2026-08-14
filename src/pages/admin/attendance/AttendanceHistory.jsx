@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePopup } from '../../../contexts/PopupContext';
 import { 
   Search, Download, FileText, ChevronDown, ChevronUp, 
   MapPin, Monitor, Globe, Clock, SearchX, RefreshCw
@@ -24,7 +25,8 @@ function formatLocation(loc) {
   return String(loc);
 }
 
-const AttendanceHistory = () => {
+export default function AttendanceHistory() {
+  const { showAlert } = usePopup();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,7 +139,10 @@ const AttendanceHistory = () => {
   };
 
   const handleExportCSV = () => {
-    if (filteredHistory.length === 0) return alert('No records to export');
+    if (filteredHistory.length === 0) {
+      showAlert('No records to export', 'warning');
+      return;
+    }
     const headers = ['Employee Name', 'Emp ID', 'Department', 'Date', 'Check In', 'Check Out', 'Break Hours', 'Work Hours', 'Mode', 'Status'];
     const rows = filteredHistory.map(r => [
       `"${r.empName || ''}"`,
@@ -394,6 +399,4 @@ const AttendanceHistory = () => {
       )}
     </motion.div>
   );
-};
-
-export default AttendanceHistory;
+}

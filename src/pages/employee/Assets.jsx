@@ -25,6 +25,7 @@ import {
 
 const EmployeeAssets = () => {
   const { user } = useAuth();
+  const { showAlert } = usePopup();
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,7 +90,7 @@ const EmployeeAssets = () => {
 
   const handleReportIssue = (e) => {
     e.preventDefault();
-    alert(`Issue reported for ${selectedAsset?.name} (${selectedAsset?.id}). IT support will contact you shortly.`);
+    showAlert(`Issue reported for ${selectedAsset?.name} (${selectedAsset?.id}). IT support will contact you shortly.`, 'success');
     setShowIssueModal(false);
     setIssueForm({ type: 'Damaged', description: '' });
   };

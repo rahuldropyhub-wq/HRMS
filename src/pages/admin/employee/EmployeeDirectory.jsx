@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { usePopup } from '../../../contexts/PopupContext';
 import {
   Search, Plus, MoreVertical, Eye, Edit,
   UserX, UserCheck, ChevronLeft, ChevronRight, Download, SearchX
@@ -23,8 +24,9 @@ const getInitials = (first, last) => {
   const l = last ? String(last).trim() : '';
   return `${f ? f[0] : ''}${l ? l[0] : ''}`.toUpperCase() || '?';
 };
-const EmployeeDirectory = () => {
+export default function EmployeeDirectory() {
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = usePopup();
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,15 +95,17 @@ const EmployeeDirectory = () => {
     } else if (action === 'edit') {
       navigate(`/admin/employees/edit/${id}`);
     } else if (action === 'deactivate') {
-      if (window.confirm("Are you sure you want to deactivate this employee?")) {
+      showConfirm("Are you sure you want to deactivate this employee?", async () => {
         await updateEmployee(id, { status: 'Inactive' });
         setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'Inactive' } : emp));
-      }
+        showAlert("Employee deactivated successfully.", "success");
+      });
     } else if (action === 'activate') {
-      if (window.confirm("Are you sure you want to activate this employee?")) {
+      showConfirm("Are you sure you want to activate this employee?", async () => {
         await updateEmployee(id, { status: 'Active' });
         setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'Active' } : emp));
-      }
+        showAlert("Employee activated successfully.", "success");
+      });
     }
   };
 
@@ -376,6 +380,4 @@ const EmployeeDirectory = () => {
       </div>
     </motion.div>
   );
-};
-
-export default EmployeeDirectory;
+}
