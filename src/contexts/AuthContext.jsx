@@ -131,11 +131,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithOtp = async (email) => {
-    const lowerEmail = email ? email.toLowerCase() : '';
+    const lowerEmail = email ? email.toLowerCase().trim() : '';
     const isDesignatedUser = HARDCODED_ADMINS.includes(lowerEmail);
 
     if (!isSupabaseConfigured) {
-      return { data: { user: null }, error: null };
+      return { 
+        error: { message: 'Supabase authentication service is not connected.' }
+      };
     }
 
     if (!isDesignatedUser) {
@@ -143,7 +145,7 @@ export const AuthProvider = ({ children }) => {
         const { data: invitation, error: invError } = await supabase
           .from('employee_invitations')
           .select('id')
-          .eq('email', email)
+          .eq('email', lowerEmail)
           .maybeSingle();
 
         if (invError || !invitation) {
@@ -159,16 +161,25 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({ email });
-      if (error) return { data: { user: null }, error: null };
-      return { data, error };
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email: lowerEmail,
+        options: {
+          shouldCreateUser: true
+        }
+      });
+      if (error) {
+        console.error('Live signInWithOtp error:', error);
+        return { data: null, error };
+      }
+      return { data, error: null };
     } catch (err) {
-      return { data: { user: null }, error: null };
+      console.error('Live signInWithOtp exception:', err);
+      return { data: null, error: { message: err.message || 'Failed to send OTP.' } };
     }
   };
 
   const loginAdminWithOtp = async (email) => {
-    const lowerEmail = email ? email.toLowerCase() : '';
+    const lowerEmail = email ? email.toLowerCase().trim() : '';
     if (!HARDCODED_ADMINS.includes(lowerEmail)) {
       return { 
         data: { user: null }, 
@@ -177,33 +188,51 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (!isSupabaseConfigured) {
-      return { data: { user: null }, error: null };
+      return { 
+        error: { message: 'Supabase authentication service is not connected.' }
+      };
     }
+
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({ email });
-      if (error) return { data: { user: null }, error: null };
-      return { data, error };
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email: lowerEmail,
+        options: {
+          shouldCreateUser: true
+        }
+      });
+      if (error) {
+        console.error('Live Admin signInWithOtp error:', error);
+        return { data: null, error };
+      }
+      return { data, error: null };
     } catch (err) {
-      return { data: { user: null }, error: null };
+      console.error('Live Admin signInWithOtp exception:', err);
+      return { data: null, error: { message: err.message || 'Failed to send admin OTP.' } };
     }
   };
 
   const verifyOtp = async (email, token) => {
+    const lowerEmail = email ? email.toLowerCase().trim() : '';
     if (!isSupabaseConfigured) {
-      return performLocalLogin(email);
+      return performLocalLogin(lowerEmail);
     }
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token,
+        email: lowerEmail,
+        token: token.trim(),
         type: 'email'
       });
       if (error) {
-        return performLocalLogin(email);
+        console.error('Live verifyOtp error:', error);
+        return { data: null, error };
       }
-      return { data, error };
+      if (data?.user) {
+        await fetchProfile(data.user.id, data.user.email);
+      }
+      return { data, error: null };
     } catch (err) {
-      return performLocalLogin(email);
+      console.error('Live verifyOtp exception:', err);
+      return { data: null, error: { message: err.message || 'Verification failed.' } };
     }
   };
 

@@ -9,8 +9,7 @@ const supabaseAnonKey = rawKey.trim().replace(/[\r\n\t ]+/g, '');
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
   supabaseAnonKey && 
-  !supabaseUrl.includes('placeholder') &&
-  supabaseAnonKey.startsWith('eyJ')
+  !supabaseUrl.includes('placeholder')
 );
 
 if (!isSupabaseConfigured) {
