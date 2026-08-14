@@ -1,32 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "Dropyhub Enterprise Activity",
+  "name": "Dropyhub HRMS - Activity & Presence Companion",
   "version": "1.0.0",
-  "description": "Secure desktop activity monitoring for Dropyhub HRMS.",
-  "action": {
-    "default_popup": "index.html"
+  "description": "Background activity and idle presence tracker for Dropyhub HRMS",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "permissions": [
     "idle",
+    "alarms",
     "storage"
   ],
   "host_permissions": [
     "http://localhost:3000/*",
-    "http://localhost:5173/*"
+    "https://*.supabase.co/*"
   ],
   "background": {
-    "service_worker": "src/background.ts",
-    "type": "module"
+    "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "http://localhost:5173/*",
-        "https://*.dropyhub.com/*"
-      ],
-      "js": [
-        "src/content.ts"
-      ]
-    }
-  ]
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Dropyhub Activity Tracker"
+  }
 }

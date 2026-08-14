@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, RefreshCw, LayoutGrid, List,
   Coffee, Building2, Wifi, TrendingUp,
-  Video, LogOut, ChevronDown, ChevronUp, Clock
+  Video, LogOut, ChevronDown, ChevronUp, Clock, Activity, Zap
 } from 'lucide-react';
 import '../../../styles/admin/attendance/live-attendance.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
+import PresenceBadge from '../../../components/common/PresenceBadge';
+import { usePresence, PresenceStatus } from '../../../contexts/PresenceContext';
 import { getAllAttendanceToday } from '../../../services/adminService';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -204,12 +206,14 @@ const ExpandedRow = ({ emp }) => {
 // ── Main Component ─────────────────────────────────────────────────────────────
 const LiveAttendance = () => {
   const navigate = useNavigate();
+  const { onlineUsers, getEmployeePresence } = usePresence();
 
   const [view, setView] = useState('table');
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [modeFilter, setModeFilter] = useState('');
+  const [presenceFilter, setPresenceFilter] = useState('');
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(null);
@@ -306,16 +310,27 @@ const LiveAttendance = () => {
 
   const filtered = employees.filter(emp => {
     const name = `${emp.firstName} ${emp.lastName}`.toLowerCase();
+    const presence = getEmployeePresence(emp.id);
     return (
       name.includes(searchTerm.toLowerCase()) &&
       (deptFilter ? emp.dept === deptFilter : true) &&
       (statusFilter ? emp.status === statusFilter : true) &&
-      (modeFilter ? emp.mode === modeFilter : true)
+      (modeFilter ? emp.mode === modeFilter : true) &&
+      (presenceFilter ? presence?.status === presenceFilter : true)
     );
   });
 
+  const ADMIN_EMAILS = ['test@dropyhub.com', 'manjula.k@dropyhub.com'];
+  const isUserAdmin = (u) => u.role === 'admin' || (u.email && ADMIN_EMAILS.includes(u.email.toLowerCase()));
+
+  // Calculate live presence counts strictly for non-admin employees
+  const liveActiveCount = Object.values(onlineUsers).filter(u => u.status === PresenceStatus.ONLINE && !isUserAdmin(u)).length;
+  const liveIdleCount = Object.values(onlineUsers).filter(u => u.status === PresenceStatus.IDLE && !isUserAdmin(u)).length;
+
   const stats = {
     working: employees.filter(e => e.status === 'Working').length,
+    activeNow: liveActiveCount,
+    idleAway: liveIdleCount,
     onBreak: employees.filter(e => e.status === 'On Break').length,
     meeting: employees.filter(e => e.status === 'In Meeting').length,
     notIn: employees.filter(e => e.status === 'Not In').length,
@@ -336,9 +351,9 @@ const LiveAttendance = () => {
       {/* ─ Header ─────────────────────────────────────────────────────── */}
       <div className="la-header">
         <div className="la-header-left">
-          <h1>Live Attendance</h1>
+          <h1>Live Attendance & Activity Radar</h1>
           <p>
-            Real-time status · Last refreshed {lastRefresh.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+            Real-time Microsoft Teams-style presence tracking · Last synced {lastRefresh.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             {' · '}{employees.length} checked in today
           </p>
         </div>
@@ -347,7 +362,7 @@ const LiveAttendance = () => {
             <RefreshCw size={14} /> Refresh
           </button>
           <div className="la-live-pill">
-            <div className="la-live-dot" /> Live Updates
+            <div className="la-live-dot" /> Realtime Sync Active
           </div>
         </div>
       </div>
@@ -363,12 +378,12 @@ const LiveAttendance = () => {
       {/* ─ Stat Cards ─────────────────────────────────────────────────── */}
       <div className="la-stats-grid">
         {[
-          { cls: 'working', icon: <TrendingUp size={18} color="#22c55e" />, val: stats.working, lbl: 'Working', trend: 'up' },
-          { cls: 'break', icon: <Coffee size={18} color="#f59e0b" />, val: stats.onBreak, lbl: 'On Break', trend: 'neu' },
-          { cls: 'meeting', icon: <Video size={18} color="#3b82f6" />, val: stats.meeting, lbl: 'Meeting', trend: 'neu' },
-          { cls: 'notin', icon: <LogOut size={18} color="#94a3b8" />, val: stats.notIn, lbl: 'Not In', trend: 'down' },
-          { cls: 'office', icon: <Building2 size={18} color="#6366f1" />, val: stats.office, lbl: 'In Office', trend: 'neu' },
-          { cls: 'wfh', icon: <Wifi size={18} color="#ec4899" />, val: stats.wfh, lbl: 'WFH', trend: 'neu' },
+          { cls: 'working', icon: <Zap size={18} color="#10b981" />, val: stats.activeNow, lbl: '🟢 Active Working', trend: 'up' },
+          { cls: 'meeting', icon: <Activity size={18} color="#f59e0b" />, val: stats.idleAway, lbl: '🟡 Away / Idle', trend: 'neu' },
+          { cls: 'break', icon: <Coffee size={18} color="#f97316" />, val: stats.onBreak, lbl: '☕ On Break', trend: 'neu' },
+          { cls: 'office', icon: <Building2 size={18} color="#6366f1" />, val: stats.office, lbl: '🏢 In Office', trend: 'neu' },
+          { cls: 'wfh', icon: <Wifi size={18} color="#ec4899" />, val: stats.wfh, lbl: '🏠 Remote WFH', trend: 'neu' },
+          { cls: 'notin', icon: <LogOut size={18} color="#94a3b8" />, val: stats.notIn, lbl: '⚪ Not In', trend: 'down' },
         ].map(s => (
           <div key={s.cls} className={`la-stat-card ${s.cls}`}>
             <div className="la-stat-icon-row">
@@ -397,13 +412,13 @@ const LiveAttendance = () => {
         <div className="la-filter-item" style={{ width: 180, flexShrink: 0 }}>
           <CustomDropdown fullWidth value={deptFilter} onChange={setDeptFilter} options={deptOptions} />
         </div>
-        <div className="la-filter-item" style={{ width: 160, flexShrink: 0 }}>
-          <CustomDropdown fullWidth value={statusFilter} onChange={setStatusFilter} options={[
-            { value: '', label: 'All Statuses' },
-            { value: 'Working', label: '🟢 Working' },
-            { value: 'On Break', label: '🟡 On Break' },
-            { value: 'In Meeting', label: '🔵 In Meeting' },
-            { value: 'Not In', label: '⚪ Not In' },
+        <div className="la-filter-item" style={{ width: 170, flexShrink: 0 }}>
+          <CustomDropdown fullWidth value={presenceFilter} onChange={setPresenceFilter} options={[
+            { value: '', label: 'All Live Presence' },
+            { value: 'online', label: '🟢 Active Now' },
+            { value: 'idle', label: '🟡 Away / Idle' },
+            { value: 'break', label: '☕ On Break' },
+            { value: 'offline', label: '⚪ Offline' },
           ]} />
         </div>
         <div className="la-filter-item" style={{ width: 150, flexShrink: 0 }}>
@@ -457,6 +472,7 @@ const LiveAttendance = () => {
               <thead>
                 <tr>
                   <th>Employee</th>
+                  <th>Live Presence</th>
                   <th>Status</th>
                   <th>Mode</th>
                   <th>Check In</th>
@@ -467,39 +483,53 @@ const LiveAttendance = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((emp, i) => (
-                  <React.Fragment key={emp.id}>
-                    <motion.tr
-                      className={expandedRow === emp.id ? 'selected-row' : ''}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      onClick={() => toggleRow(emp.id)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {/* Employee */}
-                      <td>
-                        <div className="la-emp-cell">
-                          <div className="la-avatar">
-                            {emp.firstName[0]}{emp.lastName ? emp.lastName[0] : ''}
-                          </div>
-                          <div>
-                            <div className="la-emp-name">{emp.firstName} {emp.lastName}</div>
-                            <div className="la-emp-dept">
-                              {emp.empId && <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-muted)', marginRight: 5 }}>{emp.empId}</span>}
-                              {emp.dept}
+                {filtered.map((emp, i) => {
+                  const presence = getEmployeePresence(emp.id);
+                  return (
+                    <React.Fragment key={emp.id}>
+                      <motion.tr
+                        className={expandedRow === emp.id ? 'selected-row' : ''}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        onClick={() => toggleRow(emp.id)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {/* Employee */}
+                        <td>
+                          <div className="la-emp-cell">
+                            <div className="la-avatar" style={{ position: 'relative' }}>
+                              {emp.firstName[0]}{emp.lastName ? emp.lastName[0] : ''}
+                              <div style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                                <PresenceBadge status={presence?.status || (emp.onBreakNow ? 'break' : emp.status === 'Working' ? 'online' : 'offline')} size="sm" />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="la-emp-name">{emp.firstName} {emp.lastName}</div>
+                              <div className="la-emp-dept">
+                                {emp.empId && <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-muted)', marginRight: 5 }}>{emp.empId}</span>}
+                                {emp.dept}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Status */}
-                      <td>
-                        <span className={`la-status ${getStatusClass(emp.status)}`}>
-                          <span className="la-status-dot" />
-                          {emp.status}
-                        </span>
-                      </td>
+                        {/* Live Presence Pill */}
+                        <td>
+                          <PresenceBadge 
+                            status={presence?.status || (emp.onBreakNow ? 'break' : emp.status === 'Working' ? 'online' : 'offline')} 
+                            showLabel={true}
+                            idleSince={presence?.idle_since} 
+                          />
+                        </td>
+
+                        {/* Attendance Status */}
+                        <td>
+                          <span className={`la-status ${getStatusClass(emp.status)}`}>
+                            <span className="la-status-dot" />
+                            {emp.status}
+                          </span>
+                        </td>
 
                       {/* Mode */}
                       <td>
@@ -573,7 +603,8 @@ const LiveAttendance = () => {
                     {/* Expanded break details row */}
                     {expandedRow === emp.id && <ExpandedRow emp={emp} />}
                   </React.Fragment>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </motion.div>
@@ -585,37 +616,43 @@ const LiveAttendance = () => {
         <AnimatePresence mode="wait">
           <motion.div key="grid" className="la-card-grid"
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-            {filtered.map((emp, i) => (
-              <motion.div
-                key={emp.id}
-                className="la-emp-card"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.04 }}
-                onClick={() => navigate(`/admin/employees/${emp.id}`)}
-              >
-                {/* Card Top */}
-                <div className="la-card-top">
-                  <div className="la-card-avatar-row">
-                    <div className="la-card-avatar">
-                      {emp.firstName[0]}{emp.lastName ? emp.lastName[0] : ''}
+            {filtered.map((emp, i) => {
+              const presence = getEmployeePresence(emp.id);
+              return (
+                <motion.div
+                  key={emp.id}
+                  className="la-emp-card"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.04 }}
+                  onClick={() => navigate(`/admin/employees/${emp.id}`)}
+                >
+                  {/* Card Top */}
+                  <div className="la-card-top">
+                    <div className="la-card-avatar-row">
+                      <div className="la-card-avatar" style={{ position: 'relative' }}>
+                        {emp.firstName[0]}{emp.lastName ? emp.lastName[0] : ''}
+                        <div style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                          <PresenceBadge status={presence?.status || (emp.onBreakNow ? 'break' : emp.status === 'Working' ? 'online' : 'offline')} size="sm" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="la-card-name">{emp.firstName} {emp.lastName}</div>
+                        <div className="la-card-dept">{emp.dept}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="la-card-name">{emp.firstName} {emp.lastName}</div>
-                      <div className="la-card-dept">{emp.dept}</div>
+                    <div className="la-card-badges">
+                      <PresenceBadge 
+                        status={presence?.status || (emp.onBreakNow ? 'break' : emp.status === 'Working' ? 'online' : 'offline')} 
+                        showLabel={true}
+                        idleSince={presence?.idle_since} 
+                      />
+                      <span className={`la-mode ${emp.mode === 'Office' ? 'office' : 'wfh'}`}>
+                        {emp.mode === 'Office' ? '🏢' : '🏠'} {emp.mode}
+                      </span>
+                      {emp.late && <span className="la-late-badge">⚠ Late</span>}
                     </div>
                   </div>
-                  <div className="la-card-badges">
-                    <span className={`la-status ${getStatusClass(emp.status)}`}>
-                      <span className="la-status-dot" />{emp.status}
-                    </span>
-                    <span className={`la-mode ${emp.mode === 'Office' ? 'office' : 'wfh'}`}>
-                      {emp.mode === 'Office' ? '🏢' : '🏠'} {emp.mode}
-                    </span>
-                    {emp.late && <span className="la-late-badge">⚠ Late</span>}
-                    {emp.onBreakNow && <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>☕ On Break</span>}
-                  </div>
-                </div>
 
                 {/* Card Bottom — Time + Break Metrics */}
                 <div className="la-card-bottom">
@@ -672,7 +709,8 @@ const LiveAttendance = () => {
                   )}
                 </div>
               </motion.div>
-            ))}
+            );
+          })}
           </motion.div>
         </AnimatePresence>
       )}

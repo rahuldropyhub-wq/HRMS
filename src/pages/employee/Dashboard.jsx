@@ -29,6 +29,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import AttendanceControlCenter from '../../components/employee/AttendanceControlCenter';
 import DashboardLayout from '../../components/employee/DashboardLayout';
 import CelebrationsWidget from '../../components/shared/CelebrationsWidget';
+import PresenceBadge from '../../components/common/PresenceBadge';
+import { usePresence } from '../../contexts/PresenceContext';
 import '../../styles/employee/dashboard.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyAttendance, getMyTasks, getMyLeaves, getAnnouncements, getHolidays } from '../../services/employeeService';
@@ -37,6 +39,7 @@ function Dashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { currentStatus } = usePresence();
 
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [pendingTasks, setPendingTasks] = useState(0);
@@ -160,8 +163,11 @@ function Dashboard() {
         <div className="dashboard-content">
           <div className="welcome-banner">
             <div>
-              <h1>{getGreeting()}, {firstName}! 👋</h1>
-              <p>Here's what's happening with your work today.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <h1 style={{ margin: 0 }}>{getGreeting()}, {firstName}! 👋</h1>
+                <PresenceBadge status={currentStatus} showLabel={true} size="md" />
+              </div>
+              <p style={{ marginTop: '6px' }}>Here's what's happening with your work today.</p>
             </div>
             <div className="date-picker">
               {todayStr}

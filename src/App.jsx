@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PopupProvider } from './contexts/PopupContext';
+import { PresenceProvider } from './contexts/PresenceContext';
 import Login from './pages/employee/Login';
 import Dashboard from './pages/employee/Dashboard';
 import Attendance from './pages/employee/Attendance';
@@ -52,74 +53,78 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 function App() {
   return (
     <PopupProvider>
-      <BrowserRouter>
-        <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
+      <PresenceProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Protected Employee Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['employee', 'admin']} />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/attendance" element={<Attendance />} />
-          <Route path="/leave-management" element={<LeaveManagement />} />
-          <Route path="/worksheet" element={<Worksheet />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/projects" element={<EmployeeProjects />} />
-          <Route path="/tickets" element={<Tickets />} />
-          <Route path="/assets" element={<Assets />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/holidays" element={<Holidays />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-        
-        {/* Protected Admin Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-          <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="employees" element={<EmployeeDirectory />} />
-          <Route path="employees/add" element={<AddEmployee />} />
-          <Route path="employees/edit/:id" element={<AddEmployee />} />
-          <Route path="employees/:id" element={<EmployeeProfile />} />
-          <Route path="employees/documents" element={<EmployeeDocuments />} />
-          
-          <Route path="attendance/live" element={<LiveAttendance />} />
-          <Route path="attendance/history" element={<AttendanceHistory />} />
-          <Route path="attendance/wfh-tracking" element={<WFHTracking />} />
-          
-          <Route path="leave/requests" element={<LeaveRequests />} />
-          <Route path="leave/calendar" element={<LeaveCalendar />} />
-          <Route path="leave/policies" element={<LeavePolicies />} />
-          
-          <Route path="projects" element={<AdminProjects />} />
-          <Route path="tasks" element={<TaskDashboard />} />
-          <Route path="tasks/create" element={<CreateTask />} />
-          <Route path="tasks/review" element={<TaskReview />} />
-          <Route path="worksheets" element={<WorksheetReview />} />
+            {/* Protected Employee Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['employee', 'admin']} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/leave-management" element={<LeaveManagement />} />
+              <Route path="/worksheet" element={<Worksheet />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/projects" element={<EmployeeProjects />} />
+              <Route path="/tickets" element={<Tickets />} />
+              <Route path="/assets" element={<Assets />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/holidays" element={<Holidays />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+            
+            {/* Protected Admin Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="employees" element={<EmployeeDirectory />} />
+                <Route path="employees/add" element={<AddEmployee />} />
+                <Route path="employees/edit/:id" element={<AddEmployee />} />
+                <Route path="employees/profile/:id" element={<EmployeeProfile />} />
+                <Route path="employees/documents" element={<EmployeeDocuments />} />
+                
+                <Route path="attendance/live" element={<LiveAttendance />} />
+                <Route path="attendance/history" element={<AttendanceHistory />} />
+                <Route path="attendance/wfh" element={<WFHTracking />} />
 
-          <Route path="tickets" element={<TicketQueue />} />
-          <Route path="tickets/create" element={<CreateTicket />} />
-          <Route path="tickets/:id" element={<TicketDetail />} />
-          <Route path="assets" element={<AssetInventory />} />
-          <Route path="assets/assign" element={<AssetAssign />} />
-          
-          <Route path="organization/departments" element={<Departments />} />
-          <Route path="organization/designations" element={<Designations />} />
-          <Route path="organization/chart" element={<OrgChart />} />
-          <Route path="organization/holidays" element={<CompanyHolidays />} />
+                <Route path="leave/requests" element={<LeaveRequests />} />
+                <Route path="leave/calendar" element={<LeaveCalendar />} />
+                <Route path="leave/policies" element={<LeavePolicies />} />
 
-          <Route path="reports" element={<ReportsDashboard />} />
-          <Route path="reports/attendance" element={<AttendanceReport />} />
-          <Route path="reports/leave" element={<LeaveReport />} />
-          <Route path="announcements" element={<Announcements />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="settings/roles" element={<RolesPermissions />} />
-          <Route path="audit-logs" element={<AuditLogs />} />
-        </Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+                <Route path="tasks/projects" element={<AdminProjects />} />
+                <Route path="tasks/dashboard" element={<TaskDashboard />} />
+                <Route path="tasks/create" element={<CreateTask />} />
+                <Route path="tasks/review" element={<TaskReview />} />
+
+                <Route path="worksheet/review" element={<WorksheetReview />} />
+
+                <Route path="tickets/queue" element={<TicketQueue />} />
+                <Route path="tickets/create" element={<CreateTicket />} />
+                <Route path="tickets/detail/:id" element={<TicketDetail />} />
+
+                <Route path="assets/inventory" element={<AssetInventory />} />
+                <Route path="assets/assign" element={<AssetAssign />} />
+
+                <Route path="organization/departments" element={<Departments />} />
+                <Route path="organization/designations" element={<Designations />} />
+                <Route path="organization/chart" element={<OrgChart />} />
+                <Route path="organization/holidays" element={<CompanyHolidays />} />
+
+                <Route path="reports" element={<ReportsDashboard />} />
+                <Route path="reports/attendance" element={<AttendanceReport />} />
+                <Route path="reports/leave" element={<LeaveReport />} />
+                <Route path="announcements" element={<Announcements />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="settings/roles" element={<RolesPermissions />} />
+                <Route path="audit-logs" element={<AuditLogs />} />
+              </Route>
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </PresenceProvider>
     </PopupProvider>
   );
 }

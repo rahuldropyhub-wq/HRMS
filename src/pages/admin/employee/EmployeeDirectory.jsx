@@ -173,8 +173,9 @@ export default function EmployeeDirectory() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={{ width: '180px' }}>
+        <div className="filter-dropdown-wrapper" style={{ width: '180px' }}>
           <CustomDropdown
+            fullWidth={true}
             value={deptFilter}
             onChange={(val) => { setDeptFilter(val); setCurrentPage(1); }}
             options={[
@@ -183,8 +184,9 @@ export default function EmployeeDirectory() {
             ]}
           />
         </div>
-        <div style={{ width: '160px' }}>
+        <div className="filter-dropdown-wrapper" style={{ width: '160px' }}>
           <CustomDropdown
+            fullWidth={true}
             value={statusFilter}
             onChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
             options={[
@@ -195,8 +197,9 @@ export default function EmployeeDirectory() {
             ]}
           />
         </div>
-        <div className="hide-tablet" style={{ width: '160px' }}>
+        <div className="filter-dropdown-wrapper hide-tablet" style={{ width: '160px' }}>
           <CustomDropdown
+            fullWidth={true}
             value={typeFilter}
             onChange={(val) => { setTypeFilter(val); setCurrentPage(1); }}
             options={[
@@ -208,8 +211,13 @@ export default function EmployeeDirectory() {
             ]}
           />
         </div>
-        <button className="btn-secondary" title="Export CSV" onClick={handleExportCSV} style={{ padding: '8px', border: '1px solid #e5e7eb', background: 'var(--card-bg)', borderRadius: '8px', cursor: 'pointer' }}>
-          <Download size={18} color="#4b5563" />
+        <button 
+          type="button"
+          className="export-btn" 
+          title="Export CSV" 
+          onClick={handleExportCSV}
+        >
+          <Download size={18} />
         </button>
       </div>
 
