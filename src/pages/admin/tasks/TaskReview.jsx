@@ -37,7 +37,7 @@ const TaskReview = () => {
     [...localTasks, ...(dbTasks || [])].forEach(t => {
       let st = (t.status || 'todo').toLowerCase();
       if (st === 'review' || st === 'waiting-review' || st === 'completed') {
-        const assigneeStr = t.assigned_to || t.assignedTo || t.assignee || 'Balaji Sarabu (EMP-001)';
+        const assigneeStr = t.assigned_to || t.assignedTo || t.assignee || 'Unassigned';
         const key = t.id || `${t.title}-${t.due_date}`;
         mergedMap.set(key, {
           id: t.id || ('TSK-' + Math.floor(1000 + Math.random() * 9000)),

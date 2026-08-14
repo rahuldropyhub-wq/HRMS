@@ -123,7 +123,7 @@ const TaskDashboard = () => {
       if (st === 'in progress') st = 'in-progress';
       if (st === 'done') st = 'completed';
 
-      const assigneeStr = t.assigned_to || t.assignedTo || 'Balaji Sarabu (EMP-001)';
+      const assigneeStr = t.assigned_to || t.assignedTo || 'Unassigned';
       const initials = assigneeStr.substring(0, 2).toUpperCase();
 
       const key = t.id || `${t.title}-${t.due_date}`;
@@ -155,7 +155,7 @@ const TaskDashboard = () => {
     setEditingTask(null);
     setForm({
       ...initialForm,
-      assignedTo: employees.length > 0 ? `${employees[0].first_name} ${employees[0].last_name} (${employees[0].emp_id || 'EMP-001'})` : 'Balaji Sarabu (EMP-001)'
+      assignedTo: employees.length > 0 ? `${employees[0].first_name} ${employees[0].last_name} (${employees[0].emp_id || 'EMP-001'})` : 'Unassigned'
     });
     setIsModalOpen(true);
   };
@@ -184,7 +184,7 @@ const TaskDashboard = () => {
     setSubmitting(true);
     const taskId = editingTask ? editingTask.id : ('TSK-2026-' + Math.floor(100 + Math.random() * 900));
 
-    const assigneeStr = form.assignedTo || 'Balaji Sarabu (EMP-001)';
+    const assigneeStr = form.assignedTo || 'Unassigned';
     const newTaskItem = {
       id: taskId,
       title: form.title,
@@ -261,10 +261,9 @@ const TaskDashboard = () => {
     const fName = e.firstName || e.first_name || (e.email ? e.email.split('@')[0] : 'Employee');
     const lName = e.lastName || e.last_name || '';
     const fullName = `${fName} ${lName}`.trim();
-    const code = e.empCode || e.emp_id || 'EMP-001';
+    const code = e.empCode || e.emp_id || 'EMP';
     return `${fullName} (${code})`;
   });
-  if (employeeOptions.length === 0) employeeOptions.push('Balaji Sarabu (EMP-001)', 'Rahul Sharma (EMP-002)', 'Priya Verma (EMP-003)');
 
   return (
     <motion.div

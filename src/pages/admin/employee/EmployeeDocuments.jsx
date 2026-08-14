@@ -7,13 +7,8 @@ import {
 import '../../../styles/admin/employee/employee-documents.css';
 import EmptyState from '../../../components/admin/EmptyState';
 
-// Real System Documents Data
-const MOCK_DOCS = [
-  { id: '1', name: 'Offer Letter - Jayanth Choda', owner: 'Jayanth Choda', empId: 'EMP-001', type: 'PDF', status: 'Verified', date: '2026-08-01', size: '1.2 MB' },
-  { id: '2', name: 'Identity Proof (Aadhaar & PAN) - Jayanth Choda', owner: 'Jayanth Choda', empId: 'EMP-001', type: 'PDF', status: 'Verified', date: '2026-08-01', size: '2.4 MB' },
-  { id: '3', name: 'Degree Certificate - Balaji S', owner: 'Balaji S', empId: 'EMP-002', type: 'PDF', status: 'Verified', date: '2026-08-02', size: '3.1 MB' },
-  { id: '4', name: 'Relieving & Experience Certificate - Balaji S', owner: 'Balaji S', empId: 'EMP-002', type: 'PDF', status: 'Pending', date: '2026-08-05', size: '850 KB' },
-];
+// System Documents Data
+const MOCK_DOCS = [];
 
 const EmployeeDocuments = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -75,8 +70,6 @@ const EmployeeDocuments = () => {
         </div>
         <select style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', outline: 'none', background: 'var(--card-bg)' }} value={empFilter} onChange={(e) => setEmpFilter(e.target.value)}>
           <option value="">All Employees</option>
-          <option value="EMP-001">Jayanth Choda</option>
-          <option value="EMP-002">Balaji S</option>
         </select>
         <select style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', outline: 'none', background: 'var(--card-bg)' }} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="">All Types</option>

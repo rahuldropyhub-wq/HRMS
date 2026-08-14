@@ -1,15 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Box, User, CheckCircle, Wrench } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../../styles/admin/assets/asset-assign.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
+import { getAllEmployees } from '../../../services/adminService';
 
 const AssetAssign = () => {
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [assigned, setAssigned] = useState(false);
+  const [employees, setEmployees] = useState([]);
+
+  useEffect(() => {
+    getAllEmployees().then(({ data }) => {
+      if (data && Array.isArray(data)) {
+        setEmployees(data);
+      }
+    });
+  }, []);
+
+  const employeeOptions = [
+    { value: '', label: 'Search or choose employee...' },
+    ...employees.map(e => ({
+      value: e.id || e.empCode,
+      label: `${e.firstName || e.first_name || 'Employee'} ${e.lastName || e.last_name || ''} (${e.department || 'General'})`.trim()
+    }))
+  ];
 
   const onSubmit = (data) => {
     setAssigned(true);
@@ -64,13 +82,7 @@ const AssetAssign = () => {
           <CustomDropdown
             value=""
             onChange={() => {}}
-            options={[
-              { value: '', label: 'Search or choose employee...' },
-              { value: 'EMP-001', label: 'Rahul Sharma (Engineering)' },
-              { value: 'EMP-015', label: 'Amit Kumar (Design)' },
-              { value: 'EMP-042', label: 'Priya Patel (Management)' },
-              { value: 'EMP-088', label: 'Neha Gupta (HR)' }
-            ]}
+            options={employeeOptions}
             fullWidth
           />
         </div>

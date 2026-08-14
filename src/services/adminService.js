@@ -1032,7 +1032,7 @@ export const getDashboardStats = async () => {
   ]);
 
   const allEmps = empRes.data || [];
-  const totalEmps = allEmps.length > 0 ? allEmps.length : 3;
+  const totalEmps = allEmps.length;
 
   const attList = attTodayRes.data || [];
   const present = attList.filter(a => a.status === 'present' || a.status === 'working' || a.check_in).length;

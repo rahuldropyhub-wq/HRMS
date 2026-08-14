@@ -103,8 +103,6 @@ export const AuthProvider = ({ children }) => {
 
         if (lowerEmail === 'test@dropyhub.com') {
           data.role = 'admin';
-        } else if (lowerEmail === 'jayanth.choda@dropyhub.com' || lowerEmail === 'balaji.s@dropyhub.com') {
-          data.role = 'employee';
         }
 
         setProfile(data);
@@ -133,7 +131,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithOtp = async (email) => {
     const lowerEmail = email ? email.toLowerCase() : '';
-    const isDesignatedUser = ['test@dropyhub.com', 'jayanth.choda@dropyhub.com', 'balaji.s@dropyhub.com'].includes(lowerEmail);
+    const isDesignatedUser = ['test@dropyhub.com'].includes(lowerEmail);
 
     if (!isSupabaseConfigured) {
       return { data: { user: null }, error: null };
@@ -206,9 +204,6 @@ export const AuthProvider = ({ children }) => {
     if (lowerEmail === 'test@dropyhub.com' || window.location.pathname.startsWith('/admin')) {
       role = 'admin';
     }
-    if (lowerEmail === 'jayanth.choda@dropyhub.com' || lowerEmail === 'balaji.s@dropyhub.com') {
-      role = 'employee';
-    }
 
     const nameParts = email.split('@')[0].split('.');
     const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : 'User';
@@ -250,7 +245,7 @@ export const AuthProvider = ({ children }) => {
   const mockLogin = (role = 'employee', emailOverride = null) => {
     let email = emailOverride;
     if (!email) {
-      email = role === 'admin' ? 'test@dropyhub.com' : 'jayanth.choda@dropyhub.com';
+      email = role === 'admin' ? 'test@dropyhub.com' : 'employee@dropyhub.com';
     }
     const mockUser = { id: 'MOCK-123', email };
     const mockProfile = { 

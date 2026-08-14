@@ -78,7 +78,7 @@ const CreateTask = () => {
     }
 
     const taskId = 'TSK-2026-' + Math.floor(100 + Math.random() * 900);
-    const assigneeStr = data.assignee || (employees.length > 0 ? `${employees[0].first_name} ${employees[0].last_name} (${employees[0].emp_id || 'EMP-001'})` : 'Balaji Sarabu (EMP-001)');
+    const assigneeStr = data.assignee || (employees.length > 0 ? `${employees[0].first_name} ${employees[0].last_name} (${employees[0].emp_id || 'EMP-001'})` : 'Unassigned');
 
     const newTaskItem = {
       id: taskId,
@@ -145,7 +145,7 @@ const CreateTask = () => {
     const fName = e.firstName || e.first_name || (e.email ? e.email.split('@')[0] : 'Employee');
     const lName = e.lastName || e.last_name || '';
     const fullName = `${fName} ${lName}`.trim();
-    const code = e.empCode || e.emp_id || 'EMP-001';
+    const code = e.empCode || e.emp_id || 'EMP';
     const dept = e.department && e.department !== '-' ? e.department : (e.departments?.name || '');
     const displayLabel = `${fullName} (${code})${dept ? ` - ${dept}` : ''}`;
     return {
@@ -153,14 +153,6 @@ const CreateTask = () => {
       name: displayLabel
     };
   });
-
-  if (employeeOptions.length === 0) {
-    employeeOptions.push(
-      { id: 'Balaji Sarabu (EMP-001)', name: 'Balaji Sarabu (EMP-001) - Engineering' },
-      { id: 'Rahul Sharma (EMP-002)', name: 'Rahul Sharma (EMP-002) - Marketing' },
-      { id: 'Priya Verma (EMP-003)', name: 'Priya Verma (EMP-003) - HR' }
-    );
-  }
 
   return (
     <motion.div 

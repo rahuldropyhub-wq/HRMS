@@ -190,7 +190,7 @@ export default function Profile() {
   const empCode = safeText(profile?.emp_id || profile?.empId, 'DROPY-001');
   const designation = safeText(profile?.designation || profile?.designations, 'Software Engineer');
   const department = safeText(profile?.department || profile?.departments, 'Engineering');
-  const managerName = safeText(profile?.manager || profile?.reporting_manager, 'Jayanth Choda');
+  const managerName = safeText(profile?.manager || profile?.reporting_manager, 'Test Admin');
   const workLocation = safeText(profile?.work_location || profile?.workLocation, 'Hyderabad');
   const shiftName = safeText(profile?.shift, 'General');
   const officialEmail = safeText(profile?.email || profile?.officialEmail, 'N/A');

@@ -439,7 +439,7 @@ const AddEmployee = () => {
                     {...register('manager')}
                   >
                     <option value="">Select Reporting Manager</option>
-                    <option value="Jayanth Choda">Jayanth Choda (Admin)</option>
+                    <option value="Test Admin">Test Admin (Admin)</option>
                     {managersList.map(m => (
                       <option key={m.id} value={`${m.firstName || ''} ${m.lastName || ''}`.trim()}>
                         {m.firstName} {m.lastName} ({m.designation || m.department || 'Employee'})

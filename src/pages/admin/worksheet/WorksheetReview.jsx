@@ -215,10 +215,10 @@ const WorksheetReview = () => {
             onChange={() => {}}
             options={[
               { value: '', label: 'All Employees' },
-              { value: 'Rahul', label: 'Rahul Sharma' },
-              { value: 'Priya', label: 'Priya Patel' },
-              { value: 'Amit', label: 'Amit Kumar' },
-              { value: 'Neha', label: 'Neha Gupta' }
+              ...Array.from(new Set(worksheets.map(w => w.empName))).filter(Boolean).map(name => ({
+                value: name,
+                label: name
+              }))
             ]}
             fullWidth
           />

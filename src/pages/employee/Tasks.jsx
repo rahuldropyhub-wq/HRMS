@@ -742,7 +742,7 @@ export default function Tasks() {
             <FormSection title="Assignment & Scheduling" description="Who is responsible and when is it due.">
               <FormField label="Assign Employee">
                 <SelectInput
-                  options={['Ravi Sharma', 'Anjali Mehta', 'Priya Nair', 'Balaji Kumar']}
+                  options={['Unassigned']}
                   value={newTask.assignedBy}
                   onChange={e => setNewTask(p => ({ ...p, assignedBy: e.target.value }))}
                 />

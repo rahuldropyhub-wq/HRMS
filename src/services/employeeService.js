@@ -447,11 +447,7 @@ export const checkOut = async (userId) => {
 };
 
 // ─── LEAVE ────────────────────────────────────────────────────────────────────
-const DEFAULT_LEAVES = [
-  { id: 'LV-2025-032', leave_type: 'Casual Leave', start_date: '2025-05-12', end_date: '2025-05-13', reason: 'Family function', status: 'approved', created_at: '2025-05-08T10:00:00Z' },
-  { id: 'LV-2025-031', leave_type: 'Sick Leave', start_date: '2025-05-05', end_date: '2025-05-05', reason: 'Fever and cold', status: 'approved', created_at: '2025-05-04T10:00:00Z' },
-  { id: 'LV-2025-030', leave_type: 'Work From Home', start_date: '2025-05-01', end_date: '2025-05-01', reason: 'Internet issue', status: 'approved', created_at: '2025-04-30T10:00:00Z' }
-];
+const DEFAULT_LEAVES = [];
 
 export const getMyLeaves = async (userId) => {
   try {
@@ -973,24 +969,7 @@ export const getUpcomingCelebrations = async () => {
   }
 };
 
-const DEFAULT_SEED_APPRECIATIONS = [
-  {
-    id: 'app-seed-001',
-    sender_name: 'Rahul Sharma',
-    receiver_name: 'Jayanth Choda',
-    message: 'Outstanding performance on the HRMS portal release! Exceptional attention to detail.',
-    type: 'award',
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: 'app-seed-002',
-    sender_name: 'Priya Verma',
-    receiver_name: 'Balaji S',
-    message: 'Great job resolving critical mobile layout issues quickly. Kudos!',
-    type: 'shoutout',
-    created_at: new Date(Date.now() - 86400000).toISOString()
-  }
-];
+const DEFAULT_SEED_APPRECIATIONS = [];
 
 export const getAppreciations = async () => {
   let localSaved = [];

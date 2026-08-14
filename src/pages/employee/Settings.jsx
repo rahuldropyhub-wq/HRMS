@@ -30,7 +30,10 @@ import DashboardLayout from '../../components/employee/DashboardLayout';
 import '../../styles/employee/dashboard.css';
 import '../../styles/employee/settings.css';
 
+import { useAuth } from '../../contexts/AuthContext';
+
 function Settings() {
+  const { profile, user } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Toggle states
@@ -40,6 +43,11 @@ function Settings() {
   const [systemAnnouncements, setSystemAnnouncements] = useState(true);
   const [birthdays, setBirthdays] = useState(false);
   const [promotions, setPromotions] = useState(false);
+
+  const fullName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'User';
+  const email = profile?.email || user?.email || '';
+  const phone = profile?.phone || '';
+  const joinDate = profile?.joinDate || profile?.created_at?.split('T')[0] || '';
 
   return (
     <DashboardLayout>
@@ -81,7 +89,7 @@ function Settings() {
                   <p className="field-label">Profile Photo</p>
                   <div className="profile-photo-upload">
                     <div className="photo-preview">
-                      <img src="https://i.pravatar.cc/150?img=11" alt="Profile" />
+                      <img src={profile?.avatar_url || profile?.avatarUrl || "https://i.pravatar.cc/150?img=11"} alt="Profile" />
                       <button className="camera-btn">
                         <Camera size={14} />
                       </button>
@@ -93,21 +101,21 @@ function Settings() {
                 <div className="form-grid">
                   <div className="form-group">
                     <label>Full Name</label>
-                    <input type="text" defaultValue="Balaji Kumar" />
+                    <input type="text" value={fullName} readOnly />
                   </div>
                   <div className="form-group">
                     <label>Email Address</label>
-                    <input type="email" defaultValue="balaji.kumar@dropyhub.com" />
+                    <input type="email" value={email} readOnly />
                   </div>
                   <div className="form-group">
                     <label>Phone Number</label>
-                    <input type="text" defaultValue="+91 9030545655" />
+                    <input type="text" value={phone} readOnly />
                   </div>
                   <div className="form-group">
                     <label>Date of Joining</label>
                     <div className="input-with-icon">
                       <Calendar size={16} className="input-icon" />
-                      <input type="text" defaultValue="01 Jan 2025" />
+                      <input type="text" value={joinDate} readOnly />
                     </div>
                   </div>
                 </div>

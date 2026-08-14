@@ -166,7 +166,7 @@ export default function Tickets() {
     setTickets(prev => prev.map(t => t.id === selectedId ? {
       ...t,
       conversation: [...t.conversation, {
-        author: 'Balaji Kumar', role: 'employee',
+        author: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Employee', role: 'employee',
         text: comment.trim(), time: 'Just now',
       }],
     } : t));
