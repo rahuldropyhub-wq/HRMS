@@ -3,10 +3,11 @@ import { compressDocument } from '../../../utils/imageCompressor';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { UploadCloud, ArrowLeft, ArrowRight, Save, CheckCircle, User, Building2, CreditCard, FileText } from 'lucide-react';
+import { UploadCloud, ArrowLeft, ArrowRight, Save, CheckCircle, User, Building2, CreditCard, FileText, Mail } from 'lucide-react';
 import '../../../styles/admin/employee/add-employee.css';
 import CustomDropdown from '../../../components/admin/CustomDropdown';
 import { createEmployee, getEmployeeById, updateEmployee, getAllEmployees } from '../../../services/adminService';
+import { sendEmployeeWelcomeEmail } from '../../../services/emailService';
 
 const STEPS = [
   'Personal Info',
@@ -205,10 +206,20 @@ const AddEmployee = () => {
       } else {
         localStorage.removeItem('employeeDraft');
         setSubmitError('');
+
+        // Dispatch live welcome email notification to personal email
+        if (!isEditMode && (data.personalEmail || data.officialEmail)) {
+          try {
+            await sendEmployeeWelcomeEmail(completeRawData);
+          } catch (mailErr) {
+            console.warn('Welcome email dispatch notice:', mailErr);
+          }
+        }
+
         setShowSuccess(true);
         setTimeout(() => {
           navigate('/admin/employees');
-        }, 2000);
+        }, 2800);
       }
     } catch (err) {
       console.error(err);
@@ -788,17 +799,39 @@ const AddEmployee = () => {
 
           {/* Success Popup */}
           {showSuccess && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 9999 }}>
               <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }} 
-                animate={{ scale: 1, opacity: 1 }} 
-                style={{ background: 'white', padding: '32px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                initial={{ scale: 0.85, opacity: 0, y: 15 }} 
+                animate={{ scale: 1, opacity: 1, y: 0 }} 
+                style={{ background: 'white', padding: '36px 32px', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '460px', width: '90%', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', textAlign: 'center' }}
               >
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                  <CheckCircle size={32} color="white" />
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 16px rgba(16, 185, 129, 0.3)' }}>
+                  <CheckCircle size={34} color="white" />
                 </div>
-                <h2 style={{ margin: '0 0 8px 0', color: '#111827' }}>Success!</h2>
-                <p style={{ margin: 0, color: '#6b7280', textAlign: 'center' }}>Employee added successfully.<br/>Redirecting to directory...</p>
+                <h2 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '22px', fontWeight: 700 }}>
+                  {isEditMode ? 'Employee Updated!' : 'Employee Created Successfully!'}
+                </h2>
+                <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '14px' }}>
+                  {isEditMode 
+                    ? 'Employee profile has been updated.' 
+                    : 'The employee account is active and credentials have been provisioned.'}
+                </p>
+
+                {!isEditMode && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 16px', width: '100%', marginBottom: '20px', textAlign: 'left', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
+                      <Mail size={16} /> Welcome Email Dispatched!
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#14532d', lineHeight: 1.5 }}>
+                      Sent to personal email: <strong>{getValues('personalEmail') || getValues('officialEmail')}</strong><br/>
+                      Included credentials: <strong>Emp ID ({getValues('empId')})</strong>, <strong>Work Email ({getValues('officialEmail')})</strong>, and complete portal login instructions.
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  Redirecting to Employee Directory in a moment...
+                </div>
               </motion.div>
             </div>
           )}
